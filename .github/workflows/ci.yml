@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+
+jobs:
+  report:
+    needs:
+      - lint-aux
+      - extract-changelog
+      - rustfmt
+      - clippy
+      - build-and-test
+      - build-no_std
+      - package-crate
+    # 'always()' is needed because GitHub treats a skipped job (due to a failed
+    # dependency) a success.
+    if: always()
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Report status
+        env:
+          NEEDS_JSON: ${{ toJson(needs) }}
+        # Make sure all dependencies succeeded.
+        run: jq --exit-status 'all(.result == "success")' <<< "$NEEDS_JSON"
+
+  lint-aux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lint utilities
+        run: sudo npm install -g markdownlint-cli
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable --profile minimal
+      - run: ./ci/lint-aux.sh
+
+  extract-changelog:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable --profile minimal
+      - run: ./ci/extract-changelog.sh
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: version-changelog
+          path: version-changelog
+          if-no-files-found: error
+
+  rustfmt:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable --profile minimal -c rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libmpfr-dev
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable --profile minimal -c clippy
+      - run: ./ci/clippy.sh
+
+  build-and-test:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - rust-version: msrv
+          - rust-version: stable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-multilib libmpfr-dev libmpfr-dev:i386
+      - name: Install Rust
+        run: |
+          ./ci/install-rust.sh "${{ matrix.rust-version }}" --profile minimal \
+            -t x86_64-unknown-linux-gnu \
+            -t i586-unknown-linux-gnu
+      - run: ./ci/build-and-test.sh
+
+  build-no_std:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable --profile minimal -t x86_64-unknown-none
+      - run: cargo build -p fpmath --target x86_64-unknown-none
+
+  package-crate:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable --profile minimal
+      - run: ./ci/package-crate.sh
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-crate
+          path: output
+          if-no-files-found: error

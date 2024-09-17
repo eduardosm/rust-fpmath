@@ -1,5 +1,8 @@
 # fpmath
 
+[![GitHub Actions Status](https://github.com/eduardosm/rust-fpmath/workflows/CI/badge.svg)](https://github.com/eduardosm/rust-fpmath/actions)
+![MSRV](https://img.shields.io/badge/rustc-1.70+-lightgray.svg)
+
 fpmath is a pure-Rust floating point library that implements math functions for
 `f32` and `f64`.
 
