@@ -9,12 +9,14 @@ begin_group "Fetch dependencies"
 cargo fetch --locked
 end_group
 
+features=(--features "soft-float")
+
 begin_group "Build"
-cargo build --workspace --all-targets --frozen
+cargo build --frozen --workspace "${features[@]}" --all-targets
 end_group
 
 begin_group "Doc"
-cargo doc --workspace --frozen
+cargo doc --frozen --workspace "${features[@]}"
 end_group
 
 begin_group "Generate test data"
@@ -22,13 +24,13 @@ begin_group "Generate test data"
 end_group
 
 begin_group "Test x86_64"
-cargo test --workspace --target x86_64-unknown-linux-gnu --frozen
+cargo test --frozen --workspace "${features[@]}" --target x86_64-unknown-linux-gnu
 end_group
 
 begin_group "Test i586 debug"
-cargo test --workspace --target i586-unknown-linux-gnu --frozen
+cargo test --frozen --workspace "${features[@]}" --target i586-unknown-linux-gnu
 end_group
 
 begin_group "Test i586 release"
-cargo test --workspace --target i586-unknown-linux-gnu --release --frozen
+cargo test --frozen --workspace "${features[@]}" --target i586-unknown-linux-gnu --release
 end_group

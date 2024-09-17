@@ -143,6 +143,7 @@ mod tests {
         test::<f32>(0x80..=0xFF, core::iter::empty(), core::iter::empty());
     }
 
+    #[cfg(feature = "soft-float")]
     #[test]
     fn test_soft_f32() {
         test::<crate::SoftF32>(0x80..=0xFF, core::iter::empty(), core::iter::empty());
@@ -153,6 +154,7 @@ mod tests {
         test::<f64>(0x100..=0x1FF, [-340, 0, 340].into_iter(), 0x10000..=0x1FFFF);
     }
 
+    #[cfg(feature = "soft-float")]
     #[test]
     fn test_soft_f64() {
         test::<crate::SoftF64>(0x100..=0x1FF, [-340, 0, 340].into_iter(), 0x10000..=0x1FFFF);

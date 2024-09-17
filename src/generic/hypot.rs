@@ -108,6 +108,7 @@ mod tests {
         test::<f32>();
     }
 
+    #[cfg(feature = "soft-float")]
     #[test]
     fn test_soft_f32() {
         test::<crate::SoftF32>();
@@ -118,6 +119,7 @@ mod tests {
         test::<f64>();
     }
 
+    #[cfg(feature = "soft-float")]
     #[test]
     fn test_soft_f64() {
         test::<crate::SoftF64>();

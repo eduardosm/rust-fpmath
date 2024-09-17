@@ -10,8 +10,15 @@ keywords = ["float", "floating-point", "math"]
 categories = ["science", "no-std", "mathematics"]
 publish = false
 
+[package.metadata.docs.rs]
+features = ["soft-float"]
+
+[features]
+default = []
+soft-float = ["dep:rustc_apfloat"]
+
 [dependencies]
-rustc_apfloat = "0.2.1"
+rustc_apfloat = { optional = true, version = "0.2.1" }
 
 [workspace]
 members = [
