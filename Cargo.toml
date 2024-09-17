@@ -1,0 +1,25 @@
+[package]
+name = "fpmath"
+version = "0.1.0-pre"
+authors = ["Eduardo Sánchez Muñoz <esm@eduardosm.net>"]
+edition = "2021"
+rust-version = "1.70"
+description = "A floating point math library"
+license = "MIT OR Apache-2.0"
+keywords = ["float", "floating-point", "math"]
+categories = ["science", "no-std", "mathematics"]
+publish = false
+
+[dependencies]
+rustc_apfloat = "0.2.1"
+
+[workspace]
+members = [
+    "dev-mpfr",
+    "fpmath-tests",
+    "generator",
+]
+
+[workspace.dependencies]
+fpmath = { path = "." }
+dev-mpfr = { path = "dev-mpfr" }
