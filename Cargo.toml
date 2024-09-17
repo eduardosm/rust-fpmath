@@ -1,14 +1,16 @@
 [package]
 name = "fpmath"
-version = "0.1.0-pre"
+version = "0.1.0"
 authors = ["Eduardo Sánchez Muñoz <esm@eduardosm.net>"]
 edition = "2021"
 rust-version = "1.70"
 description = "A floating point math library"
+repository = "https://github.com/eduardosm/rust-fpmath"
 license = "MIT OR Apache-2.0"
 keywords = ["float", "floating-point", "math"]
-categories = ["science", "no-std", "mathematics"]
-publish = false
+categories = ["mathematics", "no-std", "science"]
+exclude = ["/.github", ".gitignore", "/ci", "/*.sh"]
+publish = true
 
 [package.metadata.docs.rs]
 features = ["soft-float"]
