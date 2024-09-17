@@ -231,6 +231,7 @@ mod tests {
         test_log_1p::<f32>();
     }
 
+    #[cfg(feature = "soft-float")]
     #[test]
     fn test_soft_f32() {
         test_log::<crate::SoftF32>();
@@ -243,6 +244,7 @@ mod tests {
         test_log_1p::<f64>();
     }
 
+    #[cfg(feature = "soft-float")]
     #[test]
     fn test_soft_f64() {
         test_log::<crate::SoftF64>();

@@ -198,6 +198,7 @@ mod tests {
         test_exp_m1::<f32>("-87.9", "88.9");
     }
 
+    #[cfg(feature = "soft-float")]
     #[test]
     fn test_soft_f32() {
         test_exp::<crate::SoftF32>("-103.99", "88.9");
@@ -210,6 +211,7 @@ mod tests {
         test_exp_m1::<f64>("-708.9", "709.9");
     }
 
+    #[cfg(feature = "soft-float")]
     #[test]
     fn test_soft_f64() {
         test_exp::<crate::SoftF64>("-745.9", "709.9");

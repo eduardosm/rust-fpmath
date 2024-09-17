@@ -3,6 +3,8 @@ use rustc_apfloat::Float as _;
 use crate::traits;
 
 /// Software double-precision floating-point number.
+///
+/// Only available when the `soft-float` feature is enabled.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd)]
 pub struct SoftF64(rustc_apfloat::ieee::Double);
 
