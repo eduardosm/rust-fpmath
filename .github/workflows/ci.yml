@@ -14,6 +14,7 @@ jobs:
       - rustfmt
       - clippy
       - build-and-test
+      - test-i586
       - build-no_std
       - package-crate
     # 'always()' is needed because GitHub treats a skipped job (due to a failed
@@ -82,6 +83,23 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libmpfr-dev
+      - name: Install Rust
+        run: ./ci/install-rust.sh "${{ matrix.rust-version }}" --profile minimal
+      - run: ./ci/build-and-test.sh
+
+  test-i586:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - rust-version: msrv
+          - rust-version: stable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends gcc-multilib libmpfr-dev libmpfr-dev:i386
@@ -90,7 +108,7 @@ jobs:
           ./ci/install-rust.sh "${{ matrix.rust-version }}" --profile minimal \
             -t x86_64-unknown-linux-gnu \
             -t i586-unknown-linux-gnu
-      - run: ./ci/build-and-test.sh
+      - run: ./ci/test-i586.sh
 
   build-no_std:
     runs-on: ubuntu-22.04

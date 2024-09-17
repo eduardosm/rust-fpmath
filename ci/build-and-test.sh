@@ -23,14 +23,6 @@ begin_group "Generate test data"
 ./run-all-test-data-gen.sh
 end_group
 
-begin_group "Test x86_64"
-cargo test --frozen --workspace "${features[@]}" --target x86_64-unknown-linux-gnu
-end_group
-
-begin_group "Test i586 debug"
-cargo test --frozen --workspace "${features[@]}" --target i586-unknown-linux-gnu
-end_group
-
-begin_group "Test i586 release"
-cargo test --frozen --workspace "${features[@]}" --target i586-unknown-linux-gnu --release
+begin_group "Test"
+cargo test --frozen --workspace "${features[@]}"
 end_group
