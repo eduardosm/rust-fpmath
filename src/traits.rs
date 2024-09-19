@@ -274,3 +274,11 @@ pub(crate) trait Float:
 
 // Hack to avoid "conflicting implementations of trait"
 pub(crate) type Like<F> = <F as Float>::Like;
+
+pub(crate) trait FloatConsts<L = Like<Self>>: Float {
+    fn pi() -> Self;
+    fn frac_pi_2() -> Self;
+    fn frac_pi_4() -> Self;
+    fn frac_1_pi() -> Self;
+    fn frac_2_pi() -> Self;
+}

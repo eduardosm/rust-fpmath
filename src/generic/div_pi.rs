@@ -1,7 +1,6 @@
-use crate::traits::{Float, Like};
+use crate::traits::{FloatConsts, Like};
 
-pub(crate) trait DivPi<L = Like<Self>>: Float {
-    fn frac_1_pi() -> Self;
+pub(crate) trait DivPi<L = Like<Self>>: FloatConsts {
     fn frac_1_pi_hi() -> Self;
     fn frac_1_pi_lo() -> Self;
 }

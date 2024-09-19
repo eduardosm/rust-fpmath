@@ -1,7 +1,6 @@
-use crate::traits::{CastFrom as _, CastInto as _, Float, Int as _, Like};
+use crate::traits::{CastFrom as _, CastInto as _, FloatConsts, Int as _, Like};
 
-pub(crate) trait ReduceHalfMulPi<L = Like<Self>>: Float {
-    fn pi() -> Self;
+pub(crate) trait ReduceHalfMulPi<L = Like<Self>>: FloatConsts {
     fn pi_hi() -> Self;
     fn pi_lo() -> Self;
 }

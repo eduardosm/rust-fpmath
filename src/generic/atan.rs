@@ -1,11 +1,8 @@
-use crate::traits::{CastInto as _, Float, Int as _, Like};
+use crate::traits::{CastInto as _, FloatConsts, Int as _, Like};
 
-pub(crate) trait Atan<L = Like<Self>>: Float {
-    fn pi() -> Self;
-    fn frac_pi_2() -> Self;
+pub(crate) trait Atan<L = Like<Self>>: FloatConsts {
     fn frac_pi_2_hi() -> Self;
     fn frac_pi_2_lo() -> Self;
-    fn frac_pi_4() -> Self;
     fn frac_3pi_4() -> Self;
 
     // Returns `(k3, (atan(x) - x) / x^3 - k3)`

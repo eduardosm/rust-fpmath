@@ -1,22 +1,10 @@
 use super::{F64Like, LikeF64};
 
 // Generated with `./run-generator.sh f64::asin_acos::consts`
-const PI: u64 = 0x400921FB54442D18; // 3.141592653589793e0
-const FRAC_PI_2: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
 const FRAC_PI_2_LO: u64 = 0x3C91A62633145C07; // 6.123233995736766e-17
 
 impl<F: F64Like> crate::generic::AsinAcos<LikeF64> for F {
-    #[inline]
-    fn pi() -> Self {
-        Self::from_raw(PI)
-    }
-
-    #[inline]
-    fn frac_pi_2() -> Self {
-        Self::from_raw(FRAC_PI_2)
-    }
-
     #[inline]
     fn frac_pi_2_hi() -> Self {
         Self::from_raw(FRAC_PI_2_HI)

@@ -21,3 +21,37 @@ mod tan;
 pub(crate) struct LikeF32;
 
 pub(crate) trait F32Like: Float<Like = LikeF32, Raw = u32, RawExp = u8, Exp = i16> {}
+
+// Generated with `./run-generator.sh f32::consts`
+const PI: u32 = 0x40490FDB; // 3.1415927e0
+const FRAC_PI_2: u32 = 0x3FC90FDB; // 1.5707964e0
+const FRAC_PI_4: u32 = 0x3F490FDB; // 7.853982e-1
+const FRAC_1_PI: u32 = 0x3EA2F983; // 3.1830987e-1
+const FRAC_2_PI: u32 = 0x3F22F983; // 6.3661975e-1
+
+impl<F: F32Like> crate::traits::FloatConsts<LikeF32> for F {
+    #[inline]
+    fn pi() -> Self {
+        Self::from_raw(PI)
+    }
+
+    #[inline]
+    fn frac_pi_2() -> Self {
+        Self::from_raw(FRAC_PI_2)
+    }
+
+    #[inline]
+    fn frac_pi_4() -> Self {
+        Self::from_raw(FRAC_PI_4)
+    }
+
+    #[inline]
+    fn frac_1_pi() -> Self {
+        Self::from_raw(FRAC_1_PI)
+    }
+
+    #[inline]
+    fn frac_2_pi() -> Self {
+        Self::from_raw(FRAC_2_PI)
+    }
+}

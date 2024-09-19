@@ -1,9 +1,7 @@
 use super::sqrt::two_hi_lo_sqrt_inner;
-use crate::traits::{Float, Int as _, Like};
+use crate::traits::{FloatConsts, Int as _, Like};
 
-pub(crate) trait AsinAcos<L = Like<Self>>: Float {
-    fn pi() -> Self;
-    fn frac_pi_2() -> Self;
+pub(crate) trait AsinAcos<L = Like<Self>>: FloatConsts {
     fn frac_pi_2_hi() -> Self;
     fn frac_pi_2_lo() -> Self;
 

@@ -25,6 +25,7 @@ fn main() -> ExitCode {
             }
 
             // f32
+            "f32::consts" => gen::f32::gen_consts(),
             "f32::cbrt::consts" => gen::f32::cbrt::gen_consts(),
             "f32::cbrt::inv_cbrt_poly" => gen::f32::cbrt::gen_inv_cbrt_poly(),
             "f32::div_pi::consts" => gen::f32::div_pi::gen_consts(),
@@ -51,6 +52,7 @@ fn main() -> ExitCode {
             "f32::atan::atan_poly" => gen::f32::atan::gen_atan_poly(),
 
             // f64
+            "f64::consts" => gen::f64::gen_consts(),
             "f64::cbrt::consts" => gen::f64::cbrt::gen_consts(),
             "f64::cbrt::inv_cbrt_poly" => gen::f64::cbrt::gen_inv_cbrt_poly(),
             "f64::div_pi::consts" => gen::f64::div_pi::gen_consts(),
