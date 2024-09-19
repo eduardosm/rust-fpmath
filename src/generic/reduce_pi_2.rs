@@ -1,11 +1,7 @@
 use super::reduce_pi_2_large::reduce_pi_2_large;
-use crate::traits::{CastInto as _, Float, Int as _, Like};
+use crate::traits::{CastInto as _, Float, FloatConsts, Int as _, Like};
 
-pub(crate) trait ReducePi2<L = Like<Self>>: Float {
-    fn frac_pi_2() -> Self;
-    fn frac_pi_4() -> Self;
-    fn frac_2_pi() -> Self;
-
+pub(crate) trait ReducePi2<L = Like<Self>>: FloatConsts {
     // trunc(π/2)
     fn frac_pi_2_hi() -> Self;
     // π/2 - trunc(π/2)

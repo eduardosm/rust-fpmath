@@ -1,10 +1,8 @@
 use super::{F64Like, LikeF64};
 use crate::generic::scalbn_medium;
+use crate::traits::FloatConsts;
 
 // Generated with `./run-generator.sh f64::reduce_pi_2::consts`
-const FRAC_PI_2: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
-const FRAC_PI_4: u64 = 0x3FE921FB54442D18; // 7.853981633974483e-1
-const FRAC_2_PI: u64 = 0x3FE45F306DC9C883; // 6.366197723675814e-1
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54400000; // 1.5707963267341256e0
 const FRAC_PI_2_HIEX: u64 = 0x3DD0B4611A626331; // 6.077100506506192e-11
 const FRAC_PI_2_MI: u64 = 0x3DD0B4611A600000; // 6.077100506303966e-11
@@ -12,22 +10,7 @@ const FRAC_PI_2_MIEX: u64 = 0x3BA3198A2E037073; // 2.0222662487959506e-21
 const FRAC_PI_2_LO: u64 = 0x3BA3198A2E000000; // 2.0222662487111665e-21
 const FRAC_PI_2_LOEX: u64 = 0x397B839A252049C1; // 8.4784276603689e-32
 
-impl<F: F64Like> crate::generic::ReducePi2<LikeF64> for F {
-    #[inline]
-    fn frac_pi_2() -> Self {
-        Self::from_raw(FRAC_PI_2)
-    }
-
-    #[inline]
-    fn frac_pi_4() -> Self {
-        Self::from_raw(FRAC_PI_4)
-    }
-
-    #[inline]
-    fn frac_2_pi() -> Self {
-        Self::from_raw(FRAC_2_PI)
-    }
-
+impl<F: F64Like + FloatConsts> crate::generic::ReducePi2<LikeF64> for F {
     #[inline]
     fn frac_pi_2_hi() -> Self {
         Self::from_raw(FRAC_PI_2_HI)

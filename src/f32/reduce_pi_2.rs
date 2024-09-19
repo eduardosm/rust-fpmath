@@ -1,10 +1,8 @@
 use super::{F32Like, LikeF32};
 use crate::generic::scalbn_medium;
+use crate::traits::FloatConsts;
 
 // Generated with `./run-generator.sh f32::reduce_pi_2::consts`
-const FRAC_PI_2: u32 = 0x3FC90FDB; // 1.5707964e0
-const FRAC_PI_4: u32 = 0x3F490FDB; // 7.853982e-1
-const FRAC_2_PI: u32 = 0x3F22F983; // 6.3661975e-1
 const FRAC_PI_2_HI: u32 = 0x3FC90E00; // 1.5707397e0
 const FRAC_PI_2_HIEX: u32 = 0x386D5111; // 5.6580702e-5
 const FRAC_PI_2_MI: u32 = 0x386D5000; // 5.657971e-5
@@ -12,22 +10,7 @@ const FRAC_PI_2_MIEX: u32 = 0x30885A31; // 9.920936e-10
 const FRAC_PI_2_LO: u32 = 0x30885A00; // 9.920882e-10
 const FRAC_PI_2_LOEX: u32 = 0x27C234C5; // 5.390303e-15
 
-impl<F: F32Like> crate::generic::ReducePi2<LikeF32> for F {
-    #[inline]
-    fn frac_pi_2() -> Self {
-        Self::from_raw(FRAC_PI_2)
-    }
-
-    #[inline]
-    fn frac_pi_4() -> Self {
-        Self::from_raw(FRAC_PI_4)
-    }
-
-    #[inline]
-    fn frac_2_pi() -> Self {
-        Self::from_raw(FRAC_2_PI)
-    }
-
+impl<F: F32Like + FloatConsts> crate::generic::ReducePi2<LikeF32> for F {
     #[inline]
     fn frac_pi_2_hi() -> Self {
         Self::from_raw(FRAC_PI_2_HI)

@@ -29,3 +29,42 @@ fn print_f64_const<N: std::fmt::Display>(name: N, value: f64) {
         value.to_bits(),
     );
 }
+
+pub(crate) fn gen_consts() {
+    let mut tmp = dev_mpfr::Mpfr::new();
+    tmp.set_prec(1024);
+
+    // tmp = π
+    tmp.const_pi(dev_mpfr::Rnd::N);
+
+    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    print_f64_const("PI", v);
+
+    // tmp = π/2
+    tmp.const_pi(dev_mpfr::Rnd::N);
+    tmp.div_f64(None, 2.0, dev_mpfr::Rnd::N);
+
+    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    print_f64_const("FRAC_PI_2", v);
+
+    // tmp = π/4
+    tmp.const_pi(dev_mpfr::Rnd::N);
+    tmp.div_f64(None, 4.0, dev_mpfr::Rnd::N);
+
+    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    print_f64_const("FRAC_PI_4", v);
+
+    // tmp = 1/π
+    tmp.const_pi(dev_mpfr::Rnd::N);
+    tmp.f64_div(1.0, None, dev_mpfr::Rnd::N);
+
+    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    print_f64_const("FRAC_1_PI", v);
+
+    // tmp = 2/π
+    tmp.const_pi(dev_mpfr::Rnd::N);
+    tmp.f64_div(2.0, None, dev_mpfr::Rnd::N);
+
+    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    print_f64_const("FRAC_2_PI", v);
+}

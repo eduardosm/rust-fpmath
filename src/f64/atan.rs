@@ -1,24 +1,11 @@
 use super::{F64Like, LikeF64};
 
 // Generated with `./run-generator.sh f64::atan::consts`
-const PI: u64 = 0x400921FB54442D18; // 3.141592653589793e0
-const FRAC_PI_2: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
 const FRAC_PI_2_LO: u64 = 0x3C91A62633145C07; // 6.123233995736766e-17
-const FRAC_PI_4: u64 = 0x3FE921FB54442D18; // 7.853981633974483e-1
 const FRAC_3PI_4: u64 = 0x4002D97C7F3321D2; // 2.356194490192345e0
 
 impl<F: F64Like> crate::generic::Atan<LikeF64> for F {
-    #[inline]
-    fn pi() -> Self {
-        Self::from_raw(PI)
-    }
-
-    #[inline]
-    fn frac_pi_2() -> Self {
-        Self::from_raw(FRAC_PI_2)
-    }
-
     #[inline]
     fn frac_pi_2_hi() -> Self {
         Self::from_raw(FRAC_PI_2_HI)
@@ -27,11 +14,6 @@ impl<F: F64Like> crate::generic::Atan<LikeF64> for F {
     #[inline]
     fn frac_pi_2_lo() -> Self {
         Self::from_raw(FRAC_PI_2_LO)
-    }
-
-    #[inline]
-    fn frac_pi_4() -> Self {
-        Self::from_raw(FRAC_PI_4)
     }
 
     #[inline]

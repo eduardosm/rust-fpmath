@@ -1,24 +1,11 @@
 use super::{F32Like, LikeF32};
 
 // Generated with `./run-generator.sh f32::atan::consts`
-const PI: u32 = 0x40490FDB; // 3.1415927e0
-const FRAC_PI_2: u32 = 0x3FC90FDB; // 1.5707964e0
 const FRAC_PI_2_HI: u32 = 0x3FC90FDA; // 1.5707963e0
 const FRAC_PI_2_LO: u32 = 0x33A22169; // 7.54979e-8
-const FRAC_PI_4: u32 = 0x3F490FDB; // 7.853982e-1
 const FRAC_3PI_4: u32 = 0x4016CBE4; // 2.3561945e0
 
 impl<F: F32Like> crate::generic::Atan<LikeF32> for F {
-    #[inline]
-    fn pi() -> Self {
-        Self::from_raw(PI)
-    }
-
-    #[inline]
-    fn frac_pi_2() -> Self {
-        Self::from_raw(FRAC_PI_2)
-    }
-
     #[inline]
     fn frac_pi_2_hi() -> Self {
         Self::from_raw(FRAC_PI_2_HI)
@@ -27,11 +14,6 @@ impl<F: F32Like> crate::generic::Atan<LikeF32> for F {
     #[inline]
     fn frac_pi_2_lo() -> Self {
         Self::from_raw(FRAC_PI_2_LO)
-    }
-
-    #[inline]
-    fn frac_pi_4() -> Self {
-        Self::from_raw(FRAC_PI_4)
     }
 
     #[inline]
