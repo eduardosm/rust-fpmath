@@ -1,7 +1,7 @@
 [package]
 name = "fpmath"
 version = "0.1.0"
-authors = ["Eduardo Sánchez Muñoz <esm@eduardosm.net>"]
+authors = ["Eduardo Sánchez Muñoz <eduardosm-dev@e64.io>"]
 edition = "2021"
 rust-version = "1.70"
 description = "A floating point math library"
