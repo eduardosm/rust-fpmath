@@ -6,6 +6,93 @@ pub(crate) trait SinhCosh<L = Like<Self>>: Exp {
     fn expo2_hi_th() -> Self;
 }
 
+pub(crate) fn sinh<F: SinhCosh>(x: F) -> F {
+    let e = x.raw_exp();
+    if x >= F::expo2_hi_th() {
+        // also handles x = inf
+        F::INFINITY
+    } else if x <= -F::expo2_hi_th() {
+        // also handles x = -inf
+        F::neg_infinity()
+    } else if e == F::MAX_RAW_EXP || e <= F::RawExp::ONE {
+        // propagate NaN
+        // or
+        // very small, includes subnormal and zero
+        // sinh(x) ~= x
+        // also handles sinh(-0) = -0
+        x
+    } else {
+        let (s, _) = sinh_cosh_inner(x);
+        s
+    }
+}
+
+pub(crate) fn cosh<F: SinhCosh>(x: F) -> F {
+    let e = x.raw_exp();
+    if x.abs() >= F::expo2_hi_th() {
+        // also handles x = ±inf
+        F::INFINITY
+    } else if e == F::MAX_RAW_EXP {
+        // Propagate NaN
+        x
+    } else if e <= F::RawExp::ONE {
+        // very small, includes subnormal and zero
+        // cosh(x) ~= 1
+        F::one()
+    } else {
+        let (_, c) = sinh_cosh_inner(x);
+        c
+    }
+}
+
+pub(crate) fn sinh_cosh<F: SinhCosh>(x: F) -> (F, F) {
+    let e = x.raw_exp();
+    if x >= F::expo2_hi_th() {
+        // also handles x = inf
+        (F::INFINITY, F::INFINITY)
+    } else if x <= -F::expo2_hi_th() {
+        // also handles x = -inf
+        (F::neg_infinity(), F::INFINITY)
+    } else if e == F::MAX_RAW_EXP {
+        // Propagate NaN
+        (x, x)
+    } else if e <= F::RawExp::ONE {
+        // very small, includes subnormal and zero
+        // sinh(x) ~= x
+        // cosh(x) ~= 1
+        // also handles sinh(-0) = -0
+        (x, F::one())
+    } else {
+        let (s, c) = sinh_cosh_inner(x);
+        (s, c)
+    }
+}
+
+fn sinh_cosh_inner<F: Exp>(x: F) -> (F, F) {
+    // Split |x| into k, r_hi, r_lo such as:
+    //  - |x| = k*ln(2) + r_hi + r_lo
+    //  - k is an integer
+    //  - |r_hi| <= 0.5*ln(2)
+    let absx = x.abs();
+    let (k, r_hi, r_lo) = exp_split(absx);
+    let (r_hi, r_lo) = F::norm_hi_lo_full(r_hi, r_lo);
+
+    // t1a = exp(r_hi + r_lo) - 1 - r_hi
+    // t1b = exp(-r_hi - r_lo) - 1 + r_hi
+    let (t1a, t1b) = sinh_cosh_inner_common_1(r_hi, r_lo);
+
+    if k > F::MANT_BITS.into() {
+        let t2 = scalbn_medium((r_hi + t1a) + F::one(), k - 1);
+        (t2.copysign(x), t2)
+    } else {
+        // abss = |sinh(x)| = (exp(|x|) - exp(-|x|)) / 2
+        // c = cosh(x) = (exp(|x|) + exp(-|x|)) / 2
+        let (abss_hi, abss_lo, c_hi, c_lo) = sinh_cosh_inner_common_2(k, r_hi, t1a, t1b);
+
+        ((abss_hi + abss_lo).copysign(x), c_hi + c_lo)
+    }
+}
+
 /// Returns `(ta, tb)`
 ///
 /// Such as
@@ -83,93 +170,6 @@ pub(super) fn sinh_cosh_inner_common_2<F: Float>(k: i32, r: F, t1a: F, t1b: F) -
         let c_lo = (t2_lo + t3b_lo) + (st1b - srb);
 
         (abss_hi, abss_lo, c_hi, c_lo)
-    }
-}
-
-fn sinh_cosh_inner<F: Exp>(x: F) -> (F, F) {
-    // Split |x| into k, r_hi, r_lo such as:
-    //  - |x| = k*ln(2) + r_hi + r_lo
-    //  - k is an integer
-    //  - |r_hi| <= 0.5*ln(2)
-    let absx = x.abs();
-    let (k, r_hi, r_lo) = exp_split(absx);
-    let (r_hi, r_lo) = F::norm_hi_lo_full(r_hi, r_lo);
-
-    // t1a = exp(r_hi + r_lo) - 1 - r_hi
-    // t1b = exp(-r_hi - r_lo) - 1 + r_hi
-    let (t1a, t1b) = sinh_cosh_inner_common_1(r_hi, r_lo);
-
-    if k > F::MANT_BITS.into() {
-        let t2 = scalbn_medium((r_hi + t1a) + F::one(), k - 1);
-        (t2.copysign(x), t2)
-    } else {
-        // abss = |sinh(x)| = (exp(|x|) - exp(-|x|)) / 2
-        // c = cosh(x) = (exp(|x|) + exp(-|x|)) / 2
-        let (abss_hi, abss_lo, c_hi, c_lo) = sinh_cosh_inner_common_2(k, r_hi, t1a, t1b);
-
-        ((abss_hi + abss_lo).copysign(x), c_hi + c_lo)
-    }
-}
-
-pub(crate) fn sinh<F: SinhCosh>(x: F) -> F {
-    let e = x.raw_exp();
-    if x >= F::expo2_hi_th() {
-        // also handles x = inf
-        F::INFINITY
-    } else if x <= -F::expo2_hi_th() {
-        // also handles x = -inf
-        F::neg_infinity()
-    } else if e == F::MAX_RAW_EXP || e <= F::RawExp::ONE {
-        // propagate NaN
-        // or
-        // very small, includes subnormal and zero
-        // sinh(x) ~= x
-        // also handles sinh(-0) = -0
-        x
-    } else {
-        let (s, _) = sinh_cosh_inner(x);
-        s
-    }
-}
-
-pub(crate) fn cosh<F: SinhCosh>(x: F) -> F {
-    let e = x.raw_exp();
-    if x.abs() >= F::expo2_hi_th() {
-        // also handles x = ±inf
-        F::INFINITY
-    } else if e == F::MAX_RAW_EXP {
-        // Propagate NaN
-        x
-    } else if e <= F::RawExp::ONE {
-        // very small, includes subnormal and zero
-        // cosh(x) ~= 1
-        F::one()
-    } else {
-        let (_, c) = sinh_cosh_inner(x);
-        c
-    }
-}
-
-pub(crate) fn sinh_cosh<F: SinhCosh>(x: F) -> (F, F) {
-    let e = x.raw_exp();
-    if x >= F::expo2_hi_th() {
-        // also handles x = inf
-        (F::INFINITY, F::INFINITY)
-    } else if x <= -F::expo2_hi_th() {
-        // also handles x = -inf
-        (F::neg_infinity(), F::INFINITY)
-    } else if e == F::MAX_RAW_EXP {
-        // Propagate NaN
-        (x, x)
-    } else if e <= F::RawExp::ONE {
-        // very small, includes subnormal and zero
-        // sinh(x) ~= x
-        // cosh(x) ~= 1
-        // also handles sinh(-0) = -0
-        (x, F::one())
-    } else {
-        let (s, c) = sinh_cosh_inner(x);
-        (s, c)
     }
 }
 

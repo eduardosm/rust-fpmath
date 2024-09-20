@@ -3,6 +3,41 @@ use rand::Rng as _;
 use super::{mkfloat, RefResult};
 use crate::data::{create_prng, generate_data};
 
+#[derive(bincode::Encode, bincode::Decode)]
+pub(crate) struct Data {
+    pub(crate) x: f64,
+    pub(crate) y: i32,
+    pub(crate) expected: RefResult,
+}
+
+#[allow(clippy::unnecessary_fallible_conversions)]
+pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
+    generate_data(
+        "f64_powi",
+        gen_args,
+        |(x, y)| {
+            let mut bigx = dev_mpfr::Mpfr::new();
+            bigx.set_prec(53);
+            bigx.set_f64(x, dev_mpfr::Rnd::N);
+
+            let mut bigy = dev_mpfr::Mpfr::new();
+            bigy.set_prec(32);
+            bigy.set_si(y.try_into().unwrap(), dev_mpfr::Rnd::N);
+
+            let mut tmp = dev_mpfr::Mpfr::new();
+            tmp.set_prec(53 * 2);
+            tmp.pow(&bigx, &bigy, dev_mpfr::Rnd::N);
+
+            Data {
+                x,
+                y,
+                expected: RefResult::from_mpfr(&mut tmp),
+            }
+        },
+        pb,
+    );
+}
+
 fn gen_args() -> Vec<(f64, i32)> {
     let mut rng = create_prng();
 
@@ -43,39 +78,4 @@ fn gen_args() -> Vec<(f64, i32)> {
     }
 
     args
-}
-
-#[derive(bincode::Encode, bincode::Decode)]
-pub(crate) struct Data {
-    pub(crate) x: f64,
-    pub(crate) y: i32,
-    pub(crate) expected: RefResult,
-}
-
-#[allow(clippy::unnecessary_fallible_conversions)]
-pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
-    generate_data(
-        "f64_powi",
-        gen_args,
-        |(x, y)| {
-            let mut bigx = dev_mpfr::Mpfr::new();
-            bigx.set_prec(53);
-            bigx.set_f64(x, dev_mpfr::Rnd::N);
-
-            let mut bigy = dev_mpfr::Mpfr::new();
-            bigy.set_prec(32);
-            bigy.set_si(y.try_into().unwrap(), dev_mpfr::Rnd::N);
-
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(53 * 2);
-            tmp.pow(&bigx, &bigy, dev_mpfr::Rnd::N);
-
-            Data {
-                x,
-                y,
-                expected: RefResult::from_mpfr(&mut tmp),
-            }
-        },
-        pb,
-    );
 }

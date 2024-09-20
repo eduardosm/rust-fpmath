@@ -29,33 +29,31 @@ pub(crate) trait ReducePi2<L = Like<Self>>: FloatConsts {
     fn reduce_pi_2_compress(qp: &[u64; 20], qe: i16, ih: u32, jz: usize) -> (Self, Self);
 }
 
-/// Rounds `x` and returns it as both float and integer
-///
-/// `x` must be finite and `0.5 <= abs(x) < 2^min(31, MANT_BITS)`
-pub(super) fn round_fi<F: Float>(x: F) -> (F, i32) {
-    let e = x.raw_exp();
-    if e < F::EXP_OFFSET {
-        // 0.5 <= abs(x) < 1
-        (F::one().copysign(x), 1 - (i32::from(x.sign()) << 1))
+/// Reduces the angle argument `x`, returning `(n, y_hi, y_lo)`
+/// such as:
+/// * `|y_hi| <= π/4`
+/// * `|y_lo|` is much smaller than `|y_hi|`
+/// * `0 <= n <= 3`
+/// * `x = 2*π*M + π/2*n + y_hi + y_lo`
+/// * `M` is an integer
+pub(crate) fn reduce_pi_2<F: ReducePi2>(x: F) -> (u8, F, F) {
+    let xabs = x.abs();
+    if xabs <= F::frac_pi_4() {
+        // reduction not needed
+        (0, x, F::ZERO)
+    } else if xabs < F::max_reduce_pi_2_medium() {
+        reduce_pi_2_medium(x)
     } else {
-        // 1 <= abs(x) < 2^min(31, MANT_BITS)
-        let shift = F::RawExp::from(F::MANT_BITS) - (e - F::EXP_OFFSET);
-        let imask = F::Raw::MAX << shift;
-        let fmask = !imask;
-        let xraw = x.to_raw();
-        let fpart = xraw & fmask;
-        let mut ipart_raw = xraw & !fmask;
-        let mut ipart_i: i32 = (x.mant() >> shift).cast_into();
-        if fpart > (fmask / F::Raw::TWO) {
-            // frac >= 0.5
-            ipart_raw += fmask + F::Raw::ONE;
-            ipart_i += 1;
-        }
-        let ipart_f = F::from_raw(ipart_raw);
+        let (x_chunks, e0, jk) = F::reduce_pi_2_prepare(x);
+        let mut qp: [u64; 20] = [0; 20];
+        let (ih, jz, n, qe) = reduce_pi_2_large(x_chunks.as_ref(), e0, jk, &mut qp);
+        let (y_hi, y_lo) = F::reduce_pi_2_compress(&qp, qe, ih, jz);
+
         if x.sign() {
-            ipart_i = -ipart_i;
+            (n.wrapping_neg() & 3, -y_hi, -y_lo)
+        } else {
+            (n & 3, y_hi, y_lo)
         }
-        (ipart_f, ipart_i)
     }
 }
 
@@ -87,30 +85,32 @@ fn reduce_pi_2_medium<F: ReducePi2>(x: F) -> (u8, F, F) {
     (n as u8 & 3, y0, y1)
 }
 
-/// Reduces the angle argument `x`, returning `(n, y_hi, y_lo)`
-/// such as:
-/// * `|y_hi| <= π/4`
-/// * `|y_lo|` is much smaller than `|y_hi|`
-/// * `0 <= n <= 3`
-/// * `x = 2*π*M + π/2*n + y_hi + y_lo`
-/// * `M` is an integer
-pub(crate) fn reduce_pi_2<F: ReducePi2>(x: F) -> (u8, F, F) {
-    let xabs = x.abs();
-    if xabs <= F::frac_pi_4() {
-        // reduction not needed
-        (0, x, F::ZERO)
-    } else if xabs < F::max_reduce_pi_2_medium() {
-        reduce_pi_2_medium(x)
+/// Rounds `x` and returns it as both float and integer
+///
+/// `x` must be finite and `0.5 <= abs(x) < 2^min(31, MANT_BITS)`
+pub(super) fn round_fi<F: Float>(x: F) -> (F, i32) {
+    let e = x.raw_exp();
+    if e < F::EXP_OFFSET {
+        // 0.5 <= abs(x) < 1
+        (F::one().copysign(x), 1 - (i32::from(x.sign()) << 1))
     } else {
-        let (x_chunks, e0, jk) = F::reduce_pi_2_prepare(x);
-        let mut qp: [u64; 20] = [0; 20];
-        let (ih, jz, n, qe) = reduce_pi_2_large(x_chunks.as_ref(), e0, jk, &mut qp);
-        let (y_hi, y_lo) = F::reduce_pi_2_compress(&qp, qe, ih, jz);
-
-        if x.sign() {
-            (n.wrapping_neg() & 3, -y_hi, -y_lo)
-        } else {
-            (n & 3, y_hi, y_lo)
+        // 1 <= abs(x) < 2^min(31, MANT_BITS)
+        let shift = F::RawExp::from(F::MANT_BITS) - (e - F::EXP_OFFSET);
+        let imask = F::Raw::MAX << shift;
+        let fmask = !imask;
+        let xraw = x.to_raw();
+        let fpart = xraw & fmask;
+        let mut ipart_raw = xraw & !fmask;
+        let mut ipart_i: i32 = (x.mant() >> shift).cast_into();
+        if fpart > (fmask / F::Raw::TWO) {
+            // frac >= 0.5
+            ipart_raw += fmask + F::Raw::ONE;
+            ipart_i += 1;
         }
+        let ipart_f = F::from_raw(ipart_raw);
+        if x.sign() {
+            ipart_i = -ipart_i;
+        }
+        (ipart_f, ipart_i)
     }
 }

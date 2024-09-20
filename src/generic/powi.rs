@@ -3,31 +3,6 @@ use super::pow::hi_lo_log_inner;
 use super::{scalbn, Exp, Log};
 use crate::traits::{CastInto as _, Int as _};
 
-pub(super) fn hi_lo_exp_inner<F: Exp>(r_hi: F, r_lo: F) -> (F, F) {
-    // Calculates exp(r_hi + r_lo)
-    // Similar to `exp_inner_common` in exp.rs, but returns hi/lo parts
-    // and assumes k=0
-
-    let r = r_hi + r_lo;
-    let r2 = r * r;
-
-    // t1 = 2 - 2 * r / (exp(r) - 1)
-    let t1 = r + F::exp_special_poly(r2);
-
-    // t2 = r * t1 / (2 - t1)
-    let t2 = r * t1 / (F::two() - t1);
-
-    // t3 = r_hi + r_lo + t2
-    let t3_hi = (r_hi + t2).purify();
-    let t3_lo = ((r_hi - t3_hi) + t2) + r_lo;
-
-    // t4 = 1 + t3
-    let t4_hi = (F::one() + t3_hi).purify();
-    let t4_lo = ((F::one() - t4_hi) + t3_hi) + t3_lo;
-
-    (t4_hi, t4_lo)
-}
-
 pub(crate) fn powi<F: Log + Exp>(x: F, y: i32) -> F {
     let (nx, xedelta) = x.normalize_arg();
     let xexp = nx.raw_exp();
@@ -160,6 +135,31 @@ pub(crate) fn powi<F: Log + Exp>(x: F, y: i32) -> F {
             absz
         }
     }
+}
+
+pub(super) fn hi_lo_exp_inner<F: Exp>(r_hi: F, r_lo: F) -> (F, F) {
+    // Calculates exp(r_hi + r_lo)
+    // Similar to `exp_inner_common` in exp.rs, but returns hi/lo parts
+    // and assumes k=0
+
+    let r = r_hi + r_lo;
+    let r2 = r * r;
+
+    // t1 = 2 - 2 * r / (exp(r) - 1)
+    let t1 = r + F::exp_special_poly(r2);
+
+    // t2 = r * t1 / (2 - t1)
+    let t2 = r * t1 / (F::two() - t1);
+
+    // t3 = r_hi + r_lo + t2
+    let t3_hi = (r_hi + t2).purify();
+    let t3_lo = ((r_hi - t3_hi) + t2) + r_lo;
+
+    // t4 = 1 + t3
+    let t4_hi = (F::one() + t3_hi).purify();
+    let t4_lo = ((F::one() - t4_hi) + t3_hi) + t3_lo;
+
+    (t4_hi, t4_lo)
 }
 
 #[cfg(test)]

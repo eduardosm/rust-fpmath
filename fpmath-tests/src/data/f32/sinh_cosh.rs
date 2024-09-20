@@ -3,30 +3,6 @@ use rand::Rng as _;
 use super::{mkfloat, RefResult};
 use crate::data::{create_prng, generate_data};
 
-pub(super) fn gen_args() -> Vec<f32> {
-    let mut rng = create_prng();
-
-    let mut args = Vec::new();
-    for e in -126..=9 {
-        args.push(mkfloat(0, e, false));
-        args.push(mkfloat(0, e, true));
-        args.push(mkfloat(u32::MAX, e, false));
-        args.push(mkfloat(u32::MAX, e, true));
-
-        for _ in 0..1000 {
-            let m = rng.gen::<u32>();
-            let s = rng.gen::<bool>();
-            args.push(mkfloat(m, e, s));
-        }
-    }
-
-    for arg in -1000..=1000 {
-        args.push(arg as f32);
-    }
-
-    args
-}
-
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
     generate_data(
         "f32_sinh_cosh",
@@ -52,4 +28,28 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         },
         pb,
     );
+}
+
+pub(super) fn gen_args() -> Vec<f32> {
+    let mut rng = create_prng();
+
+    let mut args = Vec::new();
+    for e in -126..=9 {
+        args.push(mkfloat(0, e, false));
+        args.push(mkfloat(0, e, true));
+        args.push(mkfloat(u32::MAX, e, false));
+        args.push(mkfloat(u32::MAX, e, true));
+
+        for _ in 0..1000 {
+            let m = rng.gen::<u32>();
+            let s = rng.gen::<bool>();
+            args.push(mkfloat(m, e, s));
+        }
+    }
+
+    for arg in -1000..=1000 {
+        args.push(arg as f32);
+    }
+
+    args
 }

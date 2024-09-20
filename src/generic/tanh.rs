@@ -3,6 +3,26 @@ use super::sinh_cosh::{sinh_cosh_inner_common_1, sinh_cosh_inner_common_2};
 use super::{Exp, SinhCosh};
 use crate::traits::Int as _;
 
+pub(crate) fn tanh<F: SinhCosh>(x: F) -> F {
+    let e = x.raw_exp();
+    if x >= F::expo2_hi_th() {
+        // also handles x = inf
+        F::one()
+    } else if x <= -F::expo2_hi_th() {
+        // also handles x = -inf
+        -F::one()
+    } else if e == F::MAX_RAW_EXP || e <= F::RawExp::ONE {
+        // propagate NaN
+        // or
+        // very small, includes subnormal and zero
+        // tanh(x) ~= x
+        // also handles tanh(-0) = -0
+        x
+    } else {
+        tanh_inner(x)
+    }
+}
+
 fn tanh_inner<F: Exp>(x: F) -> F {
     // Split |x| into k, r_hi, r_lo such as:
     //  - |x| = k*ln(2) + r_hi + r_lo
@@ -31,26 +51,6 @@ fn tanh_inner<F: Exp>(x: F) -> F {
 
         let (q_hi, q_lo) = F::div_hi_lo(n_hi, n_lo, d_hi, d_lo);
         (q_hi + q_lo).copysign(x)
-    }
-}
-
-pub(crate) fn tanh<F: SinhCosh>(x: F) -> F {
-    let e = x.raw_exp();
-    if x >= F::expo2_hi_th() {
-        // also handles x = inf
-        F::one()
-    } else if x <= -F::expo2_hi_th() {
-        // also handles x = -inf
-        -F::one()
-    } else if e == F::MAX_RAW_EXP || e <= F::RawExp::ONE {
-        // propagate NaN
-        // or
-        // very small, includes subnormal and zero
-        // tanh(x) ~= x
-        // also handles tanh(-0) = -0
-        x
-    } else {
-        tanh_inner(x)
     }
 }
 

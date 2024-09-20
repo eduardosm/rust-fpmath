@@ -15,51 +15,6 @@ pub(crate) trait Exp<L = Like<Self>>: Float {
     fn exp_m1_special_poly(x2: Self) -> Self;
 }
 
-/// Splits `x` into `(k, r_hi, r_lo)`
-///
-/// Such as:
-/// * `x = k*ln(2) + r_hi + r_lo`
-/// * `k` is an integer
-/// * `|r| <= 0.5*ln(2)`
-pub(super) fn exp_split<F: Exp>(x: F) -> (i32, F, F) {
-    let y = x * F::log2_e();
-    let (k, kf) = round_as_i_f(y);
-    // `kf * LN_2_HI` is exact because the lower bits of `LN_2_HI` are zero.
-    let r_hi = x - kf * F::ln_2_hi();
-    let r_lo = -kf * F::ln_2_lo();
-
-    (k, r_hi, r_lo)
-}
-
-/// Calculates `exp(k*ln(2) + r_hi + r_lo)`
-pub(super) fn exp_inner_common<F: Exp>(k: i32, r_hi: F, r_lo: F) -> F {
-    // Based on the algorithm used by the msun math library
-
-    let r = r_hi + r_lo;
-    let r2 = r * r;
-
-    // t1 = 2 - 2 * r / (exp(r) - 1)
-    let t1 = r + F::exp_special_poly(r2);
-
-    // t2 = exp(r) = 1 + r + (r * t1) / (2 - t1)
-    //             = 1 + r_hi + r_lo + (r * t1) / (2 - t1)
-    let t2 = F::one() + (r_hi + (r_lo + r * t1 / (F::two() - t1)));
-
-    // exp(x) = exp(r_hi + r_lo) * 2^k = t2 * 2^k
-    scalbn_medium(t2, k)
-}
-
-fn exp_inner<F: Exp>(x: F) -> F {
-    // Split x into k, r_hi, r_lo such as:
-    //  - x = k*ln(2) + r_hi + r_lo
-    //  - k is an integer
-    //  - |r| <= 0.5*ln(2)
-    let (k, r_hi, r_lo) = exp_split(x);
-
-    // exp(x) = exp(k*ln(2) + r_hi + r_lo)
-    exp_inner_common(k, r_hi, r_lo)
-}
-
 /// Calculates `e^x`
 pub(crate) fn exp<F: Exp>(x: F) -> F {
     if x >= F::exp_hi_th() {
@@ -81,6 +36,55 @@ pub(crate) fn exp<F: Exp>(x: F) -> F {
             exp_inner(x)
         }
     }
+}
+
+pub(crate) fn exp_m1<F: Exp>(x: F) -> F {
+    if x >= F::exp_m1_hi_th() {
+        // also handles x = inf
+        F::INFINITY
+    } else if x <= F::exp_m1_lo_th() {
+        // also handles x = -inf
+        -F::one()
+    } else {
+        let e = x.raw_exp();
+        if e == F::RawExp::ZERO || e == F::MAX_RAW_EXP {
+            // x is zero or subnormal: exp(x) - 1 ~= x
+            // or
+            // x is NaN: propagate
+            x
+        } else {
+            exp_m1_inner(x)
+        }
+    }
+}
+
+fn exp_inner<F: Exp>(x: F) -> F {
+    // Split x into k, r_hi, r_lo such as:
+    //  - x = k*ln(2) + r_hi + r_lo
+    //  - k is an integer
+    //  - |r| <= 0.5*ln(2)
+    let (k, r_hi, r_lo) = exp_split(x);
+
+    // exp(x) = exp(k*ln(2) + r_hi + r_lo)
+    exp_inner_common(k, r_hi, r_lo)
+}
+
+/// Calculates `exp(k*ln(2) + r_hi + r_lo)`
+pub(super) fn exp_inner_common<F: Exp>(k: i32, r_hi: F, r_lo: F) -> F {
+    // Based on the algorithm used by the msun math library
+
+    let r = r_hi + r_lo;
+    let r2 = r * r;
+
+    // t1 = 2 - 2 * r / (exp(r) - 1)
+    let t1 = r + F::exp_special_poly(r2);
+
+    // t2 = exp(r) = 1 + r + (r * t1) / (2 - t1)
+    //             = 1 + r_hi + r_lo + (r * t1) / (2 - t1)
+    let t2 = F::one() + (r_hi + (r_lo + r * t1 / (F::two() - t1)));
+
+    // exp(x) = exp(r_hi + r_lo) * 2^k = t2 * 2^k
+    scalbn_medium(t2, k)
 }
 
 fn exp_m1_inner<F: Exp>(x: F) -> F {
@@ -129,24 +133,20 @@ fn exp_m1_inner<F: Exp>(x: F) -> F {
     }
 }
 
-pub(crate) fn exp_m1<F: Exp>(x: F) -> F {
-    if x >= F::exp_m1_hi_th() {
-        // also handles x = inf
-        F::INFINITY
-    } else if x <= F::exp_m1_lo_th() {
-        // also handles x = -inf
-        -F::one()
-    } else {
-        let e = x.raw_exp();
-        if e == F::RawExp::ZERO || e == F::MAX_RAW_EXP {
-            // x is zero or subnormal: exp(x) - 1 ~= x
-            // or
-            // x is NaN: propagate
-            x
-        } else {
-            exp_m1_inner(x)
-        }
-    }
+/// Splits `x` into `(k, r_hi, r_lo)`
+///
+/// Such as:
+/// * `x = k*ln(2) + r_hi + r_lo`
+/// * `k` is an integer
+/// * `|r| <= 0.5*ln(2)`
+pub(super) fn exp_split<F: Exp>(x: F) -> (i32, F, F) {
+    let y = x * F::log2_e();
+    let (k, kf) = round_as_i_f(y);
+    // `kf * LN_2_HI` is exact because the lower bits of `LN_2_HI` are zero.
+    let r_hi = x - kf * F::ln_2_hi();
+    let r_lo = -kf * F::ln_2_lo();
+
+    (k, r_hi, r_lo)
 }
 
 #[cfg(test)]

@@ -3,6 +3,25 @@ use super::sqrt::hi_lo_sqrt_hi_lo_inner;
 use super::Log;
 use crate::traits::Int as _;
 
+pub(crate) fn asinh<F: Log>(x: F) -> F {
+    let e = x.raw_exp();
+    if e == F::MAX_RAW_EXP || e <= (F::EXP_OFFSET - F::RawExp::from(F::MANT_BITS)) {
+        // asinh(±inf) = ±inf
+        // or
+        // propagate NaN
+        // or
+        // very small, includes subnormal and zero
+        // asinh(x) ~= x
+        // also handles asinh(-0) = -0
+        x
+    } else if e > (F::RawExp::from(F::MANT_BITS) + F::EXP_OFFSET) {
+        let y = log_inner(x.abs(), F::Exp::ONE);
+        y.copysign(x)
+    } else {
+        asinh_inner(x)
+    }
+}
+
 fn asinh_inner<F: Log>(x: F) -> F {
     let absx = x.abs();
     let x2 = x * x;
@@ -27,25 +46,6 @@ fn asinh_inner<F: Log>(x: F) -> F {
 
     // asinh(x) = sgn(x) * |asinh(x)|
     t4.copysign(x)
-}
-
-pub(crate) fn asinh<F: Log>(x: F) -> F {
-    let e = x.raw_exp();
-    if e == F::MAX_RAW_EXP || e <= (F::EXP_OFFSET - F::RawExp::from(F::MANT_BITS)) {
-        // asinh(±inf) = ±inf
-        // or
-        // propagate NaN
-        // or
-        // very small, includes subnormal and zero
-        // asinh(x) ~= x
-        // also handles asinh(-0) = -0
-        x
-    } else if e > (F::RawExp::from(F::MANT_BITS) + F::EXP_OFFSET) {
-        let y = log_inner(x.abs(), F::Exp::ONE);
-        y.copysign(x)
-    } else {
-        asinh_inner(x)
-    }
 }
 
 #[cfg(test)]

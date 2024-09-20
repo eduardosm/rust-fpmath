@@ -11,23 +11,17 @@ pub(crate) trait Cbrt<L = Like<Self>>: Float {
     fn inv_cbrt_poly(x: Self) -> Self;
 }
 
-/// Returns `(sign, k, r)` as needed by `cbrt_inner`
-fn cbrt_split<F: Cbrt>(x: F, edelta: F::Exp) -> (bool, F::Exp, F, F, F) {
-    let k = x.exponent() + edelta;
-    // 0 <= kmod3 <= 2
-    let kmod3 = F::exp_mod_3(k);
-
-    let (cb0_hi, cb0_lo) = match kmod3 {
-        0 => (F::one(), F::ZERO),
-        1 => (F::cbrt_2_hi(), F::cbrt_2_lo()),
-        2 => (F::cbrt_4_hi(), F::cbrt_4_lo()),
-        _ => unreachable!(),
-    };
-
-    // 1 <= r < 2
-    let r = x.abs().set_exp(F::Exp::ZERO);
-
-    (x.sign(), k - F::Exp::from(kmod3), r, cb0_hi, cb0_lo)
+pub(crate) fn cbrt<F: Cbrt>(x: F) -> F {
+    let (y, edelta) = x.normalize_arg();
+    let yexp = y.raw_exp();
+    if yexp == F::RawExp::ZERO || yexp == F::MAX_RAW_EXP {
+        // cbrt(±0) = ±0
+        // or
+        // propagate infinity or NaN
+        y
+    } else {
+        cbrt_inner(y, edelta)
+    }
 }
 
 fn cbrt_inner<F: Cbrt>(x: F, edelta: F::Exp) -> F {
@@ -87,17 +81,23 @@ fn cbrt_inner<F: Cbrt>(x: F, edelta: F::Exp) -> F {
     F::from_raw(y.to_raw() | (F::Raw::from(sign) << (F::BITS - 1)))
 }
 
-pub(crate) fn cbrt<F: Cbrt>(x: F) -> F {
-    let (y, edelta) = x.normalize_arg();
-    let yexp = y.raw_exp();
-    if yexp == F::RawExp::ZERO || yexp == F::MAX_RAW_EXP {
-        // cbrt(±0) = ±0
-        // or
-        // propagate infinity or NaN
-        y
-    } else {
-        cbrt_inner(y, edelta)
-    }
+/// Returns `(sign, k, r)` as needed by `cbrt_inner`
+fn cbrt_split<F: Cbrt>(x: F, edelta: F::Exp) -> (bool, F::Exp, F, F, F) {
+    let k = x.exponent() + edelta;
+    // 0 <= kmod3 <= 2
+    let kmod3 = F::exp_mod_3(k);
+
+    let (cb0_hi, cb0_lo) = match kmod3 {
+        0 => (F::one(), F::ZERO),
+        1 => (F::cbrt_2_hi(), F::cbrt_2_lo()),
+        2 => (F::cbrt_4_hi(), F::cbrt_4_lo()),
+        _ => unreachable!(),
+    };
+
+    // 1 <= r < 2
+    let r = x.abs().set_exp(F::Exp::ZERO);
+
+    (x.sign(), k - F::Exp::from(kmod3), r, cb0_hi, cb0_lo)
 }
 
 #[cfg(test)]

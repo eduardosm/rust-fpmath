@@ -21,23 +21,40 @@ pub(crate) trait Log<L = Like<Self>>: Float {
     fn log_special_poly_ex(x2: Self) -> Self;
 }
 
-/// Returns `(k, r)` as needed by `log_inner`
-///
-/// * `x * 2^edelta = 2^k * (1 + r)`
-/// * `sqrt(2) / 2 <= r + 1 <= sqrt(2)`
-pub(super) fn log_split<F: Log>(x: F, edelta: F::Exp) -> (F::Exp, F) {
-    // Split x * 2^edelta = 2^k * m
-    //  - k is an integer
-    //  - 1 <= m < 2
-    let k = x.exponent() + edelta;
-    // Take the mantissa from x and set the expontent to 0
-    let m = x.set_exp(F::Exp::ZERO);
-
-    // reduce 1 <= m < 2 into sqrt(2) / 2 <= 1 + r <= sqrt(2)
-    if m > F::sqrt_2() {
-        (k + F::Exp::ONE, m.set_exp(-F::Exp::ONE) - F::one())
+pub(crate) fn log<F: Log>(x: F) -> F {
+    let (y, edelta) = x.normalize_arg();
+    let yexp = y.raw_exp();
+    if yexp == F::RawExp::ZERO {
+        // log(±0) = -inf
+        F::neg_infinity()
+    } else if y.sign() {
+        // x < 0, log(x) = NaN
+        F::NAN
+    } else if yexp == F::MAX_RAW_EXP {
+        // propagate infinity or NaN
+        y
     } else {
-        (k, m - F::one())
+        log_inner(y, edelta)
+    }
+}
+
+pub(crate) fn log_1p<F: Log>(x: F) -> F {
+    let e = x.raw_exp();
+    if e == F::RawExp::ZERO {
+        // subnormal or zero, log(1 + x) ~= x
+        // also handles log(1 + (-0)) = -0
+        x
+    } else if x == -F::one() {
+        // x = -1, log(1 + x) = -inf
+        F::neg_infinity()
+    } else if x < -F::one() {
+        // x < -1, log(1 + x) = NaN
+        F::NAN
+    } else if e == F::MAX_RAW_EXP {
+        // propagate infinity or NaN
+        x
+    } else {
+        log_1p_inner(x)
     }
 }
 
@@ -75,20 +92,37 @@ pub(super) fn log_inner<F: Log>(x: F, edelta: F::Exp) -> F {
     (((s * (hr2 + p) + t1_lo) - hr2) + r) + t1_hi
 }
 
-pub(crate) fn log<F: Log>(x: F) -> F {
-    let (y, edelta) = x.normalize_arg();
-    let yexp = y.raw_exp();
-    if yexp == F::RawExp::ZERO {
-        // log(±0) = -inf
-        F::neg_infinity()
-    } else if y.sign() {
-        // x < 0, log(x) = NaN
-        F::NAN
-    } else if yexp == F::MAX_RAW_EXP {
-        // propagate infinity or NaN
-        y
+fn log_1p_inner<F: Log>(x: F) -> F {
+    // Calculate xp1 + e = 1 + x, where e is an
+    // error term to handle rounding in 1 + x.
+    let xp1 = (F::one() + x).purify();
+    let e = if x > F::one() {
+        (x - xp1) + F::one()
     } else {
-        log_inner(y, edelta)
+        (F::one() - xp1) + x
+    };
+
+    // Calculate log(1 + x) = log(xp1 + e)
+    log_hi_lo_inner(xp1, e)
+}
+
+/// Returns `(k, r)` as needed by `log_inner`
+///
+/// * `x * 2^edelta = 2^k * (1 + r)`
+/// * `sqrt(2) / 2 <= r + 1 <= sqrt(2)`
+pub(super) fn log_split<F: Log>(x: F, edelta: F::Exp) -> (F::Exp, F) {
+    // Split x * 2^edelta = 2^k * m
+    //  - k is an integer
+    //  - 1 <= m < 2
+    let k = x.exponent() + edelta;
+    // Take the mantissa from x and set the expontent to 0
+    let m = x.set_exp(F::Exp::ZERO);
+
+    // reduce 1 <= m < 2 into sqrt(2) / 2 <= 1 + r <= sqrt(2)
+    if m > F::sqrt_2() {
+        (k + F::Exp::ONE, m.set_exp(-F::Exp::ONE) - F::one())
+    } else {
+        (k, m - F::one())
     }
 }
 
@@ -132,40 +166,6 @@ pub(super) fn log_hi_lo_inner<F: Log>(x_hi: F, x_lo: F) -> F {
     //            = r - (0.5 * r^2 - s * (0.5 * r^2 + p))
     let hr2 = F::half() * r * r;
     (((s * (hr2 + p) + (t1_lo + c)) - hr2) + r) + t1_hi
-}
-
-fn log_1p_inner<F: Log>(x: F) -> F {
-    // Calculate xp1 + e = 1 + x, where e is an
-    // error term to handle rounding in 1 + x.
-    let xp1 = (F::one() + x).purify();
-    let e = if x > F::one() {
-        (x - xp1) + F::one()
-    } else {
-        (F::one() - xp1) + x
-    };
-
-    // Calculate log(1 + x) = log(xp1 + e)
-    log_hi_lo_inner(xp1, e)
-}
-
-pub(crate) fn log_1p<F: Log>(x: F) -> F {
-    let e = x.raw_exp();
-    if e == F::RawExp::ZERO {
-        // subnormal or zero, log(1 + x) ~= x
-        // also handles log(1 + (-0)) = -0
-        x
-    } else if x == -F::one() {
-        // x = -1, log(1 + x) = -inf
-        F::neg_infinity()
-    } else if x < -F::one() {
-        // x < -1, log(1 + x) = NaN
-        F::NAN
-    } else if e == F::MAX_RAW_EXP {
-        // propagate infinity or NaN
-        x
-    } else {
-        log_1p_inner(x)
-    }
 }
 
 /// Calculates `(log(1 + x) - log(1 - x) - 2 * x) / x`
