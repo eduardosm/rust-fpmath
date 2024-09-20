@@ -10,39 +10,6 @@ pub(crate) trait Exp2<L = Like<Self>>: Exp {
     fn exp2_hi_th() -> Self;
 }
 
-/// Splits `x` into `(k, r_hi, r_lo)`
-///
-/// Such as:
-/// * `x = k + (r_hi + r_lo)*log2(e)`
-/// * `k` is an integer
-/// * `|r_hi| <= 0.5*ln(2)`
-#[inline]
-fn exp2_split<F: Exp2>(x: F) -> (i32, F, F) {
-    let (k, kf) = round_as_i_f(x);
-    let t = x - kf;
-
-    let (t_hi, t_lo) = t.split_hi_lo();
-    let r_hi = t_hi * <F as Exp2>::ln_2_hi();
-    let r_lo = t_hi * <F as Exp2>::ln_2_lo() + t_lo * F::ln_2();
-
-    (k, r_hi, r_lo)
-}
-
-/// Calculates `2^x` where:
-///
-///  * `x` is not zero, subnormal, nan nor infinity
-///  * `x` is less than `EXP2_HI_TH`
-fn exp2_inner<F: Exp2>(x: F) -> F {
-    // Split x into k, r_hi, r_lo such as:
-    //  - x = k + (r_hi + r_lo)*log2(e)
-    //  - k is an integer
-    //  - |r_hi| <= 0.5*ln(2)
-    let (k, r_hi, r_lo) = exp2_split(x);
-
-    // Calculate 2^x = exp(k*ln(2) + r_hi + r_lo)
-    exp_inner_common(k, r_hi, r_lo)
-}
-
 /// Returns 2 raised to `x`.
 pub(crate) fn exp2<F: Exp2>(x: F) -> F {
     if x >= F::exp2_hi_th() {
@@ -64,6 +31,39 @@ pub(crate) fn exp2<F: Exp2>(x: F) -> F {
             exp2_inner(x)
         }
     }
+}
+
+/// Calculates `2^x` where:
+///
+///  * `x` is not zero, subnormal, nan nor infinity
+///  * `x` is less than `EXP2_HI_TH`
+fn exp2_inner<F: Exp2>(x: F) -> F {
+    // Split x into k, r_hi, r_lo such as:
+    //  - x = k + (r_hi + r_lo)*log2(e)
+    //  - k is an integer
+    //  - |r_hi| <= 0.5*ln(2)
+    let (k, r_hi, r_lo) = exp2_split(x);
+
+    // Calculate 2^x = exp(k*ln(2) + r_hi + r_lo)
+    exp_inner_common(k, r_hi, r_lo)
+}
+
+/// Splits `x` into `(k, r_hi, r_lo)`
+///
+/// Such as:
+/// * `x = k + (r_hi + r_lo)*log2(e)`
+/// * `k` is an integer
+/// * `|r_hi| <= 0.5*ln(2)`
+#[inline]
+fn exp2_split<F: Exp2>(x: F) -> (i32, F, F) {
+    let (k, kf) = round_as_i_f(x);
+    let t = x - kf;
+
+    let (t_hi, t_lo) = t.split_hi_lo();
+    let r_hi = t_hi * <F as Exp2>::ln_2_hi();
+    let r_lo = t_hi * <F as Exp2>::ln_2_lo() + t_lo * F::ln_2();
+
+    (k, r_hi, r_lo)
 }
 
 #[cfg(test)]

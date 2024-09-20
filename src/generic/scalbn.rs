@@ -1,5 +1,23 @@
 use crate::traits::{CastInto as _, Float};
 
+pub(crate) fn scalbn<F: Float>(x: F, y: i32) -> F {
+    let (y1, y2, y3) = scalbn_split3::<F>(y);
+
+    let p1 = F::exp2i_fast(y1);
+    let p2 = F::exp2i_fast(y2);
+    let p3 = F::exp2i_fast(y3);
+    ((x * p1) * p2) * p3
+}
+
+#[inline]
+pub(crate) fn scalbn_medium<F: Float>(x: F, y: i32) -> F {
+    let (y1, y2) = scalbn_split2::<F>(y);
+
+    let p1 = F::exp2i_fast(y1);
+    let p2 = F::exp2i_fast(y2);
+    (x * p1) * p2
+}
+
 #[inline]
 fn scalbn_split2<F: Float>(e: i32) -> (F::Exp, F::Exp) {
     if e >= 0 {
@@ -12,15 +30,6 @@ fn scalbn_split2<F: Float>(e: i32) -> (F::Exp, F::Exp) {
         let e1 = (e - e2).max(F::MIN_NORMAL_EXP.into());
         (e1.cast_into(), e2.cast_into())
     }
-}
-
-#[inline]
-pub(crate) fn scalbn_medium<F: Float>(x: F, y: i32) -> F {
-    let (y1, y2) = scalbn_split2::<F>(y);
-
-    let p1 = F::exp2i_fast(y1);
-    let p2 = F::exp2i_fast(y2);
-    (x * p1) * p2
 }
 
 #[inline]
@@ -37,15 +46,6 @@ fn scalbn_split3<F: Float>(e: i32) -> (F::Exp, F::Exp, F::Exp) {
         let e1 = ((e - e3) - e2).max(F::MIN_NORMAL_EXP.into());
         (e1.cast_into(), e2.cast_into(), e3.cast_into())
     }
-}
-
-pub(crate) fn scalbn<F: Float>(x: F, y: i32) -> F {
-    let (y1, y2, y3) = scalbn_split3::<F>(y);
-
-    let p1 = F::exp2i_fast(y1);
-    let p2 = F::exp2i_fast(y2);
-    let p3 = F::exp2i_fast(y3);
-    ((x * p1) * p2) * p3
 }
 
 #[cfg(test)]

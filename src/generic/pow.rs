@@ -1,57 +1,7 @@
 use super::exp::{exp_inner_common, exp_split};
 use super::log::{hi_lo_log_special_poly, log_split};
-use super::{Exp, Log};
-use crate::traits::{CastInto as _, Float, Int as _};
-
-pub(super) fn hi_lo_log_inner<F: Log>(x: F, edelta: F::Exp) -> (F, F) {
-    // Algorithm based on one used by the msun math library:
-    //  * log(1 + r) = p * s + 2 * s
-    //  * s = r / (2 + r)
-    //  * p = (log(1 + s) - log(1 - s) - 2 * s) / s
-
-    // Split x * 2^edelta = 2^k * (1 + r)
-    //  - k is an integer
-    //  - sqrt(2) / 2 <= 1 + r < sqrt(2)
-    let (k, r) = log_split(x, edelta);
-    let (r_hi, r_lo) = r.split_hi_lo();
-
-    // rp2 = 2 + r
-    let rp2_hi = (F::two() + r).split_hi();
-    let rp2_lo = (F::two() - rp2_hi) + r;
-
-    // s = r / (2 + r)
-    let (s_hi, s_lo) = F::div_hi_lo(r_hi, r_lo, rp2_hi, rp2_lo);
-    let (s_hi, s_lo) = F::norm_hi_lo_splitted(s_hi, s_lo);
-
-    let s2_hi = s_hi * s_hi;
-    let s2_lo = F::two() * s_hi * s_lo + s_lo * s_lo;
-    let (s2_hi, s2_lo) = F::norm_hi_lo_splitted(s2_hi, s2_lo);
-
-    // p = (log(1 + s) - log(1 - s) - 2 * s) / s
-    let (p_hi, p_lo) = hi_lo_log_special_poly(s2_hi, s2_lo);
-    let (p_hi, p_lo) = F::norm_hi_lo_splitted(p_hi, p_lo);
-
-    // t1 = k * log(2)
-    let kf: F = k.cast_into();
-    let t1_hi = kf * F::ln_2_hi();
-    let t1_lo = kf * F::ln_2_lo();
-
-    // t2 = log(1 + r) = p * s + 2 * s
-    let ps_hi = p_hi * s_hi;
-    let ps_lo = p_hi * s_lo + p_lo * s_hi + p_lo * s_lo;
-
-    let twos_hi = F::two() * s_hi;
-    let twos_lo = F::two() * s_lo;
-
-    let t2_hi = (ps_hi + twos_hi).purify();
-    let t2_lo = (((twos_hi - t2_hi) + ps_hi) + twos_lo) + ps_lo;
-
-    // t3 = log(2^k * (1 + r)) = t1 + t2
-    let t3_hi = (t1_hi + t2_hi).purify();
-    let t3_lo = (((t1_hi - t3_hi) + t2_hi) + t1_lo) + t2_lo;
-
-    (t3_hi, t3_lo)
-}
+use super::{int_is_odd, is_int, is_odd_int, Exp, Log};
+use crate::traits::{CastInto as _, Int as _};
 
 pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
     let (nx, xedelta) = x.normalize_arg();
@@ -174,7 +124,7 @@ pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
             exp_inner_common(k, r_hi, r_lo)
         };
 
-        if nx.sign() && is_odd(ny) {
+        if nx.sign() && int_is_odd(ny) {
             -absz
         } else {
             absz
@@ -182,43 +132,54 @@ pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
     }
 }
 
-fn is_int<F: Float>(x: F) -> bool {
-    let e = x.raw_exp();
-    if e > F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS) {
-        true
-    } else if e < F::EXP_OFFSET {
-        false
-    } else {
-        let frac_shift = (F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS)) - e;
-        (x.to_raw() & !(F::Raw::MAX << frac_shift)) == F::Raw::ZERO
-    }
-}
+pub(super) fn hi_lo_log_inner<F: Log>(x: F, edelta: F::Exp) -> (F, F) {
+    // Algorithm based on one used by the msun math library:
+    //  * log(1 + r) = p * s + 2 * s
+    //  * s = r / (2 + r)
+    //  * p = (log(1 + s) - log(1 - s) - 2 * s) / s
 
-fn is_odd_int<F: Float>(x: F) -> bool {
-    let e = x.raw_exp();
-    if e > F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS) || e < F::EXP_OFFSET {
-        // infinity, an even integer or only fractional part (less than 1)
-        false
-    } else {
-        let frac_shift = (F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS)) - e;
-        if (x.to_raw() & !(F::Raw::MAX << frac_shift)) != F::Raw::ZERO {
-            // not an integer
-            false
-        } else {
-            ((x.mant() >> frac_shift) & F::Raw::ONE) == F::Raw::ONE
-        }
-    }
-}
+    // Split x * 2^edelta = 2^k * (1 + r)
+    //  - k is an integer
+    //  - sqrt(2) / 2 <= 1 + r < sqrt(2)
+    let (k, r) = log_split(x, edelta);
+    let (r_hi, r_lo) = r.split_hi_lo();
 
-// like `is_odd_int`, but assumes that `x` is an integer
-fn is_odd<F: Float>(x: F) -> bool {
-    let e = x.raw_exp();
-    if e > F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS) {
-        false
-    } else {
-        let frac_shift = (F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS)) - e;
-        ((x.mant() >> frac_shift) & F::Raw::ONE) == F::Raw::ONE
-    }
+    // rp2 = 2 + r
+    let rp2_hi = (F::two() + r).split_hi();
+    let rp2_lo = (F::two() - rp2_hi) + r;
+
+    // s = r / (2 + r)
+    let (s_hi, s_lo) = F::div_hi_lo(r_hi, r_lo, rp2_hi, rp2_lo);
+    let (s_hi, s_lo) = F::norm_hi_lo_splitted(s_hi, s_lo);
+
+    let s2_hi = s_hi * s_hi;
+    let s2_lo = F::two() * s_hi * s_lo + s_lo * s_lo;
+    let (s2_hi, s2_lo) = F::norm_hi_lo_splitted(s2_hi, s2_lo);
+
+    // p = (log(1 + s) - log(1 - s) - 2 * s) / s
+    let (p_hi, p_lo) = hi_lo_log_special_poly(s2_hi, s2_lo);
+    let (p_hi, p_lo) = F::norm_hi_lo_splitted(p_hi, p_lo);
+
+    // t1 = k * log(2)
+    let kf: F = k.cast_into();
+    let t1_hi = kf * F::ln_2_hi();
+    let t1_lo = kf * F::ln_2_lo();
+
+    // t2 = log(1 + r) = p * s + 2 * s
+    let ps_hi = p_hi * s_hi;
+    let ps_lo = p_hi * s_lo + p_lo * s_hi + p_lo * s_lo;
+
+    let twos_hi = F::two() * s_hi;
+    let twos_lo = F::two() * s_lo;
+
+    let t2_hi = (ps_hi + twos_hi).purify();
+    let t2_lo = (((twos_hi - t2_hi) + ps_hi) + twos_lo) + ps_lo;
+
+    // t3 = log(2^k * (1 + r)) = t1 + t2
+    let t3_hi = (t1_hi + t2_hi).purify();
+    let t3_lo = (((t1_hi - t3_hi) + t2_hi) + t1_lo) + t2_lo;
+
+    (t3_hi, t3_lo)
 }
 
 #[cfg(test)]

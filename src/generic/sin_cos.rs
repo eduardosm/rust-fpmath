@@ -18,51 +18,6 @@ pub(crate) trait SinCos<L = Like<Self>>: Float {
     fn cos_poly(x2: Self, x4: Self) -> Self;
 }
 
-/// Calculates `sin(x_hi + x_lo)`, where
-/// `x_lo` is very small and `|x_hi| <= π/4`
-pub(super) fn sin_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
-    // sin(x_hi + x_lo) = sin(x_hi) * cos(x_lo) + cos(x_hi) * sin(x_lo)
-    // x_lo is small, so sin(x_lo) ~= x_lo and cos(x_lo) ~= 1,
-    // then sin(x_hi + x_lo) ~= sin(x_hi) + cos(x_hi) * x_lo
-    //
-    // sin(x) is calculated with a polynomial.
-    // cos(x) * x_lo ~= (1 - 0.5*x^2) * x_lo
-
-    let x2 = x_hi * x_hi;
-    let x3 = x2 * x_hi;
-    let x5 = x3 * x2;
-
-    // t1 = sin(x_hi) - x_hi - x_hi^3 * k3.
-    let (t1, k3) = F::sin_poly(x2, x5);
-
-    // sin(x_hi + x_lo) ~= sin(x) + (1 - 0.5 * x^2) * x_lo
-    //               = x + t1 + x^3 * KS3 + (1 - 0.5 * x^2) * x_lo
-    x_hi + (x3 * k3 + (t1 + (x_lo - F::half() * x2 * x_lo)))
-}
-
-/// Calculates `cos(x_hi + x_lo)`, where
-/// `x_lo` is very small and `|x_hi| <= π/4`
-pub(super) fn cos_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
-    // cos(x_hi + x_lo) = cos(x_hi) * cos(x_lo) - sin(x_hi) * sin(x_lo)
-    // x_lo is small, so sin(x_lo) ~= x_lo and cos(x_lo) ~= 1
-    // then
-    // cos(x_hi + x_lo) ~= cos(x_hi) - sin(x_hi) * x_lo
-    //
-    // cos(x_hi) is calculated with a polynomial.
-    // sin(x_hi) * x_lo ~= x_hi * x_lo
-
-    // t1 = cos(x_hi) + 0.5 * x_hi^2 - 1
-    let x2 = x_hi * x_hi;
-    let x4 = x2 * x2;
-    let t1 = F::cos_poly(x2, x4);
-
-    // cos(x_hi + x_lo) = t1 + 1 - 0.5 * x^2 - x_hi * x_lo
-    let hx2 = (F::half() * x2).purify();
-    let t2_hi = (F::one() - hx2).purify();
-    let t2_lo = (F::one() - t2_hi) - hx2;
-    t2_hi + ((t2_lo - x_hi * x_lo) + t1)
-}
-
 pub(crate) fn sin<F: SinCos + ReducePi2>(x: F) -> F {
     let e = x.raw_exp();
     if e == F::MAX_RAW_EXP {
@@ -131,6 +86,51 @@ pub(crate) fn sin_cos<F: SinCos + ReducePi2>(x: F) -> (F, F) {
             _ => unreachable!(),
         }
     }
+}
+
+/// Calculates `sin(x_hi + x_lo)`, where
+/// `x_lo` is very small and `|x_hi| <= π/4`
+pub(super) fn sin_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
+    // sin(x_hi + x_lo) = sin(x_hi) * cos(x_lo) + cos(x_hi) * sin(x_lo)
+    // x_lo is small, so sin(x_lo) ~= x_lo and cos(x_lo) ~= 1,
+    // then sin(x_hi + x_lo) ~= sin(x_hi) + cos(x_hi) * x_lo
+    //
+    // sin(x) is calculated with a polynomial.
+    // cos(x) * x_lo ~= (1 - 0.5*x^2) * x_lo
+
+    let x2 = x_hi * x_hi;
+    let x3 = x2 * x_hi;
+    let x5 = x3 * x2;
+
+    // t1 = sin(x_hi) - x_hi - x_hi^3 * k3.
+    let (t1, k3) = F::sin_poly(x2, x5);
+
+    // sin(x_hi + x_lo) ~= sin(x) + (1 - 0.5 * x^2) * x_lo
+    //               = x + t1 + x^3 * KS3 + (1 - 0.5 * x^2) * x_lo
+    x_hi + (x3 * k3 + (t1 + (x_lo - F::half() * x2 * x_lo)))
+}
+
+/// Calculates `cos(x_hi + x_lo)`, where
+/// `x_lo` is very small and `|x_hi| <= π/4`
+pub(super) fn cos_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
+    // cos(x_hi + x_lo) = cos(x_hi) * cos(x_lo) - sin(x_hi) * sin(x_lo)
+    // x_lo is small, so sin(x_lo) ~= x_lo and cos(x_lo) ~= 1
+    // then
+    // cos(x_hi + x_lo) ~= cos(x_hi) - sin(x_hi) * x_lo
+    //
+    // cos(x_hi) is calculated with a polynomial.
+    // sin(x_hi) * x_lo ~= x_hi * x_lo
+
+    // t1 = cos(x_hi) + 0.5 * x_hi^2 - 1
+    let x2 = x_hi * x_hi;
+    let x4 = x2 * x2;
+    let t1 = F::cos_poly(x2, x4);
+
+    // cos(x_hi + x_lo) = t1 + 1 - 0.5 * x^2 - x_hi * x_lo
+    let hx2 = (F::half() * x2).purify();
+    let t2_hi = (F::one() - hx2).purify();
+    let t2_lo = (F::one() - t2_hi) - hx2;
+    t2_hi + ((t2_lo - x_hi * x_lo) + t1)
 }
 
 #[cfg(test)]

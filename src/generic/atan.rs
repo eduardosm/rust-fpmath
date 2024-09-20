@@ -9,55 +9,6 @@ pub(crate) trait Atan<L = Like<Self>>: FloatConsts {
     fn atan_poly(x2: Self) -> (Self, Self);
 }
 
-pub(super) fn atan_inner_common<F: Atan>(x_hi: F, x_lo: F) -> (F, F) {
-    let (x2_hi, x2_lo) = (x_hi * x_hi).split_hi_lo();
-    let x2_lo = x2_lo + (F::two() * x_hi * x_lo + x_lo * x_lo);
-    let x2 = x2_hi + x2_lo;
-
-    // t1 = (atan(x) - x) / x^3 - k3
-    let (k3, t1) = F::atan_poly(x2);
-
-    // t2 = (atan(x) - x) / x^3
-    let t2_hi = (t1 + k3).split_hi();
-    let t2_lo = (k3 - t2_hi) + t1;
-
-    let (x3_hi, x3_lo) = (x_hi * x2_hi).split_hi_lo();
-    let x3_lo = x3_lo + (x_hi * x2_lo + x_lo * x2_hi + x_lo * x2_lo);
-
-    // t3 = atan(x) - x
-    let t3_hi = t2_hi * x3_hi;
-    let t3_lo = t2_hi * x3_lo + t2_lo * x3_hi + t2_lo * x3_lo;
-
-    // t4 = atan(x)
-    let t4_hi = (t3_hi + x_hi).purify();
-    let t4_lo = (x_lo + t3_lo) + ((x_hi - t4_hi) + t3_hi);
-
-    (t4_hi, t4_lo)
-}
-
-pub(super) fn atan_inner<F: Atan>(x: F) -> (F, F) {
-    if x.abs() <= F::one() {
-        let (x_hi, x_lo) = x.split_hi_lo();
-        atan_inner_common(x_hi, x_lo)
-    } else {
-        let (x_hi, x_lo) = x.split_hi_lo();
-        let (y_hi, y_lo) = F::recip_hi_lo(x_hi, x_lo);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
-
-        // t1 = atan(1 / x)
-        let (t1_hi, t1_lo) = atan_inner_common(y_hi, y_lo);
-
-        // t2 = atan(x) = ±pi/2 - atan(1 / x)
-        let off_hi = F::frac_pi_2_hi().copysign(x);
-        let off_lo = F::frac_pi_2_lo().copysign(x);
-
-        let t2_hi = (off_hi - t1_hi).purify();
-        let t2_lo = (off_lo - t1_lo) + ((off_hi - t2_hi) - t1_hi);
-
-        (t2_hi, t2_lo)
-    }
-}
-
 pub(crate) fn atan<F: Atan>(x: F) -> F {
     let e = x.raw_exp();
     if e == F::MAX_RAW_EXP {
@@ -77,41 +28,6 @@ pub(crate) fn atan<F: Atan>(x: F) -> F {
         let (y_hi, y_lo) = atan_inner(x);
         y_hi + y_lo
     }
-}
-
-pub(super) fn atan2_inner<F: Atan>(mut n: F, mut d: F) -> (F, F) {
-    let ysgn = n.sign();
-    let xsgn = d.sign();
-
-    let mut off = F::ZERO;
-    if xsgn {
-        off = F::two().set_sign(ysgn);
-    }
-    if n.abs() > d.abs() {
-        core::mem::swap(&mut n, &mut d);
-        n = -n;
-        off = off + F::one().set_sign(ysgn ^ xsgn);
-    }
-
-    let (n_hi, n_lo) = n.split_hi_lo();
-    let (d_hi, d_lo) = d.split_hi_lo();
-
-    // z = n/d
-    let (z_hi, z_lo) = F::div_hi_lo(n_hi, n_lo, d_hi, d_lo);
-    let (z_hi, z_lo) = F::norm_hi_lo_splitted(z_hi, z_lo);
-
-    // t1 = atan(n/d)
-    let (t1_hi, t1_lo) = atan_inner_common(z_hi, z_lo);
-
-    // t2 = off * π/2
-    let t2_hi = F::frac_pi_2_hi() * off;
-    let t2_lo = F::frac_pi_2_lo() * off;
-
-    // t3 = atan2(y, x) = atan(n/d) + off * π/2 = t1 + t2
-    let t3_hi = (t1_hi + t2_hi).purify();
-    let t3_lo = (t1_lo + t2_lo) + ((t2_hi - t3_hi) + t1_hi);
-
-    (t3_hi, t3_lo)
 }
 
 pub(crate) fn atan2<F: Atan>(y: F, x: F) -> F {
@@ -169,6 +85,90 @@ pub(crate) fn atan2<F: Atan>(y: F, x: F) -> F {
         let (y_hi, y_lo) = atan2_inner(ny, nx);
         y_hi + y_lo
     }
+}
+
+pub(super) fn atan_inner<F: Atan>(x: F) -> (F, F) {
+    if x.abs() <= F::one() {
+        let (x_hi, x_lo) = x.split_hi_lo();
+        atan_inner_common(x_hi, x_lo)
+    } else {
+        let (x_hi, x_lo) = x.split_hi_lo();
+        let (y_hi, y_lo) = F::recip_hi_lo(x_hi, x_lo);
+        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+
+        // t1 = atan(1 / x)
+        let (t1_hi, t1_lo) = atan_inner_common(y_hi, y_lo);
+
+        // t2 = atan(x) = ±pi/2 - atan(1 / x)
+        let off_hi = F::frac_pi_2_hi().copysign(x);
+        let off_lo = F::frac_pi_2_lo().copysign(x);
+
+        let t2_hi = (off_hi - t1_hi).purify();
+        let t2_lo = (off_lo - t1_lo) + ((off_hi - t2_hi) - t1_hi);
+
+        (t2_hi, t2_lo)
+    }
+}
+
+pub(super) fn atan2_inner<F: Atan>(mut n: F, mut d: F) -> (F, F) {
+    let ysgn = n.sign();
+    let xsgn = d.sign();
+
+    let mut off = F::ZERO;
+    if xsgn {
+        off = F::two().set_sign(ysgn);
+    }
+    if n.abs() > d.abs() {
+        core::mem::swap(&mut n, &mut d);
+        n = -n;
+        off = off + F::one().set_sign(ysgn ^ xsgn);
+    }
+
+    let (n_hi, n_lo) = n.split_hi_lo();
+    let (d_hi, d_lo) = d.split_hi_lo();
+
+    // z = n/d
+    let (z_hi, z_lo) = F::div_hi_lo(n_hi, n_lo, d_hi, d_lo);
+    let (z_hi, z_lo) = F::norm_hi_lo_splitted(z_hi, z_lo);
+
+    // t1 = atan(n/d)
+    let (t1_hi, t1_lo) = atan_inner_common(z_hi, z_lo);
+
+    // t2 = off * π/2
+    let t2_hi = F::frac_pi_2_hi() * off;
+    let t2_lo = F::frac_pi_2_lo() * off;
+
+    // t3 = atan2(y, x) = atan(n/d) + off * π/2 = t1 + t2
+    let t3_hi = (t1_hi + t2_hi).purify();
+    let t3_lo = (t1_lo + t2_lo) + ((t2_hi - t3_hi) + t1_hi);
+
+    (t3_hi, t3_lo)
+}
+
+pub(super) fn atan_inner_common<F: Atan>(x_hi: F, x_lo: F) -> (F, F) {
+    let (x2_hi, x2_lo) = (x_hi * x_hi).split_hi_lo();
+    let x2_lo = x2_lo + (F::two() * x_hi * x_lo + x_lo * x_lo);
+    let x2 = x2_hi + x2_lo;
+
+    // t1 = (atan(x) - x) / x^3 - k3
+    let (k3, t1) = F::atan_poly(x2);
+
+    // t2 = (atan(x) - x) / x^3
+    let t2_hi = (t1 + k3).split_hi();
+    let t2_lo = (k3 - t2_hi) + t1;
+
+    let (x3_hi, x3_lo) = (x_hi * x2_hi).split_hi_lo();
+    let x3_lo = x3_lo + (x_hi * x2_lo + x_lo * x2_hi + x_lo * x2_lo);
+
+    // t3 = atan(x) - x
+    let t3_hi = t2_hi * x3_hi;
+    let t3_lo = t2_hi * x3_lo + t2_lo * x3_hi + t2_lo * x3_lo;
+
+    // t4 = atan(x)
+    let t4_hi = (t3_hi + x_hi).purify();
+    let t4_lo = (x_lo + t3_lo) + ((x_hi - t4_hi) + t3_hi);
+
+    (t4_hi, t4_lo)
 }
 
 #[cfg(test)]

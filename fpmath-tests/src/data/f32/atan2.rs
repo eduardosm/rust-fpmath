@@ -3,46 +3,6 @@ use rand::Rng as _;
 use super::{mkfloat, RefResult};
 use crate::data::{create_prng, generate_data};
 
-fn gen_args() -> Vec<(f32, f32)> {
-    let mut rng = create_prng();
-
-    let mut args = Vec::new();
-    for ey in -126..=127 {
-        for ex in -126..=127 {
-            let my = rng.gen::<u32>();
-            let mx = rng.gen::<u32>();
-            args.push((mkfloat(my, ey, false), mkfloat(mx, ex, false)));
-            args.push((mkfloat(my, ey, false), mkfloat(mx, ex, true)));
-            args.push((mkfloat(my, ey, true), mkfloat(mx, ex, false)));
-            args.push((mkfloat(my, ey, true), mkfloat(mx, ex, true)));
-        }
-    }
-
-    for e in -126..=127 {
-        for _ in 0..5000 {
-            let my = rng.gen::<u32>();
-            let sy = rng.gen::<bool>();
-            let mx = rng.gen::<u32>();
-            let sx = rng.gen::<bool>();
-            args.push((mkfloat(my, e, sy), mkfloat(mx, e, sx)));
-
-            let my = rng.gen::<u32>();
-            let sy = rng.gen::<bool>();
-            let mx = rng.gen::<u32>();
-            let sx = rng.gen::<bool>();
-            args.push((mkfloat(my, 0, sy), mkfloat(mx, e, sx)));
-
-            let my = rng.gen::<u32>();
-            let sy = rng.gen::<bool>();
-            let mx = rng.gen::<u32>();
-            let sx = rng.gen::<bool>();
-            args.push((mkfloat(my, e, sy), mkfloat(mx, 0, sx)));
-        }
-    }
-
-    args
-}
-
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
     generate_data(
         "f32_atan2",
@@ -133,4 +93,44 @@ pub(crate) fn gen_data_pi(pb: indicatif::ProgressBar) {
         },
         pb,
     );
+}
+
+fn gen_args() -> Vec<(f32, f32)> {
+    let mut rng = create_prng();
+
+    let mut args = Vec::new();
+    for ey in -126..=127 {
+        for ex in -126..=127 {
+            let my = rng.gen::<u32>();
+            let mx = rng.gen::<u32>();
+            args.push((mkfloat(my, ey, false), mkfloat(mx, ex, false)));
+            args.push((mkfloat(my, ey, false), mkfloat(mx, ex, true)));
+            args.push((mkfloat(my, ey, true), mkfloat(mx, ex, false)));
+            args.push((mkfloat(my, ey, true), mkfloat(mx, ex, true)));
+        }
+    }
+
+    for e in -126..=127 {
+        for _ in 0..5000 {
+            let my = rng.gen::<u32>();
+            let sy = rng.gen::<bool>();
+            let mx = rng.gen::<u32>();
+            let sx = rng.gen::<bool>();
+            args.push((mkfloat(my, e, sy), mkfloat(mx, e, sx)));
+
+            let my = rng.gen::<u32>();
+            let sy = rng.gen::<bool>();
+            let mx = rng.gen::<u32>();
+            let sx = rng.gen::<bool>();
+            args.push((mkfloat(my, 0, sy), mkfloat(mx, e, sx)));
+
+            let my = rng.gen::<u32>();
+            let sy = rng.gen::<bool>();
+            let mx = rng.gen::<u32>();
+            let sx = rng.gen::<bool>();
+            args.push((mkfloat(my, e, sy), mkfloat(mx, 0, sx)));
+        }
+    }
+
+    args
 }

@@ -9,6 +9,24 @@ pub(crate) trait AsinAcos<L = Like<Self>>: FloatConsts {
     fn asin_poly(x2: Self) -> Self;
 }
 
+pub(crate) fn asin<F: AsinAcos>(x: F) -> F {
+    let e = x.raw_exp();
+    if e == F::EXP_OFFSET && x.raw_mant() == F::Raw::ZERO {
+        // asin(±1) = ±π/2
+        F::frac_pi_2().copysign(x)
+    } else if e >= F::EXP_OFFSET {
+        // NaN or |x| > 1 (including infinity)
+        F::NAN
+    } else if e == F::RawExp::ZERO {
+        // subnormal or zero, asin(x) ~= x
+        // also handles asin(-0) = -0
+        x
+    } else {
+        let (y_hi, y_lo) = asin_inner(x);
+        y_hi + y_lo
+    }
+}
+
 pub(super) fn asin_inner<F: AsinAcos>(x: F) -> (F, F) {
     if x.exponent() < -F::Exp::ONE {
         // |x| < 0.5
@@ -41,24 +59,6 @@ pub(super) fn asin_inner<F: AsinAcos>(x: F) -> (F, F) {
 
         let sgn = F::one().copysign(x);
         (t3_hi * sgn, t3_lo * sgn)
-    }
-}
-
-pub(crate) fn asin<F: AsinAcos>(x: F) -> F {
-    let e = x.raw_exp();
-    if e == F::EXP_OFFSET && x.raw_mant() == F::Raw::ZERO {
-        // asin(±1) = ±π/2
-        F::frac_pi_2().copysign(x)
-    } else if e >= F::EXP_OFFSET {
-        // NaN or |x| > 1 (including infinity)
-        F::NAN
-    } else if e == F::RawExp::ZERO {
-        // subnormal or zero, asin(x) ~= x
-        // also handles asin(-0) = -0
-        x
-    } else {
-        let (y_hi, y_lo) = asin_inner(x);
-        y_hi + y_lo
     }
 }
 

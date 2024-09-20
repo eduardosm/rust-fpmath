@@ -2,6 +2,29 @@ use super::log::log_hi_lo_inner;
 use super::Log;
 use crate::traits::Int as _;
 
+pub(crate) fn atanh<F: Log>(x: F) -> F {
+    let e = x.raw_exp();
+    let absx = x.abs();
+    if (e == F::MAX_RAW_EXP && x.raw_mant() != F::Raw::ZERO)
+        || e <= (F::EXP_OFFSET - F::RawExp::from(F::MANT_BITS))
+    {
+        // propagate NaN
+        // or
+        // very small, includes subnormal and zero
+        // atanh(x) ~= x
+        // also handles atanh(-0) = -0
+        x
+    } else if absx == F::one() {
+        // atanh(±1) = ±inf
+        F::INFINITY.copysign(x)
+    } else if x.abs() > F::one() {
+        // |x| > 1, return NaN
+        F::NAN
+    } else {
+        atanh_inner(x)
+    }
+}
+
 fn atanh_inner<F: Log>(x: F) -> F {
     let (twox_hi, twox_lo) = (F::two() * x).split_hi_lo();
 
@@ -26,29 +49,6 @@ fn atanh_inner<F: Log>(x: F) -> F {
 
     // atanh(x) = 0.5 * log((1 + x) / (1 - x))
     F::half() * log_hi_lo_inner(t2_hi, t2_lo)
-}
-
-pub(crate) fn atanh<F: Log>(x: F) -> F {
-    let e = x.raw_exp();
-    let absx = x.abs();
-    if (e == F::MAX_RAW_EXP && x.raw_mant() != F::Raw::ZERO)
-        || e <= (F::EXP_OFFSET - F::RawExp::from(F::MANT_BITS))
-    {
-        // propagate NaN
-        // or
-        // very small, includes subnormal and zero
-        // atanh(x) ~= x
-        // also handles atanh(-0) = -0
-        x
-    } else if absx == F::one() {
-        // atanh(±1) = ±inf
-        F::INFINITY.copysign(x)
-    } else if x.abs() > F::one() {
-        // |x| > 1, return NaN
-        F::NAN
-    } else {
-        atanh_inner(x)
-    }
 }
 
 #[cfg(test)]

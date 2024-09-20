@@ -10,6 +10,23 @@ pub(crate) trait Tan<L = Like<Self>>: Float {
     fn tan_poly(x2: Self, x3: Self) -> Self;
 }
 
+pub(crate) fn tan<F: ReducePi2 + Tan>(x: F) -> F {
+    let e = x.raw_exp();
+    if e == F::MAX_RAW_EXP {
+        // tan(inf or NaN) = NaN
+        F::NAN
+    } else if e <= F::RawExp::ONE {
+        // very small, includes subnormal and zero
+        // tan(x) ~= x
+        // also handles tan(-0) = -0
+        x
+    } else {
+        let (n, y_hi, y_lo) = reduce_pi_2(x);
+
+        tan_inner(y_hi, y_lo, (n & 1) != 0)
+    }
+}
+
 pub(super) fn tan_inner<F: Tan>(x_hi: F, x_lo: F, inv: bool) -> F {
     // let y = 0.5 * x
     // tan(x) = 2 * tan(y) / (1 - tan(y)^2)
@@ -51,23 +68,6 @@ pub(super) fn tan_inner<F: Tan>(x_hi: F, x_lo: F, inv: bool) -> F {
     } else {
         let (q_hi, q_lo) = F::div_hi_lo(n_hi, n_lo, d_hi, d_lo);
         q_hi + q_lo
-    }
-}
-
-pub(crate) fn tan<F: ReducePi2 + Tan>(x: F) -> F {
-    let e = x.raw_exp();
-    if e == F::MAX_RAW_EXP {
-        // tan(inf or NaN) = NaN
-        F::NAN
-    } else if e <= F::RawExp::ONE {
-        // very small, includes subnormal and zero
-        // tan(x) ~= x
-        // also handles tan(-0) = -0
-        x
-    } else {
-        let (n, y_hi, y_lo) = reduce_pi_2(x);
-
-        tan_inner(y_hi, y_lo, (n & 1) != 0)
     }
 }
 

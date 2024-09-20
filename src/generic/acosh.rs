@@ -3,6 +3,25 @@ use super::sqrt::hi_lo_sqrt_hi_lo_inner;
 use super::Log;
 use crate::traits::Int as _;
 
+pub(crate) fn acosh<F: Log>(x: F) -> F {
+    let e = x.raw_exp();
+    if x < F::one() {
+        // x < 1, acosh(x) is NaN
+        F::NAN
+    } else if x == F::one() {
+        // asinh(1) = 0
+        F::ZERO
+    } else if e == F::MAX_RAW_EXP {
+        // x is infinity or NaN
+        // acosh(x) = x
+        x
+    } else if e > (F::RawExp::from(F::MANT_BITS) + F::EXP_OFFSET) {
+        log_inner(x, F::Exp::ONE)
+    } else {
+        acosh_inner(x)
+    }
+}
+
 fn acosh_inner<F: Log>(x: F) -> F {
     // t1 = x^2 - 1
     let (t1_hi, t1_lo) = if x < F::two() {
@@ -35,25 +54,6 @@ fn acosh_inner<F: Log>(x: F) -> F {
 
     // acosh(x) = log(x + sqrt(x^2 - 1))
     log_hi_lo_inner(t3_hi, t3_lo)
-}
-
-pub(crate) fn acosh<F: Log>(x: F) -> F {
-    let e = x.raw_exp();
-    if x < F::one() {
-        // x < 1, acosh(x) is NaN
-        F::NAN
-    } else if x == F::one() {
-        // asinh(1) = 0
-        F::ZERO
-    } else if e == F::MAX_RAW_EXP {
-        // x is infinity or NaN
-        // acosh(x) = x
-        x
-    } else if e > (F::RawExp::from(F::MANT_BITS) + F::EXP_OFFSET) {
-        log_inner(x, F::Exp::ONE)
-    } else {
-        acosh_inner(x)
-    }
 }
 
 #[cfg(test)]

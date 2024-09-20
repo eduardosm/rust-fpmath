@@ -3,32 +3,6 @@ use rand::Rng as _;
 use super::{mkfloat, RefResult};
 use crate::data::{create_prng, generate_data};
 
-fn gen_args() -> Vec<f64> {
-    let mut rng = create_prng();
-
-    let mut args = Vec::new();
-    for e in -1022..=-1 {
-        args.push(mkfloat(0, e, false));
-        args.push(mkfloat(0, e, true));
-        args.push(mkfloat(u64::MAX, e, false));
-        args.push(mkfloat(u64::MAX, e, true));
-
-        for _ in 0..10000 {
-            let m = rng.gen::<u64>();
-            let s = rng.gen::<bool>();
-            args.push(mkfloat(m, e, s));
-        }
-    }
-
-    for i in 1..=1000 {
-        let x = (i as f64) / 1000.0;
-        args.push(x);
-        args.push(-x);
-    }
-
-    args
-}
-
 #[derive(bincode::Encode, bincode::Decode)]
 pub(crate) struct Data {
     pub(crate) x: f64,
@@ -133,4 +107,30 @@ pub(crate) fn gen_data_pi(pb: indicatif::ProgressBar) {
         },
         pb,
     );
+}
+
+fn gen_args() -> Vec<f64> {
+    let mut rng = create_prng();
+
+    let mut args = Vec::new();
+    for e in -1022..=-1 {
+        args.push(mkfloat(0, e, false));
+        args.push(mkfloat(0, e, true));
+        args.push(mkfloat(u64::MAX, e, false));
+        args.push(mkfloat(u64::MAX, e, true));
+
+        for _ in 0..10000 {
+            let m = rng.gen::<u64>();
+            let s = rng.gen::<bool>();
+            args.push(mkfloat(m, e, s));
+        }
+    }
+
+    for i in 1..=1000 {
+        let x = (i as f64) / 1000.0;
+        args.push(x);
+        args.push(-x);
+    }
+
+    args
 }

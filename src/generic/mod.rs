@@ -1,3 +1,5 @@
+use crate::traits::{Float, Int as _};
+
 mod acosh;
 mod asin_acos;
 mod asind_acosd;
@@ -78,3 +80,42 @@ pub(crate) use tand::tand;
 pub(crate) use tanh::tanh;
 pub(crate) use tanpi::tanpi;
 pub(crate) use trunc::trunc;
+
+fn is_int<F: Float>(x: F) -> bool {
+    let e = x.raw_exp();
+    if e > F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS) {
+        true
+    } else if e < F::EXP_OFFSET {
+        false
+    } else {
+        let frac_shift = (F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS)) - e;
+        (x.to_raw() & !(F::Raw::MAX << frac_shift)) == F::Raw::ZERO
+    }
+}
+
+fn is_odd_int<F: Float>(x: F) -> bool {
+    let e = x.raw_exp();
+    if e > F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS) || e < F::EXP_OFFSET {
+        // infinity, an even integer or only fractional part (less than 1)
+        false
+    } else {
+        let frac_shift = (F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS)) - e;
+        if (x.to_raw() & !(F::Raw::MAX << frac_shift)) != F::Raw::ZERO {
+            // not an integer
+            false
+        } else {
+            ((x.mant() >> frac_shift) & F::Raw::ONE) == F::Raw::ONE
+        }
+    }
+}
+
+// like `is_odd_int`, but assumes that `x` is an integer
+fn int_is_odd<F: Float>(x: F) -> bool {
+    let e = x.raw_exp();
+    if e > F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS) {
+        false
+    } else {
+        let frac_shift = (F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS)) - e;
+        ((x.mant() >> frac_shift) & F::Raw::ONE) == F::Raw::ONE
+    }
+}

@@ -6,6 +6,28 @@ pub(crate) trait Log2<L = Like<Self>>: Log {
     fn log2_e_lo() -> Self;
 }
 
+pub(crate) fn log2<F: Log2>(x: F) -> F {
+    let (y, edelta) = x.normalize_arg();
+    let yexp = y.raw_exp();
+    if yexp == F::RawExp::ZERO {
+        // log2(±0) = -inf
+        F::neg_infinity()
+    } else if y.sign() {
+        // x < 0, log2(x) = NaN
+        F::NAN
+    } else if yexp == F::MAX_RAW_EXP {
+        if y.raw_mant() == F::Raw::ZERO {
+            // log2(inf) = inf
+            F::INFINITY
+        } else {
+            // NaN, propagate
+            y
+        }
+    } else {
+        log2_inner(y, edelta)
+    }
+}
+
 /// Calculates `log2(x)`
 ///
 /// `x` must be normal and positive.
@@ -43,28 +65,6 @@ fn log2_inner<F: Log2>(x: F, edelta: F::Exp) -> F {
     let t4_hi = (kf + t2_hi).purify();
     let t4_lo = t2_lo + ((kf - t4_hi) + t2_hi);
     t4_hi + t4_lo
-}
-
-pub(crate) fn log2<F: Log2>(x: F) -> F {
-    let (y, edelta) = x.normalize_arg();
-    let yexp = y.raw_exp();
-    if yexp == F::RawExp::ZERO {
-        // log2(±0) = -inf
-        F::neg_infinity()
-    } else if y.sign() {
-        // x < 0, log2(x) = NaN
-        F::NAN
-    } else if yexp == F::MAX_RAW_EXP {
-        if y.raw_mant() == F::Raw::ZERO {
-            // log2(inf) = inf
-            F::INFINITY
-        } else {
-            // NaN, propagate
-            y
-        }
-    } else {
-        log2_inner(y, edelta)
-    }
 }
 
 #[cfg(test)]

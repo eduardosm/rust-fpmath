@@ -13,39 +13,6 @@ pub(crate) trait Exp10<L = Like<Self>>: Exp {
     fn exp10_hi_th() -> Self;
 }
 
-/// Splits `x` into `(k, r_hi, r_lo)`
-///
-/// Such as:
-/// * `x = k*log10(2) + (r_hi + r_lo)*log10(e)`
-/// * `k` is an integer
-/// * `|r| <= 0.5*ln(2)`
-#[inline]
-fn exp10_split<F: Exp10>(x: F) -> (i32, F, F) {
-    let y = x * F::log2_10();
-    let (k, kf) = round_as_i_f(y);
-    // `kf * LOG10_2_HI` is exact because the lower bits
-    // of `LOG10_2_HI` are zero.
-    let t_hi = x - kf * F::log10_2_hi();
-    let t_lo = -kf * F::log10_2_lo();
-    let (t_hi, t_lo) = F::norm_hi_lo_splitted(t_hi, t_lo);
-
-    let r_hi = t_hi * F::ln_10_hi();
-    let r_lo = t_hi * F::ln_10_lo() + t_lo * F::ln_10();
-
-    (k, r_hi, r_lo)
-}
-
-fn exp10_inner<F: Exp10>(x: F) -> F {
-    // Split x into k, r_hi, r_lo such as:
-    //  - x = k*log10(2) + (r_hi + r_lo)*log10(e)
-    //  - k is an integer
-    //  - |r| <= 0.5*ln(2)
-    let (k, r_hi, r_lo) = exp10_split(x);
-
-    // Calculate 10^x = exp(k*ln(2) + r_hi + r_lo)
-    exp_inner_common(k, r_hi, r_lo)
-}
-
 /// Returns 10 raised to `x`.
 pub(crate) fn exp10<F: Exp10>(x: F) -> F {
     if x >= F::exp10_hi_th() {
@@ -67,6 +34,39 @@ pub(crate) fn exp10<F: Exp10>(x: F) -> F {
             exp10_inner(x)
         }
     }
+}
+
+fn exp10_inner<F: Exp10>(x: F) -> F {
+    // Split x into k, r_hi, r_lo such as:
+    //  - x = k*log10(2) + (r_hi + r_lo)*log10(e)
+    //  - k is an integer
+    //  - |r| <= 0.5*ln(2)
+    let (k, r_hi, r_lo) = exp10_split(x);
+
+    // Calculate 10^x = exp(k*ln(2) + r_hi + r_lo)
+    exp_inner_common(k, r_hi, r_lo)
+}
+
+/// Splits `x` into `(k, r_hi, r_lo)`
+///
+/// Such as:
+/// * `x = k*log10(2) + (r_hi + r_lo)*log10(e)`
+/// * `k` is an integer
+/// * `|r| <= 0.5*ln(2)`
+#[inline]
+fn exp10_split<F: Exp10>(x: F) -> (i32, F, F) {
+    let y = x * F::log2_10();
+    let (k, kf) = round_as_i_f(y);
+    // `kf * LOG10_2_HI` is exact because the lower bits
+    // of `LOG10_2_HI` are zero.
+    let t_hi = x - kf * F::log10_2_hi();
+    let t_lo = -kf * F::log10_2_lo();
+    let (t_hi, t_lo) = F::norm_hi_lo_splitted(t_hi, t_lo);
+
+    let r_hi = t_hi * F::ln_10_hi();
+    let r_lo = t_hi * F::ln_10_lo() + t_lo * F::ln_10();
+
+    (k, r_hi, r_lo)
 }
 
 #[cfg(test)]

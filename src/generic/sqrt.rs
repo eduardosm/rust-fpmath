@@ -1,17 +1,19 @@
 use crate::traits::{Float, Int as _};
 
-fn sqrt_split<F: Float>(x: F, edelta: F::Exp) -> (F::Exp, F::Raw) {
-    // Split x * 2^edelta = 2^(k - MANT_BITS) * m
-
-    let k = x.exponent() + edelta;
-    let m = x.mant();
-
-    if (k & F::Exp::ONE) == F::Exp::ZERO {
-        // exponent is even, 1 <= m * 2^(-MANT_BITS) < 2
-        (k, m)
+pub(crate) fn sqrt<F: Float>(x: F) -> F {
+    let (y, edelta) = x.normalize_arg();
+    let yexp = y.raw_exp();
+    if yexp == F::RawExp::ZERO {
+        // sqrt(±0) = ±0
+        y
+    } else if y.sign() {
+        // x < 0, sqrt(x) = NaN
+        F::NAN
+    } else if yexp == F::MAX_RAW_EXP {
+        // propagate infinity or NaN
+        y
     } else {
-        // exponent is odd, 2 <= m * 2^(-MANT_BITS) < 4
-        (k - F::Exp::ONE, m << 1)
+        sqrt_inner(y, edelta)
     }
 }
 
@@ -48,20 +50,18 @@ fn sqrt_inner<F: Float>(x: F, edelta: F::Exp) -> F {
     F::from_raw(yraw)
 }
 
-pub(crate) fn sqrt<F: Float>(x: F) -> F {
-    let (y, edelta) = x.normalize_arg();
-    let yexp = y.raw_exp();
-    if yexp == F::RawExp::ZERO {
-        // sqrt(±0) = ±0
-        y
-    } else if y.sign() {
-        // x < 0, sqrt(x) = NaN
-        F::NAN
-    } else if yexp == F::MAX_RAW_EXP {
-        // propagate infinity or NaN
-        y
+fn sqrt_split<F: Float>(x: F, edelta: F::Exp) -> (F::Exp, F::Raw) {
+    // Split x * 2^edelta = 2^(k - MANT_BITS) * m
+
+    let k = x.exponent() + edelta;
+    let m = x.mant();
+
+    if (k & F::Exp::ONE) == F::Exp::ZERO {
+        // exponent is even, 1 <= m * 2^(-MANT_BITS) < 2
+        (k, m)
     } else {
-        sqrt_inner(y, edelta)
+        // exponent is odd, 2 <= m * 2^(-MANT_BITS) < 4
+        (k - F::Exp::ONE, m << 1)
     }
 }
 

@@ -3,6 +3,33 @@ use rand::Rng as _;
 use super::{mkfloat, RefResult};
 use crate::data::{create_prng, generate_data};
 
+pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
+    generate_data(
+        "f32_sin_cos",
+        gen_args,
+        |x| {
+            let mut tmp_arg = dev_mpfr::Mpfr::new();
+            tmp_arg.set_prec(24);
+            tmp_arg.set_f32(x, dev_mpfr::Rnd::N);
+
+            let mut tmp_sin = dev_mpfr::Mpfr::new();
+            tmp_sin.set_prec(24 * 2);
+
+            let mut tmp_cos = dev_mpfr::Mpfr::new();
+            tmp_cos.set_prec(24 * 2);
+
+            tmp_arg.sin_cos(&mut tmp_sin, &mut tmp_cos, dev_mpfr::Rnd::N);
+
+            super::SinCosData {
+                x,
+                expected_sin: RefResult::from_mpfr(&mut tmp_sin),
+                expected_cos: RefResult::from_mpfr(&mut tmp_cos),
+            }
+        },
+        pb,
+    );
+}
+
 pub(super) fn gen_args() -> Vec<f32> {
     let mut rng = create_prng();
 
@@ -43,31 +70,4 @@ pub(super) fn gen_args() -> Vec<f32> {
     }
 
     args
-}
-
-pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
-    generate_data(
-        "f32_sin_cos",
-        gen_args,
-        |x| {
-            let mut tmp_arg = dev_mpfr::Mpfr::new();
-            tmp_arg.set_prec(24);
-            tmp_arg.set_f32(x, dev_mpfr::Rnd::N);
-
-            let mut tmp_sin = dev_mpfr::Mpfr::new();
-            tmp_sin.set_prec(24 * 2);
-
-            let mut tmp_cos = dev_mpfr::Mpfr::new();
-            tmp_cos.set_prec(24 * 2);
-
-            tmp_arg.sin_cos(&mut tmp_sin, &mut tmp_cos, dev_mpfr::Rnd::N);
-
-            super::SinCosData {
-                x,
-                expected_sin: RefResult::from_mpfr(&mut tmp_sin),
-                expected_cos: RefResult::from_mpfr(&mut tmp_cos),
-            }
-        },
-        pb,
-    );
 }
