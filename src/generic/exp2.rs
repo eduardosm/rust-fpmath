@@ -4,8 +4,6 @@ use crate::traits::{Int as _, Like};
 
 pub(crate) trait Exp2<L = Like<Self>>: Exp {
     fn ln_2() -> Self;
-    fn ln_2_hi() -> Self;
-    fn ln_2_lo() -> Self;
     fn exp2_lo_th() -> Self;
     fn exp2_hi_th() -> Self;
 }
@@ -60,8 +58,8 @@ fn exp2_split<F: Exp2>(x: F) -> (i32, F, F) {
     let t = x - kf;
 
     let (t_hi, t_lo) = t.split_hi_lo();
-    let r_hi = t_hi * <F as Exp2>::ln_2_hi();
-    let r_lo = t_hi * <F as Exp2>::ln_2_lo() + t_lo * F::ln_2();
+    let r_hi = t_hi * F::ln_2_hi();
+    let r_lo = t_hi * F::ln_2_lo() + t_lo * F::ln_2();
 
     (k, r_hi, r_lo)
 }
