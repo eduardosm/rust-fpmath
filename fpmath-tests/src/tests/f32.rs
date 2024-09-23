@@ -839,67 +839,39 @@ pub(super) fn test_round_with(test_f: fn(f32)) {
 #[test]
 fn test_round() {
     test_round_with(|arg| {
-        let mut expected = dev_mpfr::Mpfr::new();
-        expected.set_prec(64);
-        expected.set_f32(arg, dev_mpfr::Rnd::N);
-        expected.round(None);
-
+        let expected = rug::Float::with_val(64, arg).round();
         let actual = fpmath::round(arg);
 
-        assert!(
-            expected.cmp_f32(actual).is_eq(),
-            "round({arg:e}) = {actual:e}",
-        );
+        assert!(expected == actual, "round({arg:e}) = {actual:e}");
     });
 }
 
 #[test]
 fn test_floor() {
     test_round_with(|arg| {
-        let mut expected = dev_mpfr::Mpfr::new();
-        expected.set_prec(64);
-        expected.set_f32(arg, dev_mpfr::Rnd::N);
-        expected.floor(None);
-
+        let expected = rug::Float::with_val(64, arg).floor();
         let actual = fpmath::floor(arg);
 
-        assert!(
-            expected.cmp_f32(actual).is_eq(),
-            "floor({arg:e}) = {actual:e}",
-        );
+        assert!(expected == actual, "floor({arg:e}) = {actual:e}");
     });
 }
 
 #[test]
 fn test_ceil() {
     test_round_with(|arg| {
-        let mut expected = dev_mpfr::Mpfr::new();
-        expected.set_prec(64);
-        expected.set_f32(arg, dev_mpfr::Rnd::N);
-        expected.ceil(None);
-
+        let expected = rug::Float::with_val(64, arg).ceil();
         let actual = fpmath::ceil(arg);
 
-        assert!(
-            expected.cmp_f32(actual).is_eq(),
-            "ceil({arg:e}) = {actual:e}",
-        );
+        assert!(expected == actual, "ceil({arg:e}) = {actual:e}");
     });
 }
 
 #[test]
 fn test_trunc() {
     test_round_with(|arg| {
-        let mut expected = dev_mpfr::Mpfr::new();
-        expected.set_prec(64);
-        expected.set_f32(arg, dev_mpfr::Rnd::N);
-        expected.trunc(None);
-
+        let expected = rug::Float::with_val(64, arg).trunc();
         let actual = fpmath::trunc(arg);
 
-        assert!(
-            expected.cmp_f32(actual).is_eq(),
-            "trunc({arg:e}) = {actual:e}",
-        );
+        assert!(expected == actual, "trunc({arg:e}) = {actual:e}");
     });
 }

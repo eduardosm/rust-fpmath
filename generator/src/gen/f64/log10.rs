@@ -1,25 +1,15 @@
-use super::{print_f64_const, split_hi_lo};
+use super::{print_f64_const, split_hi_lo, FPREC};
 
 pub(crate) fn gen_consts() {
-    let mut tmp = dev_mpfr::Mpfr::new();
-    tmp.set_prec(1024);
-
-    // tmp = log10(e)
-    tmp.set_ui(1, dev_mpfr::Rnd::N);
-    tmp.exp(None, dev_mpfr::Rnd::N);
-    tmp.log10(None, dev_mpfr::Rnd::N);
-
+    // log10(e)
+    let mut tmp = rug::Float::with_val(FPREC, 1).exp().log10();
     let (hi, lo) = split_hi_lo(&mut tmp, 27);
-
     print_f64_const("LOG10_E_HI", hi);
     print_f64_const("LOG10_E_LO", lo);
 
-    // tmp = log10(2)
-    tmp.set_ui(2, dev_mpfr::Rnd::N);
-    tmp.log10(None, dev_mpfr::Rnd::N);
-
+    // log10(2)
+    let mut tmp = rug::Float::with_val(FPREC, 2).log10();
     let (hi, lo) = split_hi_lo(&mut tmp, 27);
-
     print_f64_const("LOG10_2_HI", hi);
     print_f64_const("LOG10_2_LO", lo);
 }

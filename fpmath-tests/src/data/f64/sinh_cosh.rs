@@ -8,22 +8,13 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_sinh_cosh",
         gen_args,
         |x| {
-            let mut tmp_arg = dev_mpfr::Mpfr::new();
-            tmp_arg.set_prec(53);
-            tmp_arg.set_f64(x, dev_mpfr::Rnd::N);
-
-            let mut tmp_sin = dev_mpfr::Mpfr::new();
-            tmp_sin.set_prec(53 * 2);
-
-            let mut tmp_cos = dev_mpfr::Mpfr::new();
-            tmp_cos.set_prec(53 * 2);
-
-            tmp_arg.sinh_cosh(&mut tmp_sin, &mut tmp_cos, dev_mpfr::Rnd::N);
+            let (tmp_sinh, tmp_cosh) =
+                rug::Float::with_val(53 * 2, x).sinh_cosh(rug::Float::new(53 * 2));
 
             super::SinCosData {
                 x,
-                expected_sin: RefResult::from_mpfr(&mut tmp_sin),
-                expected_cos: RefResult::from_mpfr(&mut tmp_cos),
+                expected_sin: RefResult::from_rug(tmp_sinh),
+                expected_cos: RefResult::from_rug(tmp_cosh),
             }
         },
         pb,

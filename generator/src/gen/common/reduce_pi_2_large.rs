@@ -1,9 +1,6 @@
 pub(crate) fn gen_frac_2_pi_large() {
     let num_words = 66;
-    let mut tmp = dev_mpfr::Mpfr::new();
-    tmp.set_prec(num_words * 24);
-    tmp.const_pi(dev_mpfr::Rnd::N);
-    tmp.f64_div(2.0, None, dev_mpfr::Rnd::N);
+    let mut tmp = 2u8 / rug::Float::with_val(num_words * 24, rug::float::Constant::Pi);
 
     println!("const FRAC_2_PI_LARGE: &[u32] = &[");
     let words_per_line = 9;
@@ -13,10 +10,12 @@ pub(crate) fn gen_frac_2_pi_large() {
         } else {
             print!(" ");
         }
-        tmp.mul_2ui(None, 24, dev_mpfr::Rnd::N);
-        let word = tmp.get_ui(dev_mpfr::Rnd::Z);
+        tmp <<= 24;
+        let word = tmp
+            .to_u32_saturating_round(rug::float::Round::Zero)
+            .unwrap();
         print!("0x{word:06X},");
-        tmp.sub_ui(None, word, dev_mpfr::Rnd::N);
+        tmp -= word;
         if (i % words_per_line) == (words_per_line - 1) {
             println!();
         }
@@ -29,13 +28,10 @@ pub(crate) fn gen_frac_2_pi_large() {
 
 pub(crate) fn gen_frac_pi_2_medium() {
     let num_words = 8;
-    let mut tmp = dev_mpfr::Mpfr::new();
-    tmp.set_prec(num_words * 24);
-    tmp.const_pi(dev_mpfr::Rnd::N);
-    tmp.mul_f64(None, 0.5, dev_mpfr::Rnd::N);
+    let mut tmp = rug::Float::with_val(num_words * 24, rug::float::Constant::Pi) / 2u8;
 
     println!("const FRAC_PI_2_MEDIUM: &[u32] = &[");
-    tmp.mul_f64(None, 0.5, dev_mpfr::Rnd::N);
+    tmp /= 2u8;
     let words_per_line = 9;
     for i in 0..num_words {
         if (i % words_per_line) == 0 {
@@ -43,10 +39,12 @@ pub(crate) fn gen_frac_pi_2_medium() {
         } else {
             print!(" ");
         }
-        tmp.mul_2ui(None, 24, dev_mpfr::Rnd::N);
-        let word = tmp.get_ui(dev_mpfr::Rnd::Z);
+        tmp <<= 24;
+        let word = tmp
+            .to_u32_saturating_round(rug::float::Round::Zero)
+            .unwrap();
         print!("0x{word:06X},");
-        tmp.sub_ui(None, word, dev_mpfr::Rnd::N);
+        tmp -= word;
         if (i % words_per_line) == (words_per_line - 1) {
             println!();
         }

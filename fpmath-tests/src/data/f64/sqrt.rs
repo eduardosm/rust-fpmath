@@ -8,14 +8,11 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_sqrt",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(53 * 2);
-            tmp.set_f64(x, dev_mpfr::Rnd::N);
-            tmp.sqrt(None, dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(53 * 2, x).sqrt();
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,

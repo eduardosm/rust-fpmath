@@ -1,6 +1,5 @@
 // 2 / π ~= sum(FRAC_2_PI_LARGE[i] * 2^(-24 * (i + 1)))
-// Generated with `./run-generator.sh
-// common::reduce_pi_2_large::FRAC_2_PI_LARGE`.
+// Generated with `./run-generator.sh common::reduce_pi_2_large::FRAC_2_PI_LARGE`.
 const FRAC_2_PI_LARGE: &[u32] = &[
     0xA2F983, 0x6E4E44, 0x1529FC, 0x2757D1, 0xF534DD, 0xC0DB62, 0x95993C, 0x439041, 0xFE5163,
     0xABDEBB, 0xC561B7, 0x246E3A, 0x424DD2, 0xE00649, 0x2EEA09, 0xD1921C, 0xFE1DEB, 0x1CB129,
@@ -13,8 +12,7 @@ const FRAC_2_PI_LARGE: &[u32] = &[
 ];
 
 // π / 2 ~= sum(FRAC_PI_2_MEDIUM[i] * 2^(1 - 24 * (i + 1)))
-// Generated with `./run-generator.sh
-// common::reduce_pi_2_large::FRAC_PI_2_MEDIUM`.
+// Generated with `./run-generator.sh common::reduce_pi_2_large::FRAC_PI_2_MEDIUM`.
 const FRAC_PI_2_MEDIUM: &[u32] = &[
     0xC90FDA, 0xA22168, 0xC234C4, 0xC6628B, 0x80DC1C, 0xD12902, 0x4E088A, 0x67CC74,
 ];

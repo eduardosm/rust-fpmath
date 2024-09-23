@@ -1,25 +1,16 @@
-use super::{print_f32_const, split_hi_lo};
+use super::{print_f32_const, split_hi_lo, FPREC};
 use crate::sollya;
 
 pub(crate) fn gen_consts() {
-    let mut tmp = dev_mpfr::Mpfr::new();
-    tmp.set_prec(1024);
-
-    // tmp = cbrt(2)
-    tmp.set_ui(2, dev_mpfr::Rnd::N);
-    tmp.cbrt(None, dev_mpfr::Rnd::N);
-
+    // cbrt(2)
+    let mut tmp = rug::Float::with_val(FPREC, 2).cbrt();
     let (hi, lo) = split_hi_lo(&mut tmp, 12);
-
     print_f32_const("CBRT_2_HI", hi);
     print_f32_const("CBRT_2_LO", lo);
 
-    // tmp = cbrt(4)
-    tmp.set_ui(4, dev_mpfr::Rnd::N);
-    tmp.cbrt(None, dev_mpfr::Rnd::N);
-
+    // cbrt(4)
+    let mut tmp = rug::Float::with_val(FPREC, 4).cbrt();
     let (hi, lo) = split_hi_lo(&mut tmp, 12);
-
     print_f32_const("CBRT_4_HI", hi);
     print_f32_const("CBRT_4_LO", lo);
 }

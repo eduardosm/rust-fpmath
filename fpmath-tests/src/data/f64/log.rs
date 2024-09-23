@@ -8,14 +8,11 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_log",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(53 * 2);
-            tmp.set_f64(x, dev_mpfr::Rnd::N);
-            tmp.log(None, dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(53 * 2, x).ln();
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,
@@ -27,14 +24,11 @@ pub(crate) fn gen_data_2(pb: indicatif::ProgressBar) {
         "f64_log2",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(53 * 2);
-            tmp.set_f64(x, dev_mpfr::Rnd::N);
-            tmp.log2(None, dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(53 * 2, x).log2();
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,
@@ -46,14 +40,11 @@ pub(crate) fn gen_data_10(pb: indicatif::ProgressBar) {
         "f64_log10",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(53 * 2);
-            tmp.set_f64(x, dev_mpfr::Rnd::N);
-            tmp.log10(None, dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(53 * 2, x).log10();
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,

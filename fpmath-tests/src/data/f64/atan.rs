@@ -8,14 +8,11 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_atan",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(53 * 2);
-            tmp.set_f64(x, dev_mpfr::Rnd::N);
-            tmp.atan(None, dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(53 * 2, x).atan();
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,
@@ -23,24 +20,17 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
 }
 
 pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
-    let mut conv = dev_mpfr::Mpfr::new();
-    conv.set_prec(53 * 3);
-    conv.const_pi(dev_mpfr::Rnd::N);
-    conv.f64_div(180.0, None, dev_mpfr::Rnd::N);
+    let conv = 180u8 / rug::Float::with_val(53 * 3, rug::float::Constant::Pi);
 
     generate_data(
         "f64_atand",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(53 * 3);
-            tmp.set_f64(x, dev_mpfr::Rnd::N);
-            tmp.atan(None, dev_mpfr::Rnd::N);
-            tmp.mul(None, Some(&conv), dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(53 * 3, x).atan() * &conv;
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,
@@ -48,23 +38,15 @@ pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
 }
 
 pub(crate) fn gen_data_pi(pb: indicatif::ProgressBar) {
-    let mut conv = dev_mpfr::Mpfr::new();
-    conv.set_prec(53 * 3);
-    conv.const_pi(dev_mpfr::Rnd::N);
-
     generate_data(
         "f64_atanpi",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(53 * 3);
-            tmp.set_f64(x, dev_mpfr::Rnd::N);
-            tmp.atan(None, dev_mpfr::Rnd::N);
-            tmp.div(None, Some(&conv), dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(53 * 2, x).atan_pi();
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,

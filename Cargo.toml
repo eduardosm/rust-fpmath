@@ -24,11 +24,9 @@ rustc_apfloat = { optional = true, version = "0.2.1" }
 
 [workspace]
 members = [
-    "dev-mpfr",
     "fpmath-tests",
     "generator",
 ]
 
 [workspace.dependencies]
 fpmath = { path = "." }
-dev-mpfr = { path = "dev-mpfr" }

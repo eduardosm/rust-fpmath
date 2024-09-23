@@ -15,22 +15,14 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f32_exp",
         gen_args,
         |x| {
-            let mut bigx = dev_mpfr::Mpfr::new();
-            bigx.set_prec(24);
-            bigx.set_f32(x, dev_mpfr::Rnd::N);
-
-            let mut tmp_exp = dev_mpfr::Mpfr::new();
-            tmp_exp.set_prec(24 * 2);
-            tmp_exp.exp(Some(&bigx), dev_mpfr::Rnd::N);
-
-            let mut tmp_expm1 = dev_mpfr::Mpfr::new();
-            tmp_expm1.set_prec(24 * 2);
-            tmp_expm1.expm1(Some(&bigx), dev_mpfr::Rnd::N);
+            let bigx = rug::Float::with_val(24, x);
+            let tmp_exp = rug::Float::with_val(24 * 2, bigx.exp_ref());
+            let tmp_expm1 = rug::Float::with_val(24 * 2, bigx.exp_m1_ref());
 
             ExpExpM1Data {
                 x,
-                expected_exp: RefResult::from_mpfr(&mut tmp_exp),
-                expected_expm1: RefResult::from_mpfr(&mut tmp_expm1),
+                expected_exp: RefResult::from_rug(tmp_exp),
+                expected_expm1: RefResult::from_rug(tmp_expm1),
             }
         },
         pb,
@@ -42,14 +34,11 @@ pub(crate) fn gen_data_2(pb: indicatif::ProgressBar) {
         "f32_exp2",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(24 * 2);
-            tmp.set_f32(x, dev_mpfr::Rnd::N);
-            tmp.exp2(None, dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(24 * 2, x).exp2();
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,
@@ -61,14 +50,11 @@ pub(crate) fn gen_data_10(pb: indicatif::ProgressBar) {
         "f32_exp10",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(24 * 2);
-            tmp.set_f32(x, dev_mpfr::Rnd::N);
-            tmp.exp10(None, dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(24 * 2, x).exp10();
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,

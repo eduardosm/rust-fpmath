@@ -8,14 +8,11 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f32_log_1p",
         gen_args,
         |x| {
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(24 * 2);
-            tmp.set_f32(x, dev_mpfr::Rnd::N);
-            tmp.log1p(None, dev_mpfr::Rnd::N);
+            let tmp = rug::Float::with_val(24 * 2, x).ln_1p();
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,

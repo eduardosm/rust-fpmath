@@ -15,23 +15,14 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_asin_acos",
         gen_args,
         |x| {
-            let mut tmp_arg = dev_mpfr::Mpfr::new();
-            tmp_arg.set_prec(53);
-            tmp_arg.set_f64(x, dev_mpfr::Rnd::N);
-
-            let mut tmp_asin = dev_mpfr::Mpfr::new();
-            tmp_asin.set_prec(53 * 2);
-
-            let mut tmp_acos = dev_mpfr::Mpfr::new();
-            tmp_acos.set_prec(53 * 2);
-
-            tmp_asin.asin(Some(&tmp_arg), dev_mpfr::Rnd::N);
-            tmp_acos.acos(Some(&tmp_arg), dev_mpfr::Rnd::N);
+            let bigx = rug::Float::with_val(53, x);
+            let tmp_asin = rug::Float::with_val(53 * 2, bigx.asin_ref());
+            let tmp_acos = rug::Float::with_val(53 * 2, bigx.acos_ref());
 
             Data {
                 x,
-                expected_asin: RefResult::from_mpfr(&mut tmp_asin),
-                expected_acos: RefResult::from_mpfr(&mut tmp_acos),
+                expected_asin: RefResult::from_rug(tmp_asin),
+                expected_acos: RefResult::from_rug(tmp_acos),
             }
         },
         pb,
@@ -39,35 +30,20 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
 }
 
 pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
-    let mut conv = dev_mpfr::Mpfr::new();
-    conv.set_prec(53 * 3);
-    conv.const_pi(dev_mpfr::Rnd::N);
-    conv.f64_div(180.0, None, dev_mpfr::Rnd::N);
+    let conv = 180u8 / rug::Float::with_val(53 * 3, rug::float::Constant::Pi);
 
     generate_data(
         "f64_asind_acosd",
         gen_args,
         |x| {
-            let mut tmp_arg = dev_mpfr::Mpfr::new();
-            tmp_arg.set_prec(53);
-            tmp_arg.set_f64(x, dev_mpfr::Rnd::N);
-
-            let mut tmp_asin = dev_mpfr::Mpfr::new();
-            tmp_asin.set_prec(53 * 3);
-
-            let mut tmp_acos = dev_mpfr::Mpfr::new();
-            tmp_acos.set_prec(53 * 3);
-
-            tmp_asin.asin(Some(&tmp_arg), dev_mpfr::Rnd::N);
-            tmp_acos.acos(Some(&tmp_arg), dev_mpfr::Rnd::N);
-
-            tmp_asin.mul(None, Some(&conv), dev_mpfr::Rnd::N);
-            tmp_acos.mul(None, Some(&conv), dev_mpfr::Rnd::N);
+            let bigx = rug::Float::with_val(53, x);
+            let tmp_asin = rug::Float::with_val(53 * 3, bigx.asin_ref()) * &conv;
+            let tmp_acos = rug::Float::with_val(53 * 3, bigx.acos_ref()) * &conv;
 
             Data {
                 x,
-                expected_asin: RefResult::from_mpfr(&mut tmp_asin),
-                expected_acos: RefResult::from_mpfr(&mut tmp_acos),
+                expected_asin: RefResult::from_rug(tmp_asin),
+                expected_acos: RefResult::from_rug(tmp_acos),
             }
         },
         pb,
@@ -75,34 +51,18 @@ pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
 }
 
 pub(crate) fn gen_data_pi(pb: indicatif::ProgressBar) {
-    let mut conv = dev_mpfr::Mpfr::new();
-    conv.set_prec(53 * 3);
-    conv.const_pi(dev_mpfr::Rnd::N);
-
     generate_data(
         "f64_asinpi_acospi",
         gen_args,
         |x| {
-            let mut tmp_arg = dev_mpfr::Mpfr::new();
-            tmp_arg.set_prec(53);
-            tmp_arg.set_f64(x, dev_mpfr::Rnd::N);
-
-            let mut tmp_asin = dev_mpfr::Mpfr::new();
-            tmp_asin.set_prec(53 * 3);
-
-            let mut tmp_acos = dev_mpfr::Mpfr::new();
-            tmp_acos.set_prec(53 * 3);
-
-            tmp_asin.asin(Some(&tmp_arg), dev_mpfr::Rnd::N);
-            tmp_acos.acos(Some(&tmp_arg), dev_mpfr::Rnd::N);
-
-            tmp_asin.div(None, Some(&conv), dev_mpfr::Rnd::N);
-            tmp_acos.div(None, Some(&conv), dev_mpfr::Rnd::N);
+            let bigx = rug::Float::with_val(53, x);
+            let tmp_asin = rug::Float::with_val(53 * 2, bigx.asin_pi_ref());
+            let tmp_acos = rug::Float::with_val(53 * 2, bigx.acos_pi_ref());
 
             Data {
                 x,
-                expected_asin: RefResult::from_mpfr(&mut tmp_asin),
-                expected_acos: RefResult::from_mpfr(&mut tmp_acos),
+                expected_asin: RefResult::from_rug(tmp_asin),
+                expected_acos: RefResult::from_rug(tmp_acos),
             }
         },
         pb,

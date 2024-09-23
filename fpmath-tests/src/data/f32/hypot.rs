@@ -8,22 +8,14 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f32_hypot",
         gen_args,
         |(x, y)| {
-            let mut bigx = dev_mpfr::Mpfr::new();
-            bigx.set_prec(24);
-            bigx.set_f32(x, dev_mpfr::Rnd::N);
-
-            let mut bigy = dev_mpfr::Mpfr::new();
-            bigy.set_prec(24);
-            bigy.set_f32(y, dev_mpfr::Rnd::N);
-
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(24 * 2);
-            tmp.hypot(&bigx, &bigy, dev_mpfr::Rnd::N);
+            let bigx = rug::Float::with_val(24, x);
+            let bigy = rug::Float::with_val(24, y);
+            let tmp = rug::Float::with_val(24 * 2, bigx.hypot_ref(&bigy));
 
             super::TwoArgData {
                 x,
                 y,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,
