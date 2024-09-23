@@ -49,7 +49,6 @@ if [[ "$(grep img.shields.io/badge/rustc README.md)" != *"rustc-$msrv+-lightgray
 fi
 
 crates=(
-  "dev-mpfr"
   "fpmath"
   "fpmath-tests"
   "generator"

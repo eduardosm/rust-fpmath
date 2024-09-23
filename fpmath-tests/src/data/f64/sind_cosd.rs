@@ -4,37 +4,18 @@ use super::{mkfloat, RefResult};
 use crate::data::{create_prng, generate_data};
 
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
-    let mut k_360 = dev_mpfr::Mpfr::new();
-    k_360.set_prec(128);
-    k_360.set_ui(360, dev_mpfr::Rnd::N);
-
-    let mut conv = dev_mpfr::Mpfr::new();
-    conv.set_prec(2048);
-    conv.const_pi(dev_mpfr::Rnd::N);
-    conv.div_f64(None, 180.0, dev_mpfr::Rnd::N);
-
     generate_data(
         "f64_sind_cosd",
         gen_args,
         |x| {
-            let mut tmp_arg = dev_mpfr::Mpfr::new();
-            tmp_arg.set_prec(2048);
-            tmp_arg.set_f64(x, dev_mpfr::Rnd::N);
-            tmp_arg.fmod(None, Some(&k_360), dev_mpfr::Rnd::N);
-            tmp_arg.mul(Some(&conv), None, dev_mpfr::Rnd::N);
-
-            let mut tmp_sin = dev_mpfr::Mpfr::new();
-            tmp_sin.set_prec(53 * 2);
-
-            let mut tmp_cos = dev_mpfr::Mpfr::new();
-            tmp_cos.set_prec(53 * 2);
-
-            tmp_arg.sin_cos(&mut tmp_sin, &mut tmp_cos, dev_mpfr::Rnd::N);
+            let tmp_arg = (rug::Float::with_val(53 * 3, x) % 360u16) / 180u8;
+            let tmp_sin = rug::Float::with_val(53 * 2, tmp_arg.sin_pi_ref());
+            let tmp_cos = rug::Float::with_val(53 * 2, tmp_arg.cos_pi_ref());
 
             super::SinCosData {
                 x,
-                expected_sin: RefResult::from_mpfr(&mut tmp_sin),
-                expected_cos: RefResult::from_mpfr(&mut tmp_cos),
+                expected_sin: RefResult::from_rug(tmp_sin),
+                expected_cos: RefResult::from_rug(tmp_cos),
             }
         },
         pb,

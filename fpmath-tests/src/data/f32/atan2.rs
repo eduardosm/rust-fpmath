@@ -8,22 +8,14 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f32_atan2",
         gen_args,
         |(x, y)| {
-            let mut bigx = dev_mpfr::Mpfr::new();
-            bigx.set_prec(24);
-            bigx.set_f32(x, dev_mpfr::Rnd::N);
-
-            let mut bigy = dev_mpfr::Mpfr::new();
-            bigy.set_prec(24);
-            bigy.set_f32(y, dev_mpfr::Rnd::N);
-
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(24 * 2);
-            tmp.atan2(&bigx, &bigy, dev_mpfr::Rnd::N);
+            let bigx = rug::Float::with_val(24, x);
+            let bigy = rug::Float::with_val(24, y);
+            let tmp = rug::Float::with_val(24 * 2, bigx.atan2_ref(&bigy));
 
             super::TwoArgData {
                 x,
                 y,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,
@@ -31,32 +23,20 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
 }
 
 pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
-    let mut conv = dev_mpfr::Mpfr::new();
-    conv.set_prec(24 * 3);
-    conv.const_pi(dev_mpfr::Rnd::N);
-    conv.f64_div(180.0, None, dev_mpfr::Rnd::N);
+    let conv = 180u8 / rug::Float::with_val(24 * 3, rug::float::Constant::Pi);
 
     generate_data(
         "f32_atan2d",
         gen_args,
         |(x, y)| {
-            let mut bigx = dev_mpfr::Mpfr::new();
-            bigx.set_prec(24);
-            bigx.set_f32(x, dev_mpfr::Rnd::N);
-
-            let mut bigy = dev_mpfr::Mpfr::new();
-            bigy.set_prec(24);
-            bigy.set_f32(y, dev_mpfr::Rnd::N);
-
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(24 * 3);
-            tmp.atan2(&bigx, &bigy, dev_mpfr::Rnd::N);
-            tmp.mul(None, Some(&conv), dev_mpfr::Rnd::N);
+            let bigx = rug::Float::with_val(24, x);
+            let bigy = rug::Float::with_val(24, y);
+            let tmp = rug::Float::with_val(24 * 3, bigx.atan2_ref(&bigy)) * &conv;
 
             super::TwoArgData {
                 x,
                 y,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,
@@ -64,31 +44,18 @@ pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
 }
 
 pub(crate) fn gen_data_pi(pb: indicatif::ProgressBar) {
-    let mut conv = dev_mpfr::Mpfr::new();
-    conv.set_prec(24 * 3);
-    conv.const_pi(dev_mpfr::Rnd::N);
-
     generate_data(
         "f32_atan2pi",
         gen_args,
         |(x, y)| {
-            let mut bigx = dev_mpfr::Mpfr::new();
-            bigx.set_prec(24);
-            bigx.set_f32(x, dev_mpfr::Rnd::N);
-
-            let mut bigy = dev_mpfr::Mpfr::new();
-            bigy.set_prec(24);
-            bigy.set_f32(y, dev_mpfr::Rnd::N);
-
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(24 * 3);
-            tmp.atan2(&bigx, &bigy, dev_mpfr::Rnd::N);
-            tmp.div(None, Some(&conv), dev_mpfr::Rnd::N);
+            let bigx = rug::Float::with_val(24, x);
+            let bigy = rug::Float::with_val(24, y);
+            let tmp = rug::Float::with_val(24 * 2, bigx.atan2_pi_ref(&bigy));
 
             super::TwoArgData {
                 x,
                 y,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,

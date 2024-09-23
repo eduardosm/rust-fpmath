@@ -1,25 +1,16 @@
-use super::{print_f64_const, split_hi_lo};
+use super::{print_f64_const, split_hi_lo, FPREC};
 use crate::sollya;
 
 pub(crate) fn gen_consts() {
-    let mut tmp = dev_mpfr::Mpfr::new();
-    tmp.set_prec(1024);
-
-    // tmp = π/2
-    tmp.const_pi(dev_mpfr::Rnd::N);
-    tmp.div_f64(None, 2.0, dev_mpfr::Rnd::N);
-
+    // π/2
+    let mut tmp = rug::Float::with_val(FPREC, rug::float::Constant::Pi) / 2u8;
     let (hi, lo) = split_hi_lo(&mut tmp, 0);
-
     print_f64_const("FRAC_PI_2_HI", hi);
     print_f64_const("FRAC_PI_2_LO", lo);
 
-    // tmp = 3π/4
-    tmp.const_pi(dev_mpfr::Rnd::N);
-    tmp.mul_f64(None, 0.75, dev_mpfr::Rnd::N);
-
-    let v = tmp.get_f64(dev_mpfr::Rnd::N);
-
+    // 3π/4
+    let tmp = rug::Float::with_val(FPREC, rug::float::Constant::Pi) * 0.75f32;
+    let v = tmp.to_f64();
     print_f64_const("FRAC_3PI_4", v);
 }
 

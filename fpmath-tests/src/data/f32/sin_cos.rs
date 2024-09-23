@@ -8,22 +8,13 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f32_sin_cos",
         gen_args,
         |x| {
-            let mut tmp_arg = dev_mpfr::Mpfr::new();
-            tmp_arg.set_prec(24);
-            tmp_arg.set_f32(x, dev_mpfr::Rnd::N);
-
-            let mut tmp_sin = dev_mpfr::Mpfr::new();
-            tmp_sin.set_prec(24 * 2);
-
-            let mut tmp_cos = dev_mpfr::Mpfr::new();
-            tmp_cos.set_prec(24 * 2);
-
-            tmp_arg.sin_cos(&mut tmp_sin, &mut tmp_cos, dev_mpfr::Rnd::N);
+            let (tmp_sin, tmp_cos) =
+                rug::Float::with_val(24 * 2, x).sin_cos(rug::Float::new(24 * 2));
 
             super::SinCosData {
                 x,
-                expected_sin: RefResult::from_mpfr(&mut tmp_sin),
-                expected_cos: RefResult::from_mpfr(&mut tmp_cos),
+                expected_sin: RefResult::from_rug(tmp_sin),
+                expected_cos: RefResult::from_rug(tmp_cos),
             }
         },
         pb,

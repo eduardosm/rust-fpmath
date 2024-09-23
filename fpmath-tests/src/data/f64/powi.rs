@@ -10,28 +10,19 @@ pub(crate) struct Data {
     pub(crate) expected: RefResult,
 }
 
-#[allow(clippy::unnecessary_fallible_conversions)]
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
     generate_data(
         "f64_powi",
         gen_args,
         |(x, y)| {
-            let mut bigx = dev_mpfr::Mpfr::new();
-            bigx.set_prec(53);
-            bigx.set_f64(x, dev_mpfr::Rnd::N);
-
-            let mut bigy = dev_mpfr::Mpfr::new();
-            bigy.set_prec(32);
-            bigy.set_si(y.try_into().unwrap(), dev_mpfr::Rnd::N);
-
-            let mut tmp = dev_mpfr::Mpfr::new();
-            tmp.set_prec(53 * 2);
-            tmp.pow(&bigx, &bigy, dev_mpfr::Rnd::N);
+            let bigx = rug::Float::with_val(53, x);
+            let bigy = rug::Float::with_val(32, y);
+            let tmp = rug::Float::with_val(53 * 2, rug::ops::Pow::pow(&bigx, &bigy));
 
             Data {
                 x,
                 y,
-                expected: RefResult::from_mpfr(&mut tmp),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,

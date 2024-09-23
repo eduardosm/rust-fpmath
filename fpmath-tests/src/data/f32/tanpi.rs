@@ -2,36 +2,26 @@ use super::{sind_cosd::gen_args, RefResult};
 use crate::data::generate_data;
 
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
-    let mut k_2 = dev_mpfr::Mpfr::new();
-    k_2.set_prec(64);
-    k_2.set_ui(2, dev_mpfr::Rnd::N);
-
-    let mut conv = dev_mpfr::Mpfr::new();
-    conv.set_prec(512);
-    conv.const_pi(dev_mpfr::Rnd::N);
-
     generate_data(
         "f32_tanpi",
         gen_args,
         |x| {
-            let mut tmp_arg = dev_mpfr::Mpfr::new();
-            tmp_arg.set_prec(512);
-            tmp_arg.set_f32(x, dev_mpfr::Rnd::N);
-            tmp_arg.fmod(None, Some(&k_2), dev_mpfr::Rnd::N);
-            tmp_arg.mul(Some(&conv), None, dev_mpfr::Rnd::N);
+            let mut tmp = rug::Float::with_val(24 * 2, x).tan_pi();
 
-            let mut tmp_tan = dev_mpfr::Mpfr::new();
-            tmp_tan.set_prec(24 * 2);
-            tmp_tan.set_f32(x, dev_mpfr::Rnd::N);
-            tmp_tan.tan(Some(&tmp_arg), dev_mpfr::Rnd::N);
-
-            if tmp_tan.get_f32(dev_mpfr::Rnd::N).abs() > f32::MAX {
-                tmp_tan.set_inf(x.is_sign_negative());
+            if !(f32::MIN..=f32::MAX).contains(&tmp) {
+                rug::Assign::assign(
+                    &mut tmp,
+                    if x.is_sign_positive() {
+                        rug::float::Special::Infinity
+                    } else {
+                        rug::float::Special::NegInfinity
+                    },
+                );
             }
 
             super::OneArgData {
                 x,
-                expected: RefResult::from_mpfr(&mut tmp_tan),
+                expected: RefResult::from_rug(tmp),
             }
         },
         pb,

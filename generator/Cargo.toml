@@ -6,5 +6,12 @@ rust-version = "1.70"
 license = "MIT OR Apache-2.0"
 publish = false
 
-[dependencies]
-dev-mpfr = { workspace = true }
+[dependencies.rug]
+version = "1.26.1"
+default-features = false
+features = ["float", "integer", "std"]
+
+[dependencies.gmp-mpfr-sys]
+version = "1.6.4"
+default-features = false
+features = ["force-cross"] # needed for i586 support

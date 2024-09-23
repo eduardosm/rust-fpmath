@@ -37,45 +37,41 @@ pub(crate) struct RefResult {
 }
 
 impl RefResult {
-    pub(crate) fn from_mpfr(tmp: &mut dev_mpfr::Mpfr) -> Self {
+    pub(crate) fn from_rug(mut tmp: rug::Float) -> Self {
         if tmp.is_nan() {
             Self {
                 exp: 0,
                 hi: f64::NAN,
                 lo: f64::NAN,
             }
-        } else if tmp.cmp_f64(f64::MAX).is_gt() {
+        } else if tmp > f64::MAX {
             Self {
                 exp: 0,
                 hi: f64::INFINITY,
                 lo: f64::INFINITY,
             }
-        } else if tmp.cmp_f64(f64::MIN).is_lt() {
+        } else if tmp < f64::MIN {
             Self {
                 exp: 0,
                 hi: f64::NEG_INFINITY,
                 lo: f64::NEG_INFINITY,
             }
-        } else if tmp.sgn() == 0 {
+        } else if tmp.is_zero() {
             Self {
                 exp: 0,
                 hi: 0.0,
                 lo: 0.0,
             }
         } else {
-            let e_real = tmp.get_exp();
+            let e_real = tmp.get_exp().unwrap();
             let e_sat = e_real.max(-1022);
-            tmp.set_exp(e_real - e_sat);
+            tmp >>= e_sat;
 
-            let hi = tmp.get_f64(dev_mpfr::Rnd::Z);
-            tmp.sub_f64(None, hi, dev_mpfr::Rnd::N);
-            let lo = tmp.get_f64(dev_mpfr::Rnd::N);
+            let hi = tmp.to_f64_round(rug::float::Round::Zero);
+            tmp -= hi;
+            let lo = tmp.to_f64();
 
-            Self {
-                exp: e_sat.try_into().unwrap(),
-                hi,
-                lo,
-            }
+            Self { exp: e_sat, hi, lo }
         }
     }
 

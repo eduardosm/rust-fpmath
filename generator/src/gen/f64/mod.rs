@@ -15,11 +15,13 @@ pub(crate) mod reduce_pi_2;
 pub(crate) mod sin_cos;
 pub(crate) mod tan;
 
-fn split_hi_lo(tmp: &mut dev_mpfr::Mpfr, n_zeros_in_hi: u8) -> (f64, f64) {
-    let hi = tmp.get_f64(dev_mpfr::Rnd::Z);
+const FPREC: u32 = 1024;
+
+fn split_hi_lo(tmp: &mut rug::Float, n_zeros_in_hi: u8) -> (f64, f64) {
+    let hi = tmp.to_f64_round(rug::float::Round::Zero);
     let hi = f64::from_bits(hi.to_bits() & (u64::MAX << n_zeros_in_hi));
-    tmp.sub_f64(None, hi, dev_mpfr::Rnd::N);
-    let lo = tmp.get_f64(dev_mpfr::Rnd::N);
+    *tmp -= hi;
+    let lo = tmp.to_f64();
     (hi, lo)
 }
 
@@ -31,40 +33,28 @@ fn print_f64_const<N: std::fmt::Display>(name: N, value: f64) {
 }
 
 pub(crate) fn gen_consts() {
-    let mut tmp = dev_mpfr::Mpfr::new();
-    tmp.set_prec(1024);
-
-    // tmp = π
-    tmp.const_pi(dev_mpfr::Rnd::N);
-
-    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    // π
+    let tmp = rug::Float::with_val(FPREC, rug::float::Constant::Pi);
+    let v = tmp.to_f64();
     print_f64_const("PI", v);
 
-    // tmp = π/2
-    tmp.const_pi(dev_mpfr::Rnd::N);
-    tmp.div_f64(None, 2.0, dev_mpfr::Rnd::N);
-
-    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    // π/2
+    let tmp = rug::Float::with_val(FPREC, rug::float::Constant::Pi) / 2u8;
+    let v = tmp.to_f64();
     print_f64_const("FRAC_PI_2", v);
 
-    // tmp = π/4
-    tmp.const_pi(dev_mpfr::Rnd::N);
-    tmp.div_f64(None, 4.0, dev_mpfr::Rnd::N);
-
-    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    // π/4
+    let tmp = rug::Float::with_val(FPREC, rug::float::Constant::Pi) / 4u8;
+    let v = tmp.to_f64();
     print_f64_const("FRAC_PI_4", v);
 
-    // tmp = 1/π
-    tmp.const_pi(dev_mpfr::Rnd::N);
-    tmp.f64_div(1.0, None, dev_mpfr::Rnd::N);
-
-    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    // 1/π
+    let tmp = 1u8 / rug::Float::with_val(FPREC, rug::float::Constant::Pi);
+    let v = tmp.to_f64();
     print_f64_const("FRAC_1_PI", v);
 
-    // tmp = 2/π
-    tmp.const_pi(dev_mpfr::Rnd::N);
-    tmp.f64_div(2.0, None, dev_mpfr::Rnd::N);
-
-    let v = tmp.get_f64(dev_mpfr::Rnd::N);
+    // 2/π
+    let tmp = 2u8 / rug::Float::with_val(FPREC, rug::float::Constant::Pi);
+    let v = tmp.to_f64();
     print_f64_const("FRAC_2_PI", v);
 }

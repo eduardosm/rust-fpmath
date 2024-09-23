@@ -1,42 +1,27 @@
-use super::{print_f64_const, split_hi_lo};
+use super::{print_f64_const, split_hi_lo, FPREC};
 use crate::sollya;
 
 pub(crate) fn gen_consts() {
-    let mut tmp = dev_mpfr::Mpfr::new();
-    tmp.set_prec(1024);
-
-    // tmp = sqrt(2)
-    tmp.set_ui(2, dev_mpfr::Rnd::N);
-    tmp.sqrt(None, dev_mpfr::Rnd::N);
-
-    let v = tmp.get_f64(dev_mpfr::Rnd::N);
-
+    // sqrt(2)
+    let tmp = rug::Float::with_val(FPREC, 2).sqrt();
+    let v = tmp.to_f64();
     print_f64_const("SQRT_2", v);
 
-    // tmp = ln(2)
-    tmp.set_ui(2, dev_mpfr::Rnd::N);
-    tmp.log(None, dev_mpfr::Rnd::N);
-
+    // ln(2)
+    let mut tmp = rug::Float::with_val(FPREC, rug::float::Constant::Log2);
     let (hi, lo) = split_hi_lo(&mut tmp, 27);
-
     print_f64_const("LN_2_HI", hi);
     print_f64_const("LN_2_LO", lo);
 
-    // tmp = 2 / 3
-    tmp.set_ui(2, dev_mpfr::Rnd::N);
-    tmp.div_f64(None, 3.0, dev_mpfr::Rnd::N);
-
+    // 2 / 3
+    let mut tmp = rug::Float::with_val(FPREC, 2) / 3u8;
     let (hi, lo) = split_hi_lo(&mut tmp, 0);
-
     print_f64_const("FRAC_2_3_HI", hi);
     print_f64_const("FRAC_2_3_LO", lo);
 
-    // tmp = 0.4
-    tmp.set_ui(4, dev_mpfr::Rnd::N);
-    tmp.div_f64(None, 10.0, dev_mpfr::Rnd::N);
-
+    // 0.4
+    let mut tmp = rug::Float::with_val(FPREC, 4) / 10u8;
     let (hi, lo) = split_hi_lo(&mut tmp, 0);
-
     print_f64_const("FRAC_4_10_HI", hi);
     print_f64_const("FRAC_4_10_LO", lo);
 }
