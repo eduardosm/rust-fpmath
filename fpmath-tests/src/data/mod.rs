@@ -1,42 +1,9 @@
 use std::io::Write as _;
 use std::path::PathBuf;
 
-pub(crate) mod f32;
 pub(crate) mod f64;
 
 pub(crate) const GEN_FUNCTIONS: &[(&str, fn(indicatif::ProgressBar))] = &[
-    ("f32::acosh", f32::acosh::gen_data),
-    ("f32::asin_acos", f32::asin_acos::gen_data),
-    ("f32::asind_acosd", f32::asin_acos::gen_data_d),
-    ("f32::asinh", f32::asinh::gen_data),
-    ("f32::asinpi_acospi", f32::asin_acos::gen_data_pi),
-    ("f32::atan", f32::atan::gen_data),
-    ("f32::atan2", f32::atan2::gen_data),
-    ("f32::atan2d", f32::atan2::gen_data_d),
-    ("f32::atan2pi", f32::atan2::gen_data_pi),
-    ("f32::atand", f32::atan::gen_data_d),
-    ("f32::atanh", f32::atanh::gen_data),
-    ("f32::atanpi", f32::atan::gen_data_pi),
-    ("f32::cbrt", f32::cbrt::gen_data),
-    ("f32::exp", f32::exp::gen_data),
-    ("f32::exp10", f32::exp::gen_data_10),
-    ("f32::exp2", f32::exp::gen_data_2),
-    ("f32::hypot", f32::hypot::gen_data),
-    ("f32::log", f32::log::gen_data),
-    ("f32::log10", f32::log::gen_data_10),
-    ("f32::log2", f32::log::gen_data_2),
-    ("f32::log_1p", f32::log_1p::gen_data),
-    ("f32::pow", f32::pow::gen_data),
-    ("f32::powi", f32::powi::gen_data),
-    ("f32::sin_cos", f32::sin_cos::gen_data),
-    ("f32::sind_cosd", f32::sind_cosd::gen_data),
-    ("f32::sinh_cosh", f32::sinh_cosh::gen_data),
-    ("f32::sinpi_cospi", f32::sinpi_cospi::gen_data),
-    ("f32::sqrt", f32::sqrt::gen_data),
-    ("f32::tan", f32::tan::gen_data),
-    ("f32::tand", f32::tand::gen_data),
-    ("f32::tanh", f32::tanh::gen_data),
-    ("f32::tanpi", f32::tanpi::gen_data),
     ("f64::acosh", f64::acosh::gen_data),
     ("f64::asin_acos", f64::asin_acos::gen_data),
     ("f64::asind_acosd", f64::asin_acos::gen_data_d),

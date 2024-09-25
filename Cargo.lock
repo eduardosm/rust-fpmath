@@ -76,6 +76,7 @@ dependencies = [
  "rand",
  "rand_pcg",
  "rug",
+ "rustc_apfloat",
 ]
 
 [[package]]
