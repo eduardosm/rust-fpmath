@@ -5,7 +5,7 @@
     unreachable_pub,
     unused_qualifications
 )]
-#![allow(clippy::type_complexity)]
+#![allow(clippy::neg_cmp_op_on_partial_ord, clippy::type_complexity)]
 #![forbid(unsafe_code)]
 
 use std::collections::{BTreeSet, HashMap};
