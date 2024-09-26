@@ -791,7 +791,7 @@ fn test_tanh() {
     assert!(max_error > 0.5);
 }
 
-pub(super) fn test_round_with(test_f: fn(f64)) {
+fn test_round_with(test_f: fn(f64)) {
     use rand::Rng as _;
 
     let mut rng = crate::data::create_prng();
