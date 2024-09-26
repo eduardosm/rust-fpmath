@@ -13,15 +13,14 @@ mod trigonometric_pi;
 mod trigonometric_rad;
 
 #[derive(Debug)]
-pub(crate) struct RefResult {
+struct RefResult {
     exp: i32,
     hi: f32,
     lo: f32,
 }
 
 impl RefResult {
-    #[cfg(test)]
-    pub(crate) fn from_f64(value: f64) -> Self {
+    fn from_f64(value: f64) -> Self {
         use rustc_apfloat::ieee::{Double, Single};
         use rustc_apfloat::Float as _;
         use rustc_apfloat::FloatConvert as _;
@@ -71,8 +70,7 @@ impl RefResult {
         }
     }
 
-    #[cfg(test)]
-    pub(crate) fn calc_error(&self, actual: f32) -> f32 {
+    fn calc_error(&self, actual: f32) -> f32 {
         // Use MIN/MAX instead of infinity because with x87 there can be
         // non-infinity values greater than MAX/less than MIN.
         if actual.is_nan() || self.hi.is_nan() {
@@ -99,7 +97,7 @@ impl RefResult {
     }
 }
 
-pub(crate) fn mkfloat(m: u32, e: i16, s: bool) -> f32 {
+fn mkfloat(m: u32, e: i16, s: bool) -> f32 {
     let m = m >> (32 - 23);
     let e = u32::from((e + 127) as u16) << 23;
     let s = u32::from(s) << 31;
