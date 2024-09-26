@@ -29,14 +29,16 @@ fn test_asin_acos() {
             max_acos_error = max_acos_error.max(acos_err);
 
             let asin_threshold = select_threshold(actual_asin, 0.9, 1.9);
-            if asin_err > asin_threshold {
-                panic!("asin({x:e}) = {actual_asin:e} (error = {asin_err} ULP)");
-            }
+            assert!(
+                asin_err < asin_threshold,
+                "asin({x:e}) = {actual_asin:e} (error = {asin_err} ULP)",
+            );
 
             let acos_threshold = select_threshold(actual_acos, 0.9, 1.9);
-            if acos_err > acos_threshold {
-                panic!("acos({x:e}) = {actual_acos:e} (error = {acos_err} ULP)");
-            }
+            assert!(
+                acos_err < acos_threshold,
+                "acos({x:e}) = {actual_acos:e} (error = {acos_err} ULP)",
+            );
         },
     );
     eprintln!("max asin error = {max_asin_error}");
@@ -66,14 +68,16 @@ fn test_asind_acosd() {
             max_acos_error = max_acos_error.max(acos_err);
 
             let asin_threshold = select_threshold(actual_asin, 0.9, 1.9);
-            if asin_err > asin_threshold {
-                panic!("asind({x:e}) = {actual_asin:e} (error = {asin_err} ULP)");
-            }
+            assert!(
+                asin_err < asin_threshold,
+                "asind({x:e}) = {actual_asin:e} (error = {asin_err} ULP)",
+            );
 
             let acos_threshold = select_threshold(actual_acos, 0.9, 1.9);
-            if acos_err > acos_threshold {
-                panic!("acosd({x:e}) = {actual_acos:e} (error = {acos_err} ULP)");
-            }
+            assert!(
+                acos_err < acos_threshold,
+                "acosd({x:e}) = {actual_acos:e} (error = {acos_err} ULP)",
+            );
         },
     );
     eprintln!("max asind error = {max_asin_error}");
@@ -103,14 +107,16 @@ fn test_asinpi_acospi() {
             max_acos_error = max_acos_error.max(acos_err);
 
             let asin_threshold = select_threshold(actual_asin, 0.9, 1.9);
-            if asin_err > asin_threshold {
-                panic!("asinpi({x:e}) = {actual_asin:e} (error = {asin_err} ULP)");
-            }
+            assert!(
+                asin_err < asin_threshold,
+                "asinpi({x:e}) = {actual_asin:e} (error = {asin_err} ULP)",
+            );
 
             let acos_threshold = select_threshold(actual_acos, 0.9, 1.9);
-            if acos_err > acos_threshold {
-                panic!("acospi({x:e}) = {actual_acos:e} (error = {acos_err} ULP)");
-            }
+            assert!(
+                acos_err < acos_threshold,
+                "acospi({x:e}) = {actual_acos:e} (error = {acos_err} ULP)",
+            );
         },
     );
     eprintln!("max asinpi error = {max_asin_error}");
@@ -128,9 +134,7 @@ fn test_atan() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err >= 0.9 {
-            panic!("atan({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "atan({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max atan error = {max_error}");
     assert!(max_error > 0.5);
@@ -145,9 +149,7 @@ fn test_atand() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err >= 0.9 {
-            panic!("atand({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "atand({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max atand error = {max_error}");
     assert!(max_error > 0.5);
@@ -163,9 +165,10 @@ fn test_atanpi() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err >= threshold {
-            panic!("atanpi({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "atanpi({x:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max atanpi error = {max_error}");
     assert!(max_error > 0.5);
@@ -181,9 +184,10 @@ fn test_atan2() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err > threshold {
-            panic!("atan2({x:e}, {y:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "atan2({x:e}, {y:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max atan2 error = {max_error}");
     assert!(max_error > 0.5);
@@ -199,9 +203,10 @@ fn test_atan2d() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err > threshold {
-            panic!("atan2d({x:e}, {y:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "atan2d({x:e}, {y:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max atan2d error = {max_error}");
     assert!(max_error > 0.5);
@@ -217,9 +222,10 @@ fn test_atan2pi() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.95, 1.9);
-        if err > threshold {
-            panic!("atan2pi({x:e}, {y:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "atan2pi({x:e}, {y:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max atan2pi error = {max_error}");
     assert!(max_error > 0.5);
@@ -234,9 +240,7 @@ fn test_asinh() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err >= 0.9 {
-            panic!("asinh({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "asinh({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max asinh error = {max_error}");
     assert!(max_error > 0.5);
@@ -251,9 +255,7 @@ fn test_acosh() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err >= 0.9 {
-            panic!("acosh({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "acosh({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max acosh error = {max_error}");
     assert!(max_error > 0.5);
@@ -268,9 +270,7 @@ fn test_atanh() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err >= 0.9 {
-            panic!("atanh({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "atanh({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max atanh error = {max_error}");
     assert!(max_error > 0.5);
@@ -285,9 +285,7 @@ fn test_cbrt() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err >= 0.9 {
-            panic!("cbrt({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "cbrt({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max cbrt error = {max_error}");
     assert!(max_error > 0.5);
@@ -314,14 +312,16 @@ fn test_exp() {
             max_expm1_error = max_expm1_error.max(expm1_err);
 
             let exp_threshold = select_threshold(actual_exp, 0.9, 1.9);
-            if exp_err >= exp_threshold {
-                panic!("exp({x:e}) = {actual_exp:e} (error = {exp_err} ULP)");
-            }
+            assert!(
+                exp_err < exp_threshold,
+                "exp({x:e}) = {actual_exp:e} (error = {exp_err} ULP)",
+            );
 
             let expm1_threshold = select_threshold(actual_expm1, 0.9, 1.9);
-            if expm1_err >= expm1_threshold {
-                panic!("expm1({x:e}) = {actual_expm1:e} (error = {expm1_err} ULP)");
-            }
+            assert!(
+                expm1_err < expm1_threshold,
+                "expm1({x:e}) = {actual_expm1:e} (error = {expm1_err} ULP)",
+            );
         },
     );
     eprintln!("max exp error = {max_exp_error}");
@@ -340,9 +340,10 @@ fn test_exp2() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err > threshold {
-            panic!("exp2({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "exp2({x:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max exp2 error = {max_error}");
     assert!(max_error > 0.5);
@@ -358,9 +359,10 @@ fn test_exp10() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err > threshold {
-            panic!("exp10({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "exp10({x:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max exp10 error = {max_error}");
     assert!(max_error > 0.5);
@@ -376,9 +378,10 @@ fn test_hypot() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err > threshold {
-            panic!("hypot({x:e}, {y:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "hypot({x:e}, {y:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max hypot error = {max_error}");
     assert!(max_error > 0.49);
@@ -393,9 +396,7 @@ fn test_log() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err > 0.9 {
-            panic!("log({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "log({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max log error = {max_error}");
     assert!(max_error > 0.5);
@@ -410,9 +411,7 @@ fn test_log_1p() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err > 0.9 {
-            panic!("log_1p({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "log_1p({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max log_1p error = {max_error}");
     assert!(max_error > 0.5);
@@ -427,9 +426,7 @@ fn test_log2() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err > 0.9 {
-            panic!("log2({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "log2({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max log2 error = {max_error}");
     assert!(max_error > 0.5);
@@ -444,9 +441,7 @@ fn test_log10() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err > 0.9 {
-            panic!("log10({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "log10({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max log10 error = {max_error}");
     assert!(max_error > 0.5);
@@ -462,9 +457,10 @@ fn test_pow() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err > threshold {
-            panic!("pow({x:e}, {y:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "pow({x:e}, {y:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max pow error = {max_error}");
     assert!(max_error > 0.5);
@@ -480,9 +476,10 @@ fn test_powi() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err > threshold {
-            panic!("powi({x:e}, {y}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "powi({x:e}, {y}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max pow error = {max_error}");
     assert!(max_error > 0.5);
@@ -515,19 +512,23 @@ fn test_sin_cos() {
             max_cos1_error = max_cos1_error.max(cos1_err);
             max_cos2_error = max_cos2_error.max(cos2_err);
 
-            if sin1_err > 0.9 {
-                panic!("sin({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)");
-            }
-            if sin2_err > 0.9 {
-                panic!("sin({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)");
-            }
+            assert!(
+                sin1_err < 0.9,
+                "sin({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
+            );
+            assert!(
+                sin2_err < 0.9,
+                "sin({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
+            );
 
-            if cos1_err > 0.9 {
-                panic!("cos({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)");
-            }
-            if cos2_err > 0.9 {
-                panic!("cos({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)");
-            }
+            assert!(
+                cos1_err < 0.9,
+                "cos({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
+            );
+            assert!(
+                cos2_err < 0.9,
+                "cos({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
+            );
         },
     );
     eprintln!("max sin1 error = {max_sin1_error}");
@@ -568,22 +569,26 @@ fn test_sind_cosd() {
             max_cos2_error = max_cos2_error.max(cos2_err);
 
             let sin1_threshold = select_threshold(actual_sin1, 0.9, 1.9);
-            if sin1_err > sin1_threshold {
-                panic!("sind({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)");
-            }
+            assert!(
+                sin1_err < sin1_threshold,
+                "sind({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
+            );
             let sin2_threshold = select_threshold(actual_sin2, 0.9, 1.9);
-            if sin2_err > sin2_threshold {
-                panic!("sind({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)");
-            }
+            assert!(
+                sin2_err < sin2_threshold,
+                "sind({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
+            );
 
             let cos1_threshold = select_threshold(actual_cos1, 0.9, 1.9);
-            if cos1_err > cos1_threshold {
-                panic!("cosd({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)");
-            }
+            assert!(
+                cos1_err < cos1_threshold,
+                "cosd({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
+            );
             let cos2_threshold = select_threshold(actual_cos2, 0.9, 1.9);
-            if cos2_err > cos2_threshold {
-                panic!("cosd({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)");
-            }
+            assert!(
+                cos2_err < cos2_threshold,
+                "cosd({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
+            );
         },
     );
     eprintln!("max sind1 error = {max_sin1_error}");
@@ -624,22 +629,26 @@ fn test_sinpi_cospi() {
             max_cos2_error = max_cos2_error.max(cos2_err);
 
             let sin1_threshold = select_threshold(actual_sin1, 0.9, 1.9);
-            if sin1_err > sin1_threshold {
-                panic!("sinpi({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)");
-            }
+            assert!(
+                sin1_err < sin1_threshold,
+                "sinpi({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
+            );
             let sin2_threshold = select_threshold(actual_sin2, 0.9, 1.9);
-            if sin2_err > sin2_threshold {
-                panic!("sinpi({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)");
-            }
+            assert!(
+                sin2_err < sin2_threshold,
+                "sinpi({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
+            );
 
             let cos1_threshold = select_threshold(actual_cos1, 0.9, 1.9);
-            if cos1_err > cos1_threshold {
-                panic!("cospi({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)");
-            }
+            assert!(
+                cos1_err < cos1_threshold,
+                "cospi({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
+            );
             let cos2_threshold = select_threshold(actual_cos2, 0.9, 1.9);
-            if cos2_err > cos2_threshold {
-                panic!("cospi({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)");
-            }
+            assert!(
+                cos2_err < cos2_threshold,
+                "cospi({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
+            );
         },
     );
     eprintln!("max sinpi1 error = {max_sin1_error}");
@@ -679,19 +688,23 @@ fn test_sinh_cosh() {
             max_cos1_error = max_cos1_error.max(cos1_err);
             max_cos2_error = max_cos2_error.max(cos2_err);
 
-            if sin1_err > 0.9 {
-                panic!("sinh({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)");
-            }
-            if sin2_err > 0.9 {
-                panic!("sinh({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)");
-            }
+            assert!(
+                sin1_err < 0.9,
+                "sinh({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
+            );
+            assert!(
+                sin2_err < 0.9,
+                "sinh({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
+            );
 
-            if cos1_err > 0.9 {
-                panic!("cosh({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)");
-            }
-            if cos2_err > 0.9 {
-                panic!("cosh({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)");
-            }
+            assert!(
+                cos1_err < 0.9,
+                "cosh({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
+            );
+            assert!(
+                cos2_err < 0.9,
+                "cosh({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
+            );
         },
     );
     eprintln!("max sinh1 error = {max_sin1_error}");
@@ -713,9 +726,7 @@ fn test_sqrt() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err > 0.5 {
-            panic!("sqrt({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err <= 0.5, "sqrt({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max sqrt error = {max_error}");
     assert!(max_error == 0.5);
@@ -730,9 +741,7 @@ fn test_tan() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err > 0.9 {
-            panic!("tan({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "tan({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max tan error = {max_error}");
     assert!(max_error > 0.5);
@@ -748,9 +757,10 @@ fn test_tand() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err > threshold {
-            panic!("tand({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "tand({x:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max tand error = {max_error}");
     assert!(max_error > 0.5);
@@ -766,9 +776,10 @@ fn test_tanpi() {
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
-        if err > threshold {
-            panic!("tanpi({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(
+            err < threshold,
+            "tanpi({x:e}) = {actual:e} (error = {err} ULP)",
+        );
     });
     eprintln!("max tanpi error = {max_error}");
     assert!(max_error > 0.5);
@@ -783,9 +794,7 @@ fn test_tanh() {
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
 
-        if err > 0.9 {
-            panic!("tanh({x:e}) = {actual:e} (error = {err} ULP)");
-        }
+        assert!(err < 0.9, "tanh({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max tanh error = {max_error}");
     assert!(max_error > 0.5);
