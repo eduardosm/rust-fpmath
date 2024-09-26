@@ -1,8 +1,8 @@
+use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, CastInto as _, FloatConsts, Int as _, Like};
 
 pub(crate) trait ReduceHalfMulPi<L = Like<Self>>: FloatConsts {
-    fn pi_hi() -> Self;
-    fn pi_lo() -> Self;
+    fn pi_ex() -> SemiDouble<Self>;
 }
 
 /// Reduces the angle argument `x` (in radians/π) and converts it to
@@ -21,24 +21,20 @@ pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, F, F) {
         let scale = F::exp2i_fast(F::Exp::cast_from(F::MANT_BITS));
         let descale = F::exp2i_fast(-F::Exp::cast_from(F::MANT_BITS));
 
-        let (x_hi, x_lo) = (x * scale).split_hi_lo();
-        let y_hi = x_hi * F::pi_hi();
-        let y_lo = x_hi * F::pi_lo() + x_lo * F::pi();
-        let (y_hi, y_lo) = F::norm_hi_lo_full(y_hi, y_lo);
+        let sx = SemiDouble::new(x * scale);
+        let y = (sx * F::pi_ex()).pmul1(descale).to_norm();
 
-        (0, y_hi * descale, y_lo * descale)
+        (0, y.hi(), y.lo())
     } else if xexp == -F::Exp::TWO {
         // 0.25 <= abs(x) < 0.5
         let fpart = x - F::half().copysign(x);
 
         let n = if x.sign() { 3 } else { 1 };
 
-        let (fpart_hi, fpart_lo) = fpart.split_hi_lo();
-        let y_hi = fpart_hi * F::pi_hi();
-        let y_lo = fpart_hi * F::pi_lo() + fpart_lo * F::pi();
-        let (y_hi, y_lo) = F::norm_hi_lo_full(y_hi, y_lo);
+        let fpart = SemiDouble::new(fpart);
+        let y = (fpart * F::pi_ex()).to_norm();
 
-        (n, y_hi, y_lo)
+        (n, y.hi(), y.lo())
     } else if xexp < F::Exp::cast_from(F::MANT_BITS) {
         // Split x = fpart + ipart * 0.5
         let shift: u8 = (F::Exp::cast_from(F::MANT_BITS) - (xexp + F::Exp::ONE)).cast_into();
@@ -59,12 +55,10 @@ pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, F, F) {
             n = n.wrapping_neg();
         }
 
-        let (fpart_hi, fpart_lo) = fpart_f.split_hi_lo();
-        let y_hi = fpart_hi * F::pi_hi();
-        let y_lo = fpart_hi * F::pi_lo() + fpart_lo * F::pi();
-        let (y_hi, y_lo) = F::norm_hi_lo_full(y_hi, y_lo);
+        let fpart = SemiDouble::new(fpart_f);
+        let y = (fpart * F::pi_ex()).to_norm();
 
-        (n & 3, y_hi, y_lo)
+        (n & 3, y.hi(), y.lo())
     } else if xexp == F::Exp::cast_from(F::MANT_BITS) {
         // The lowest bit of the integer part is zero
         let n: u8 = ((x.to_raw() & F::Raw::ONE) << 1).cast_into();

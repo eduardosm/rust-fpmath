@@ -1,5 +1,6 @@
 use super::exp::exp_split;
 use super::{scalbn_medium, Exp};
+use crate::double::DenormDouble;
 use crate::traits::{CastInto as _, Float, Int as _, Like};
 
 pub(crate) trait SinhCosh<L = Like<Self>>: Exp {
@@ -87,9 +88,9 @@ fn sinh_cosh_inner<F: Exp>(x: F) -> (F, F) {
     } else {
         // abss = |sinh(x)| = (exp(|x|) - exp(-|x|)) / 2
         // c = cosh(x) = (exp(|x|) + exp(-|x|)) / 2
-        let (abss_hi, abss_lo, c_hi, c_lo) = sinh_cosh_inner_common_2(k, r_hi, t1a, t1b);
+        let (abss, c) = sinh_cosh_inner_common_2(k, r_hi, t1a, t1b);
 
-        ((abss_hi + abss_lo).copysign(x), c_hi + c_lo)
+        (abss.to_single().copysign(x), c.to_single())
     }
 }
 
@@ -126,13 +127,17 @@ pub(super) fn sinh_cosh_inner_common_1<F: Exp>(r_hi: F, r_lo: F) -> (F, F) {
     (t4a, t4b)
 }
 
-/// Calculates `(abss_hi, abss_lo, c_hi, c_lo)`
+/// Calculates `(abss, c)`
 ///
 /// Such as
-/// * `abss_hi + abss_lo = (1 + r + t1a) * 2^(k - 1) - (1 - r + t1b) * 2^(-k -
-///   1)`
-/// * `c_hi + c_lo = (1 + r + t1a) * 2^(k - 1) + (1 - r + t1b) * 2^(-k - 1)`
-pub(super) fn sinh_cosh_inner_common_2<F: Float>(k: i32, r: F, t1a: F, t1b: F) -> (F, F, F, F) {
+/// * `abs = (1 + r + t1a) * 2^(k - 1) - (1 - r + t1b) * 2^(-k - 1)`
+/// * `c = (1 + r + t1a) * 2^(k - 1) + (1 - r + t1b) * 2^(-k - 1)`
+pub(super) fn sinh_cosh_inner_common_2<F: Float>(
+    k: i32,
+    r: F,
+    t1a: F,
+    t1b: F,
+) -> (DenormDouble<F>, DenormDouble<F>) {
     let s1a = F::exp2i_fast((k - 1).cast_into());
     let sra = r * s1a;
     let st1a = t1a * s1a;
@@ -143,33 +148,24 @@ pub(super) fn sinh_cosh_inner_common_2<F: Float>(k: i32, r: F, t1a: F, t1b: F) -
 
     if k <= 1 {
         let t2a = s1a - s1b;
-        let t3a_hi = (t2a + (sra + srb)).purify();
-        let t3a_lo = ((t2a - t3a_hi) + sra) + srb;
-        let abss_hi = t3a_hi;
-        let abss_lo = t3a_lo + (st1a - st1b);
+        let t3a = DenormDouble::new_qadd11(sra, srb).qradd1(t2a);
+        let abss = t3a.ladd(st1a - st1b);
 
         let t2b = s1a + s1b;
-        let t3b_hi = (t2b + (sra - srb)).purify();
-        let t3b_lo = ((t2b - t3b_hi) + sra) - srb;
-        let c_hi = t3b_hi;
-        let c_lo = t3b_lo + (st1a + st1b);
+        let t3b = DenormDouble::new_qsub11(sra, srb).qradd1(t2b);
+        let c = t3b.ladd(st1a + st1b);
 
-        (abss_hi, abss_lo, c_hi, c_lo)
+        (abss, c)
     } else {
-        let t2_hi = (s1a + (sra + st1a)).purify();
-        let t2_lo = ((s1a - t2_hi) + sra) + st1a;
+        let t2 = DenormDouble::new_qadd11(sra, st1a).qradd1(s1a);
 
-        let t3a_hi = (t2_hi - s1b).purify();
-        let t3a_lo = (t2_hi - t3a_hi) - s1b;
-        let abss_hi = t3a_hi;
-        let abss_lo = (t2_lo + t3a_lo) + (srb - st1b);
+        let t3a = t2.qsub1(s1b);
+        let abss = t3a.ladd(srb - st1b);
 
-        let t3b_hi = (t2_hi + s1b).purify();
-        let t3b_lo = (t2_hi - t3b_hi) + s1b;
-        let c_hi = t3b_hi;
-        let c_lo = (t2_lo + t3b_lo) + (st1b - srb);
+        let t3b = t2.qadd1(s1b);
+        let c = t3b.ladd(st1b - srb);
 
-        (abss_hi, abss_lo, c_hi, c_lo)
+        (abss, c)
     }
 }
 

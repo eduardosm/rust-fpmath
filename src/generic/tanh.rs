@@ -42,15 +42,14 @@ fn tanh_inner<F: Exp>(x: F) -> F {
 
         // abss = |sinh(x)| = (exp(|x|) - exp(-|x|)) / 2
         // c = cosh(x) = (exp(|x|) + exp(-|x|)) / 2
-        let (abss_hi, abss_lo, c_hi, c_lo) = sinh_cosh_inner_common_2(k, r_hi, t1a, t1b);
+        let (abss, c) = sinh_cosh_inner_common_2(k, r_hi, t1a, t1b);
 
         // abst = |tanh(x)| = |sinh(x)| / cosh(x)
+        let n = abss.to_semi();
+        let d = c.to_semi();
+        let q = n / d;
 
-        let (n_hi, n_lo) = F::norm_hi_lo_splitted(abss_hi, abss_lo);
-        let (d_hi, d_lo) = F::norm_hi_lo_splitted(c_hi, c_lo);
-
-        let (q_hi, q_lo) = F::div_hi_lo(n_hi, n_lo, d_hi, d_lo);
-        (q_hi + q_lo).copysign(x)
+        q.to_single().copysign(x)
     }
 }
 

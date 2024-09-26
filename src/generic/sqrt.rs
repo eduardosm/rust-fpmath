@@ -1,3 +1,4 @@
+use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{Float, Int as _};
 
 pub(crate) fn sqrt<F: Float>(x: F) -> F {
@@ -66,39 +67,31 @@ fn sqrt_split<F: Float>(x: F, edelta: F::Exp) -> (F::Exp, F::Raw) {
 }
 
 /// Calculates `2 * sqrt(x)` with extended precision
-pub(super) fn two_hi_lo_sqrt_inner<F: Float>(x: F) -> (F, F) {
+pub(super) fn two_hi_lo_sqrt_inner<F: Float>(x: F) -> DenormDouble<F> {
     // Improve accuracy with a single Newton iteration
     // y = sqrt(x)
     // sqrt(x)_hi + sqrt(x)_lo = (y * y + x) / (2 * y)
 
     let y = sqrt_inner(x, F::Exp::ZERO);
-    let (y_hi, y_lo) = y.split_hi_lo();
+    let y = SemiDouble::new(y);
 
-    let y2_hi = y_hi * y_hi;
-    let y2_lo = F::two() * y_hi * y_lo + y_lo * y_lo;
+    let y2 = y.square();
 
-    let t1_hi = (y2_hi + x).split_hi();
-    let t1_lo = ((x - t1_hi) + y2_hi) + y2_lo;
-
-    F::div_hi_lo(t1_hi, t1_lo, y_hi, y_lo)
+    SemiDouble::new_qadd12(x, y2) / y
 }
 
 /// Calculates `sqrt(x_hi + x_lo)` with extended precision
-pub(super) fn hi_lo_sqrt_hi_lo_inner<F: Float>(x_hi: F, x_lo: F) -> (F, F) {
+pub(super) fn hi_lo_sqrt_hi_lo_inner<F: Float>(x: DenormDouble<F>) -> DenormDouble<F> {
     // Improve accuracy with a single Newton iteration
     // y = sqrt(x)
     // sqrt(x)_hi + sqrt(x)_lo = (y * y + x_hi + x_lo) / (2 * y)
 
-    let y = sqrt_inner(x_hi, F::Exp::ZERO);
-    let (y_hi, y_lo) = y.split_hi_lo();
+    let y = sqrt_inner(x.hi(), F::Exp::ZERO);
+    let y = SemiDouble::new(y);
 
-    let y2_hi = y_hi * y_hi;
-    let y2_lo = F::two() * y_hi * y_lo + y_lo * y_lo;
+    let y2 = y.square();
 
-    let t1_hi = (y2_hi + x_hi).split_hi();
-    let t1_lo = ((x_hi - t1_hi) + y2_hi) + (y2_lo + x_lo);
-
-    F::div_hi_lo(t1_hi, t1_lo, y_hi * F::two(), y_lo * F::two())
+    SemiDouble::new_qadd22(x, y2) / y.pmul1(F::two())
 }
 
 #[cfg(test)]

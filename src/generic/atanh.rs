@@ -1,5 +1,6 @@
 use super::log::log_hi_lo_inner;
 use super::Log;
+use crate::double::SemiDouble;
 use crate::traits::Int as _;
 
 pub(crate) fn atanh<F: Log>(x: F) -> F {
@@ -26,29 +27,15 @@ pub(crate) fn atanh<F: Log>(x: F) -> F {
 }
 
 fn atanh_inner<F: Log>(x: F) -> F {
-    let (twox_hi, twox_lo) = (F::two() * x).split_hi_lo();
-
-    // omx = 1 - x
-    let omx_hi = (F::one() - x).purify();
-    let omx_lo = (F::one() - omx_hi) - x;
-    let (omx_hi, omx_lo) = F::norm_hi_lo_splitted(omx_hi, omx_lo);
-
     // t1 = 2 * x / (1 - x)
-    let (t1_hi, t1_lo) = F::div_hi_lo(twox_hi, twox_lo, omx_hi, omx_lo);
+    let t1 = SemiDouble::new(F::two() * x) / SemiDouble::new_qsub11(F::one(), x);
 
     // t2 = (1 + x) / (1 - x) = t1 + 1
-    let t2a_hi = (t1_hi + F::one()).purify();
-    let t2a_lo = if t1_hi > F::one() {
-        (t1_hi - t2a_hi) + F::one()
-    } else {
-        (F::one() - t2a_hi) + t1_hi
-    };
-
-    let t2_hi = (t2a_hi + t1_lo).purify();
-    let t2_lo = ((t2a_hi - t2_hi) + t1_lo) + t2a_lo;
+    let t2 = t1 + F::one();
+    let t2 = t2.to_norm();
 
     // atanh(x) = 0.5 * log((1 + x) / (1 - x))
-    F::half() * log_hi_lo_inner(t2_hi, t2_lo)
+    F::half() * log_hi_lo_inner(t2.hi(), t2.lo())
 }
 
 #[cfg(test)]

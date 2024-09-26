@@ -1,4 +1,5 @@
 use super::sqrt::hi_lo_sqrt_hi_lo_inner;
+use crate::double::SemiDouble;
 use crate::traits::{Float, Int as _};
 
 pub(crate) fn hypot<F: Float>(x: F, y: F) -> F {
@@ -38,27 +39,21 @@ pub(crate) fn hypot<F: Float>(x: F, y: F) -> F {
         } else {
             // hypot(x, y) = hypot(min, max)
             //             = hypot(min * scale, max * scale) / scale
-            let (smin_hi, smin_lo) = smin.split_hi_lo();
-            let (smax_hi, smax_lo) = smax.split_hi_lo();
+            let smin = SemiDouble::new(smin);
+            let smax = SemiDouble::new(smax);
 
-            let smin2_hi = smin_hi * smin_hi;
-            let smin2_lo = F::two() * smin_hi * smin_lo + smin_lo * smin_lo;
-            let (smin2_hi, smin2_lo) = F::norm_hi_lo_full(smin2_hi, smin2_lo);
-
-            let smax2_hi = smax_hi * smax_hi;
-            let smax2_lo = F::two() * smax_hi * smax_lo + smax_lo * smax_lo;
-            let (smax2_hi, smax2_lo) = F::norm_hi_lo_full(smax2_hi, smax2_lo);
+            let smin2 = smin.square().to_norm();
+            let smax2 = smax.square().to_norm();
 
             // sum = (min * scale)^2 + (max * scale)^2
-            let sum_hi = (smin2_hi + smax2_hi).purify();
-            let sum_lo = (((smax2_hi - sum_hi) + smin2_hi) + smax2_lo) + smin2_lo;
+            let sum = smax2.qadd2(smin2);
 
             // z = sqrt((min * scale)^2 + (max * scale)^2)
             //   = hypot(min * scale, max * scale)
-            let (z_hi, z_lo) = hi_lo_sqrt_hi_lo_inner(sum_hi, sum_lo);
+            let z = hi_lo_sqrt_hi_lo_inner(sum);
 
             // hypot(x, y) = hypot(min * scale, max * scale) / scale
-            (z_hi + z_lo) * descale
+            z.to_single() * descale
         }
     }
 }

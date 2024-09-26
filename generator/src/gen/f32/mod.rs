@@ -48,11 +48,6 @@ pub(crate) fn gen_consts() {
     let v = tmp.to_f32();
     print_f32_const("FRAC_PI_4", v);
 
-    // 1/π
-    let tmp = 1u8 / rug::Float::with_val(FPREC, rug::float::Constant::Pi);
-    let v = tmp.to_f32();
-    print_f32_const("FRAC_1_PI", v);
-
     // 2/π
     let tmp = 2u8 / rug::Float::with_val(FPREC, rug::float::Constant::Pi);
     let v = tmp.to_f32();

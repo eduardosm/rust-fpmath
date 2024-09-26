@@ -1,3 +1,4 @@
+use crate::double::DenormDouble;
 use crate::generic::{reduce_pi_2, ReducePi2};
 use crate::traits::{Float, Int as _, Like};
 
@@ -106,7 +107,7 @@ pub(super) fn sin_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
     let (t1, k3) = F::sin_poly(x2, x5);
 
     // sin(x_hi + x_lo) ~= sin(x) + (1 - 0.5 * x^2) * x_lo
-    //               = x + t1 + x^3 * KS3 + (1 - 0.5 * x^2) * x_lo
+    //                  = x + t1 + x^3 * KS3 + (1 - 0.5 * x^2) * x_lo
     x_hi + (x3 * k3 + (t1 + (x_lo - F::half() * x2 * x_lo)))
 }
 
@@ -127,10 +128,8 @@ pub(super) fn cos_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
     let t1 = F::cos_poly(x2, x4);
 
     // cos(x_hi + x_lo) = t1 + 1 - 0.5 * x^2 - x_hi * x_lo
-    let hx2 = (F::half() * x2).purify();
-    let t2_hi = (F::one() - hx2).purify();
-    let t2_lo = (F::one() - t2_hi) - hx2;
-    t2_hi + ((t2_lo - x_hi * x_lo) + t1)
+    let t2 = DenormDouble::new_qsub11(F::one(), F::half() * x2);
+    t2.lsub(x_hi * x_lo).ladd(t1).to_single()
 }
 
 #[cfg(test)]

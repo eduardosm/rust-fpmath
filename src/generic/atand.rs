@@ -1,5 +1,6 @@
 use super::atan::{atan2_inner, atan_inner};
 use super::{Atan, RadToDeg};
+use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, CastInto as _, Int as _};
 
 pub(crate) fn atand<F: Atan + RadToDeg>(x: F) -> F {
@@ -18,10 +19,9 @@ pub(crate) fn atand<F: Atan + RadToDeg>(x: F) -> F {
         // also handles atand(-0) = -0
         x * F::rad_to_deg()
     } else {
-        let (y_hi, y_lo) = atan_inner(x);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+        let y = atan_inner(x).to_semi();
 
-        y_hi * F::rad_to_deg_hi() + (y_hi * F::rad_to_deg_lo() + y_lo * F::rad_to_deg())
+        (y * F::rad_to_deg_ex()).to_single()
     }
 }
 
@@ -78,19 +78,16 @@ pub(crate) fn atan2d<F: Atan + RadToDeg>(y: F, x: F) -> F {
 
         // y/x is very small
         // atan2d(y, x) ~= (y/x) * (180/π)
-        let (ny_hi, ny_lo) = (ny * scale).split_hi_lo();
-        let (nx_hi, nx_lo) = nx.split_hi_lo();
+        let ny = SemiDouble::new(ny * scale);
+        let nx = SemiDouble::new(nx);
 
-        let (nydeg_hi, nydeg_lo) = (ny_hi * F::rad_to_deg_hi()).split_hi_lo();
-        let nydeg_lo = nydeg_lo + (ny_hi * F::rad_to_deg_lo() + ny_lo * F::rad_to_deg());
+        let nydeg = ny * F::rad_to_deg_ex();
 
-        let (t1_hi, t1_lo) = F::div_hi_lo(nydeg_hi, nydeg_lo, nx_hi, nx_lo);
-        (t1_hi + t1_lo) * descale
+        (nydeg.to_semi() / nx).to_single() * descale
     } else {
-        let (y_hi, y_lo) = atan2_inner(ny, nx);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+        let y = atan2_inner(ny, nx).to_semi();
 
-        y_hi * F::rad_to_deg_hi() + (y_hi * F::rad_to_deg_lo() + y_lo * F::rad_to_deg())
+        (y * F::rad_to_deg_ex()).to_single()
     }
 }
 

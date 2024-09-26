@@ -1,9 +1,9 @@
 use super::{log::log_split, Log};
+use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{CastInto as _, Int as _, Like};
 
 pub(crate) trait Log10<L = Like<Self>>: Log {
-    fn log10_e_hi() -> Self;
-    fn log10_e_lo() -> Self;
+    fn log10_e_ex() -> SemiDouble<Self>;
     fn log10_2_hi() -> Self;
     fn log10_2_lo() -> Self;
 }
@@ -56,22 +56,20 @@ fn log10_inner<F: Log10>(x: F, edelta: F::Exp) -> F {
     //    = r - (0.5 * r^2 - s * (0.5 * r^2 + p))
     // Split t1 into t1_hi + t1_lo for better accuracy
     let hr2 = (F::half() * r * r).purify();
-    let t1_hi = (r - hr2).split_hi();
-    let t1_lo = ((r - t1_hi) - hr2) + s * (hr2 + p);
+    let t1 = DenormDouble::new_qsub11(r, hr2)
+        .qadd1(s * (hr2 + p))
+        .to_semi();
 
     // t2 = log10(1 + r) = log(1 + r) * log10(e) = t1 * log10(e)
-    let t2_hi = t1_hi * F::log10_e_hi();
-    let t2_lo = (t1_hi + t1_lo) * F::log10_e_lo() + t1_lo * F::log10_e_hi();
+    let t2 = t1 * F::log10_e_ex();
 
     // t3 = k * log10(2)
     let kf: F = k.cast_into();
-    let t3_hi = kf * F::log10_2_hi();
-    let t3_lo = kf * F::log10_2_lo();
+    let t3 = DenormDouble::new(F::log10_2_hi(), F::log10_2_lo()).pmul1(kf);
 
     // log10(x) = k * log10(2) + log10(1 + r) = t2 + t3
-    let t4_hi = (t3_hi + t2_hi).purify();
-    let t4_lo = (t2_lo + t3_lo) + ((t3_hi - t4_hi) + t2_hi);
-    t4_hi + t4_lo
+    let t4 = t3.qadd2(t2);
+    t4.to_single()
 }
 
 #[cfg(test)]

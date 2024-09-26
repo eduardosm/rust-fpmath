@@ -241,33 +241,6 @@ pub(crate) trait Float:
         (hi2, lo2)
     }
 
-    #[inline]
-    fn div_hi_lo(n_hi: Self, n_lo: Self, d_hi: Self, d_lo: Self) -> (Self, Self) {
-        let di = Self::one() / (d_hi + d_lo).purify();
-        let (di_hi, di_lo) = di.split_hi_lo();
-
-        let q_hi = ((n_hi + n_lo) * di).purify();
-        let q_lo = -q_hi
-            + n_hi * di_hi
-            + n_hi * di_lo
-            + n_lo * di
-            + q_hi * (Self::one() - d_hi * di_hi - d_hi * di_lo - d_lo * di);
-
-        (q_hi, q_lo)
-    }
-
-    #[inline]
-    fn recip_hi_lo(d_hi: Self, d_lo: Self) -> (Self, Self) {
-        let di = Self::one() / (d_hi + d_lo).purify();
-        let (di_hi, di_lo) = di.split_hi_lo();
-
-        let q_hi = di.purify();
-        let q_lo =
-            -q_hi + di_hi + di_lo + q_hi * (Self::one() - d_hi * di_hi - d_hi * di_lo - d_lo * di);
-
-        (q_hi, q_lo)
-    }
-
     #[cfg(test)]
     fn parse(s: &str) -> Self;
 }
@@ -279,6 +252,5 @@ pub(crate) trait FloatConsts<L = Like<Self>>: Float {
     fn pi() -> Self;
     fn frac_pi_2() -> Self;
     fn frac_pi_4() -> Self;
-    fn frac_1_pi() -> Self;
     fn frac_2_pi() -> Self;
 }

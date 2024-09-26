@@ -1,4 +1,5 @@
 use super::{round_as_i_f, scalbn_medium};
+use crate::double::DenormDouble;
 use crate::traits::{CastInto as _, Float, Int as _, Like};
 
 pub(crate) trait Exp<L = Like<Self>>: Float {
@@ -120,14 +121,11 @@ fn exp_m1_inner<F: Exp>(x: F) -> F {
         let sr = r_hi * s1;
         let st4 = t4 * s1;
 
-        let t5_hi = (s1 + sr).purify();
-        let t5_lo = (s1 - t5_hi) + sr;
-        let t6_hi = (t5_hi + st4).purify();
-        let t6_lo = t5_lo + ((t5_hi - t6_hi) + st4);
-        let t7_hi = (t6_hi - F::one()).purify();
-        let t7_lo = t6_lo + ((t6_hi - t7_hi) - F::one());
+        let t5 = DenormDouble::new_qadd11(s1, sr);
+        let t6 = t5.qadd1(st4);
+        let t7 = t6.qsub1(F::one());
 
-        t7_hi + t7_lo
+        t7.to_single()
     } else {
         scalbn_medium((r_hi + t4) + F::one(), k)
     }

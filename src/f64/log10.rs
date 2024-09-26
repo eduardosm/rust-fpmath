@@ -1,4 +1,5 @@
 use super::{F64Like, LikeF64};
+use crate::double::SemiDouble;
 
 // Generated with `./run-generator.sh f64::log10::consts`
 const LOG10_E_HI: u64 = 0x3FDBCB7B10000000; // 4.342944771051407e-1
@@ -8,13 +9,8 @@ const LOG10_2_LO: u64 = 0x3E03EF3FDE623E25; // 5.801722962879576e-10
 
 impl<F: F64Like> crate::generic::Log10<LikeF64> for F {
     #[inline]
-    fn log10_e_hi() -> Self {
-        Self::from_raw(LOG10_E_HI)
-    }
-
-    #[inline]
-    fn log10_e_lo() -> Self {
-        Self::from_raw(LOG10_E_LO)
+    fn log10_e_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(LOG10_E_HI), Self::from_raw(LOG10_E_LO))
     }
 
     #[inline]

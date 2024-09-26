@@ -1,4 +1,5 @@
 use super::{F32Like, LikeF32};
+use crate::double::NormDouble;
 
 // Generated with `./run-generator.sh f32::asin_acos::consts`
 const FRAC_PI_2_HI: u32 = 0x3FC90FDA; // 1.5707963e0
@@ -6,13 +7,8 @@ const FRAC_PI_2_LO: u32 = 0x33A22169; // 7.54979e-8
 
 impl<F: F32Like> crate::generic::AsinAcos<LikeF32> for F {
     #[inline]
-    fn frac_pi_2_hi() -> Self {
-        Self::from_raw(FRAC_PI_2_HI)
-    }
-
-    #[inline]
-    fn frac_pi_2_lo() -> Self {
-        Self::from_raw(FRAC_PI_2_LO)
+    fn frac_pi_2_ex() -> NormDouble<Self> {
+        NormDouble::with_parts(Self::from_raw(FRAC_PI_2_HI), Self::from_raw(FRAC_PI_2_LO))
     }
 
     #[inline]

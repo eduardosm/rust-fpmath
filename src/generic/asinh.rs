@@ -1,6 +1,7 @@
 use super::log::{log_hi_lo_inner, log_inner};
 use super::sqrt::hi_lo_sqrt_hi_lo_inner;
 use super::Log;
+use crate::double::DenormDouble;
 use crate::traits::Int as _;
 
 pub(crate) fn asinh<F: Log>(x: F) -> F {
@@ -27,22 +28,16 @@ fn asinh_inner<F: Log>(x: F) -> F {
     let x2 = x * x;
 
     // t1 = x^2 + 1
-    let t1_hi = (x2 + F::one()).purify();
-    let t1_lo = if x2 > F::one() {
-        (x2 - t1_hi) + F::one()
-    } else {
-        (F::one() - t1_hi) + x2
-    };
+    let t1 = DenormDouble::new_add11(x2, F::one());
 
     // t2 = sqrt(x^2 + 1)
-    let (t2_hi, t2_lo) = hi_lo_sqrt_hi_lo_inner(t1_hi, t1_lo);
+    let t2 = hi_lo_sqrt_hi_lo_inner(t1);
 
     // t3 = |x| + sqrt(x^2 + 1)
-    let t3_hi = (absx + t2_hi).purify();
-    let t3_lo = ((t2_hi - t3_hi) + absx) + t2_lo;
+    let t3 = t2.qadd1(absx);
 
     // t4 = |asinh(x)| = log(|x| + sqrt(x^2 + 1))
-    let t4 = log_hi_lo_inner(t3_hi, t3_lo);
+    let t4 = log_hi_lo_inner(t3.hi(), t3.lo());
 
     // asinh(x) = sgn(x) * |asinh(x)|
     t4.copysign(x)

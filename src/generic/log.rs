@@ -1,13 +1,12 @@
+use crate::double::{DenormDouble, NormDouble, SemiDouble};
 use crate::traits::{CastInto as _, Float, Int as _, Like};
 
 pub(crate) trait Log<L = Like<Self>>: Float {
     fn sqrt_2() -> Self;
     fn ln_2_hi() -> Self;
     fn ln_2_lo() -> Self;
-    fn frac_2_3_hi() -> Self;
-    fn frac_2_3_lo() -> Self;
-    fn frac_4_10_hi() -> Self;
-    fn frac_4_10_lo() -> Self;
+    fn frac_2_3_ex() -> NormDouble<Self>;
+    fn frac_4_10_ex() -> NormDouble<Self>;
 
     /// Calculates `(log(1 + x) - log(1 - x) - 2 * x) / x`
     ///
@@ -171,30 +170,21 @@ pub(super) fn log_hi_lo_inner<F: Log>(x_hi: F, x_lo: F) -> F {
 /// Calculates `(log(1 + x) - log(1 - x) - 2 * x) / x`
 ///
 /// `-0.1716 < x < 0.1716`
-pub(super) fn hi_lo_log_special_poly<F: Log>(x2_hi: F, x2_lo: F) -> (F, F) {
-    // p1 = (p - 2/3 * x^2 - 0.4 * x^4) / x^4
-    let x2 = x2_hi + x2_lo;
-    let p0 = F::log_special_poly_ex(x2);
+pub(super) fn hi_lo_log_special_poly<F: Log>(x2: SemiDouble<F>) -> DenormDouble<F> {
+    // p0 = (p - 2/3 * x^2 - 0.4 * x^4) / x^4
+    let p0 = F::log_special_poly_ex(x2.to_single());
 
-    // p1 = (p - 2/3 * x^2) / x^4
-    let p1_hi = (p0 + F::frac_4_10_hi()).purify();
-    let p1_lo = ((F::frac_4_10_hi() - p1_hi) + p0) + F::frac_4_10_lo();
-    let (p1_hi, p1_lo) = F::norm_hi_lo_splitted(p1_hi, p1_lo);
+    // p1 = (p - 2/3 * x^2) / x^4 = p0 + 0.4
+    let p1 = F::frac_4_10_ex().to_denorm().qadd1(p0).to_semi();
 
-    // p2 = (p - 2/3 * x^2) / x^2
-    let p2_hi = p1_hi * x2_hi;
-    let p2_lo = p1_hi * x2_lo + p1_lo * x2_hi + p1_lo * x2_lo;
+    // p2 = (p - 2/3 * x^2) / x^2 = p1 * x2
+    let p2 = p1 * x2;
 
-    // p3 = p / x^2
-    let p3_hi = (p2_hi + F::frac_2_3_hi()).purify();
-    let p3_lo = (((F::frac_2_3_hi() - p3_hi) + p2_hi) + F::frac_2_3_lo()) + p2_lo;
-    let (p3_hi, p3_lo) = F::norm_hi_lo_splitted(p3_hi, p3_lo);
+    // p3 = p / x^2 = p2 + 2/3
+    let p3 = F::frac_2_3_ex().to_denorm().qadd2(p2).to_semi();
 
-    // p = (log(1 + x) - log(1 - x) - 2 * x) / x
-    let p_hi = p3_hi * x2_hi;
-    let p_lo = p3_hi * x2_lo + p3_lo * x2_hi + p3_lo * x2_lo;
-
-    (p_hi, p_lo)
+    // (log(1 + x) - log(1 - x) - 2 * x) / x = p3 * x2
+    p3 * x2
 }
 
 #[cfg(test)]

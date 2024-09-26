@@ -1,4 +1,5 @@
 use super::{F64Like, LikeF64};
+use crate::double::SemiDouble;
 
 // Generated with `./run-generator.sh f64::cbrt::consts`
 const CBRT_2_HI: u64 = 0x3FF428A2F8000000; // 1.2599210441112518e0
@@ -8,23 +9,13 @@ const CBRT_4_LO: u64 = 0x3E54F5B8F20AC166; // 1.9520384533345454e-8
 
 impl<F: F64Like> crate::generic::Cbrt<LikeF64> for F {
     #[inline]
-    fn cbrt_2_hi() -> Self {
-        Self::from_raw(CBRT_2_HI)
+    fn cbrt_2_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(CBRT_2_HI), Self::from_raw(CBRT_2_LO))
     }
 
     #[inline]
-    fn cbrt_2_lo() -> Self {
-        Self::from_raw(CBRT_2_LO)
-    }
-
-    #[inline]
-    fn cbrt_4_hi() -> F {
-        Self::from_raw(CBRT_4_HI)
-    }
-
-    #[inline]
-    fn cbrt_4_lo() -> F {
-        Self::from_raw(CBRT_4_LO)
+    fn cbrt_4_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(CBRT_4_HI), Self::from_raw(CBRT_4_LO))
     }
 
     #[inline]

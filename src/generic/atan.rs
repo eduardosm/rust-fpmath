@@ -1,3 +1,4 @@
+use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{CastInto as _, FloatConsts, Int as _, Like};
 
 pub(crate) trait Atan<L = Like<Self>>: FloatConsts {
@@ -25,8 +26,7 @@ pub(crate) fn atan<F: Atan>(x: F) -> F {
         // also handles atan(-0) = -0
         x
     } else {
-        let (y_hi, y_lo) = atan_inner(x);
-        y_hi + y_lo
+        atan_inner(x).to_single()
     }
 }
 
@@ -82,35 +82,26 @@ pub(crate) fn atan2<F: Atan>(y: F, x: F) -> F {
         // atan2(y, x) ~= y/x
         ny / nx
     } else {
-        let (y_hi, y_lo) = atan2_inner(ny, nx);
-        y_hi + y_lo
+        atan2_inner(ny, nx).to_single()
     }
 }
 
-pub(super) fn atan_inner<F: Atan>(x: F) -> (F, F) {
+pub(super) fn atan_inner<F: Atan>(x: F) -> DenormDouble<F> {
     if x.abs() <= F::one() {
-        let (x_hi, x_lo) = x.split_hi_lo();
-        atan_inner_common(x_hi, x_lo)
+        atan_inner_common(SemiDouble::new(x))
     } else {
-        let (x_hi, x_lo) = x.split_hi_lo();
-        let (y_hi, y_lo) = F::recip_hi_lo(x_hi, x_lo);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+        let y = DenormDouble::new_recip(x);
 
         // t1 = atan(1 / x)
-        let (t1_hi, t1_lo) = atan_inner_common(y_hi, y_lo);
+        let t1 = atan_inner_common(y.to_semi());
 
-        // t2 = atan(x) = ±pi/2 - atan(1 / x)
-        let off_hi = F::frac_pi_2_hi().copysign(x);
-        let off_lo = F::frac_pi_2_lo().copysign(x);
-
-        let t2_hi = (off_hi - t1_hi).purify();
-        let t2_lo = (off_lo - t1_lo) + ((off_hi - t2_hi) - t1_hi);
-
-        (t2_hi, t2_lo)
+        // atan(x) = ±pi/2 - atan(1 / x)
+        let off = DenormDouble::new(F::frac_pi_2_hi().copysign(x), F::frac_pi_2_lo().copysign(x));
+        off.qsub2(t1)
     }
 }
 
-pub(super) fn atan2_inner<F: Atan>(mut n: F, mut d: F) -> (F, F) {
+pub(super) fn atan2_inner<F: Atan>(mut n: F, mut d: F) -> DenormDouble<F> {
     let ysgn = n.sign();
     let xsgn = d.sign();
 
@@ -124,51 +115,35 @@ pub(super) fn atan2_inner<F: Atan>(mut n: F, mut d: F) -> (F, F) {
         off = off + F::one().set_sign(ysgn ^ xsgn);
     }
 
-    let (n_hi, n_lo) = n.split_hi_lo();
-    let (d_hi, d_lo) = d.split_hi_lo();
-
     // z = n/d
-    let (z_hi, z_lo) = F::div_hi_lo(n_hi, n_lo, d_hi, d_lo);
-    let (z_hi, z_lo) = F::norm_hi_lo_splitted(z_hi, z_lo);
+    let z = DenormDouble::new_div11(n, d);
 
     // t1 = atan(n/d)
-    let (t1_hi, t1_lo) = atan_inner_common(z_hi, z_lo);
+    let t1 = atan_inner_common(z.to_semi());
 
     // t2 = off * π/2
-    let t2_hi = F::frac_pi_2_hi() * off;
-    let t2_lo = F::frac_pi_2_lo() * off;
+    let t2 = DenormDouble::new(F::frac_pi_2_hi() * off, F::frac_pi_2_lo() * off);
 
-    // t3 = atan2(y, x) = atan(n/d) + off * π/2 = t1 + t2
-    let t3_hi = (t1_hi + t2_hi).purify();
-    let t3_lo = (t1_lo + t2_lo) + ((t2_hi - t3_hi) + t1_hi);
-
-    (t3_hi, t3_lo)
+    // atan2(y, x) = atan(n/d) + off * π/2 = t1 + t2
+    t2.qadd2(t1)
 }
 
-pub(super) fn atan_inner_common<F: Atan>(x_hi: F, x_lo: F) -> (F, F) {
-    let (x2_hi, x2_lo) = (x_hi * x_hi).split_hi_lo();
-    let x2_lo = x2_lo + (F::two() * x_hi * x_lo + x_lo * x_lo);
-    let x2 = x2_hi + x2_lo;
+pub(super) fn atan_inner_common<F: Atan>(x: SemiDouble<F>) -> DenormDouble<F> {
+    let x2 = x.square();
 
     // t1 = (atan(x) - x) / x^3 - k3
-    let (k3, t1) = F::atan_poly(x2);
+    let (k3, t1) = F::atan_poly(x2.to_single());
 
-    // t2 = (atan(x) - x) / x^3
-    let t2_hi = (t1 + k3).split_hi();
-    let t2_lo = (k3 - t2_hi) + t1;
+    // t2 = (atan(x) - x) / x^3 = t1 + k3
+    let t2 = SemiDouble::new_qadd11(k3, t1);
 
-    let (x3_hi, x3_lo) = (x_hi * x2_hi).split_hi_lo();
-    let x3_lo = x3_lo + (x_hi * x2_lo + x_lo * x2_hi + x_lo * x2_lo);
+    let x3 = x * x2.to_semi();
 
-    // t3 = atan(x) - x
-    let t3_hi = t2_hi * x3_hi;
-    let t3_lo = t2_hi * x3_lo + t2_lo * x3_hi + t2_lo * x3_lo;
+    // t3 = atan(x) - x = t2 * x^3
+    let t3 = x3.to_semi() * t2;
 
-    // t4 = atan(x)
-    let t4_hi = (t3_hi + x_hi).purify();
-    let t4_lo = (x_lo + t3_lo) + ((x_hi - t4_hi) + t3_hi);
-
-    (t4_hi, t4_lo)
+    // atan(x) = t3 + x
+    x.to_denorm().qadd2(t3)
 }
 
 #[cfg(test)]

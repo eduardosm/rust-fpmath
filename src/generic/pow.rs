@@ -1,6 +1,7 @@
 use super::exp::{exp_inner_common, exp_split};
 use super::log::{hi_lo_log_special_poly, log_split};
 use super::{int_is_odd, is_int, is_odd_int, Exp, Log};
+use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{CastInto as _, Int as _};
 
 pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
@@ -102,24 +103,19 @@ pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
         F::NAN
     } else {
         // logx = log(|x|)
-        let (logx_hi, logx_lo) = hi_lo_log_inner(nx.abs(), xedelta);
-        let (logx_hi, logx_lo) = F::norm_hi_lo_splitted(logx_hi, logx_lo);
-
-        let (y_hi, y_lo) = y.split_hi_lo();
+        let logx = hi_lo_log_inner(nx.abs(), xedelta).to_semi();
 
         // ylx = y * log(|x|)
-        let ylx_hi = logx_hi * y_hi;
-        let ylx_lo = logx_hi * y_lo + logx_lo * y;
-        let (ylx_hi, ylx_lo) = F::norm_hi_lo_full(ylx_hi, ylx_lo);
+        let ylx = (logx * y).to_norm();
 
         // |z| = |x|^y = exp(y * log(|x|))
-        let absz = if ylx_hi >= F::exp_hi_th() {
+        let absz = if ylx.hi() >= F::exp_hi_th() {
             F::INFINITY
-        } else if ylx_hi <= F::exp_lo_th() {
+        } else if ylx.hi() <= F::exp_lo_th() {
             F::ZERO
         } else {
-            let (k, r_hi, r_lo) = exp_split(ylx_hi);
-            let r_lo = r_lo + ylx_lo;
+            let (k, r_hi, r_lo) = exp_split(ylx.hi());
+            let r_lo = r_lo + ylx.lo();
 
             exp_inner_common(k, r_hi, r_lo)
         };
@@ -132,7 +128,7 @@ pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
     }
 }
 
-pub(super) fn hi_lo_log_inner<F: Log>(x: F, edelta: F::Exp) -> (F, F) {
+pub(super) fn hi_lo_log_inner<F: Log>(x: F, edelta: F::Exp) -> DenormDouble<F> {
     // Algorithm based on one used by the msun math library:
     //  * log(1 + r) = p * s + 2 * s
     //  * s = r / (2 + r)
@@ -142,44 +138,28 @@ pub(super) fn hi_lo_log_inner<F: Log>(x: F, edelta: F::Exp) -> (F, F) {
     //  - k is an integer
     //  - sqrt(2) / 2 <= 1 + r < sqrt(2)
     let (k, r) = log_split(x, edelta);
-    let (r_hi, r_lo) = r.split_hi_lo();
 
     // rp2 = 2 + r
-    let rp2_hi = (F::two() + r).split_hi();
-    let rp2_lo = (F::two() - rp2_hi) + r;
+    let rp2 = SemiDouble::new_qadd11(F::two(), r);
 
     // s = r / (2 + r)
-    let (s_hi, s_lo) = F::div_hi_lo(r_hi, r_lo, rp2_hi, rp2_lo);
-    let (s_hi, s_lo) = F::norm_hi_lo_splitted(s_hi, s_lo);
-
-    let s2_hi = s_hi * s_hi;
-    let s2_lo = F::two() * s_hi * s_lo + s_lo * s_lo;
-    let (s2_hi, s2_lo) = F::norm_hi_lo_splitted(s2_hi, s2_lo);
+    let s = (SemiDouble::new(r) / rp2).to_semi();
+    let s2 = s.square().to_semi();
 
     // p = (log(1 + s) - log(1 - s) - 2 * s) / s
-    let (p_hi, p_lo) = hi_lo_log_special_poly(s2_hi, s2_lo);
-    let (p_hi, p_lo) = F::norm_hi_lo_splitted(p_hi, p_lo);
+    let p = hi_lo_log_special_poly(s2).to_semi();
 
     // t1 = k * log(2)
     let kf: F = k.cast_into();
-    let t1_hi = kf * F::ln_2_hi();
-    let t1_lo = kf * F::ln_2_lo();
+    let t1 = DenormDouble::new(F::ln_2_hi(), F::ln_2_lo()).pmul1(kf);
 
     // t2 = log(1 + r) = p * s + 2 * s
-    let ps_hi = p_hi * s_hi;
-    let ps_lo = p_hi * s_lo + p_lo * s_hi + p_lo * s_lo;
+    let ps = p * s;
+    let twos = s.pmul1(F::two());
+    let t2 = twos.to_denorm().qadd2(ps);
 
-    let twos_hi = F::two() * s_hi;
-    let twos_lo = F::two() * s_lo;
-
-    let t2_hi = (ps_hi + twos_hi).purify();
-    let t2_lo = (((twos_hi - t2_hi) + ps_hi) + twos_lo) + ps_lo;
-
-    // t3 = log(2^k * (1 + r)) = t1 + t2
-    let t3_hi = (t1_hi + t2_hi).purify();
-    let t3_lo = (((t1_hi - t3_hi) + t2_hi) + t1_lo) + t2_lo;
-
-    (t3_hi, t3_lo)
+    // log(2^k * (1 + r)) = t1 + t2
+    t1.qadd2(t2)
 }
 
 #[cfg(test)]
