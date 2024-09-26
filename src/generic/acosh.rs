@@ -1,6 +1,7 @@
 use super::log::{log_hi_lo_inner, log_inner};
 use super::sqrt::hi_lo_sqrt_hi_lo_inner;
 use super::Log;
+use crate::double::DenormDouble;
 use crate::traits::Int as _;
 
 pub(crate) fn acosh<F: Log>(x: F) -> F {
@@ -24,36 +25,29 @@ pub(crate) fn acosh<F: Log>(x: F) -> F {
 
 fn acosh_inner<F: Log>(x: F) -> F {
     // t1 = x^2 - 1
-    let (t1_hi, t1_lo) = if x < F::two() {
+    let t1 = if x < F::two() {
         // y = x - 1
         let y = x - F::one();
         let y2 = y * y;
         let twoy = F::two() * y;
 
         // t1 = x^2 - 1 = y^2 + 2 * y
-        let t1_hi = (y2 + twoy).purify();
-        let t1_lo = (twoy - t1_hi) + y2;
-
-        (t1_hi, t1_lo)
+        DenormDouble::new_qadd11(twoy, y2)
     } else {
         let x2 = x * x;
 
         // t1 = x^2 - 1
-        let t1_hi = (x2 - F::one()).purify();
-        let t1_lo = (x2 - t1_hi) - F::one();
-
-        (t1_hi, t1_lo)
+        DenormDouble::new_qsub11(x2, F::one())
     };
 
     // t2 = sqrt(x^2 - 1)
-    let (t2_hi, t2_lo) = hi_lo_sqrt_hi_lo_inner(t1_hi, t1_lo);
+    let t2 = hi_lo_sqrt_hi_lo_inner(t1);
 
     // t3 = x + sqrt(x^2 - 1)
-    let t3_hi = (x + t2_hi).purify();
-    let t3_lo = ((x - t3_hi) + t2_hi) + t2_lo;
+    let t3 = t2.qradd1(x);
 
     // acosh(x) = log(x + sqrt(x^2 - 1))
-    log_hi_lo_inner(t3_hi, t3_lo)
+    log_hi_lo_inner(t3.hi(), t3.lo())
 }
 
 #[cfg(test)]

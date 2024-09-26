@@ -1,5 +1,6 @@
 use super::atan::{atan2_inner, atan_inner};
 use super::{Atan, DivPi};
+use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, CastInto as _, Int as _};
 
 pub(crate) fn atanpi<F: Atan + DivPi>(x: F) -> F {
@@ -23,15 +24,13 @@ pub(crate) fn atanpi<F: Atan + DivPi>(x: F) -> F {
         let scale = F::exp2i_fast(logscale);
         let descale = F::exp2i_fast(-logscale);
 
-        let (x_hi, x_lo) = (x * scale).split_hi_lo();
-        let y_hi = x_hi * F::frac_1_pi_hi();
-        let y_lo = x_hi * F::frac_1_pi_lo() + x_lo * F::frac_1_pi();
-        (y_hi + y_lo) * descale
-    } else {
-        let (y_hi, y_lo) = atan_inner(x);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+        let nx = SemiDouble::new(x * scale);
 
-        y_hi * F::frac_1_pi_hi() + (y_hi * F::frac_1_pi_lo() + y_lo * F::frac_1_pi())
+        (nx * F::frac_1_pi_ex()).to_single() * descale
+    } else {
+        let y = atan_inner(x).to_semi();
+
+        (y * F::frac_1_pi_ex()).to_single()
     }
 }
 
@@ -90,19 +89,16 @@ pub(crate) fn atan2pi<F: Atan + DivPi>(y: F, x: F) -> F {
 
         // y/x is very small
         // atan2pi(y, x) ~= (y/x) / π
-        let (ny_hi, ny_lo) = (ny * scale).split_hi_lo();
-        let (nx_hi, nx_lo) = nx.split_hi_lo();
+        let ny = SemiDouble::new(ny * scale);
+        let nx = SemiDouble::new(nx);
 
-        let (nydeg_hi, nydeg_lo) = (ny_hi * F::frac_1_pi_hi()).split_hi_lo();
-        let nydeg_lo = nydeg_lo + (ny_hi * F::frac_1_pi_lo() + ny_lo * F::frac_1_pi());
+        let nyhrev = ny * F::frac_1_pi_ex();
 
-        let (t1_hi, t1_lo) = F::div_hi_lo(nydeg_hi, nydeg_lo, nx_hi, nx_lo);
-        (t1_hi + t1_lo) * descale
+        (nyhrev.to_semi() / nx).to_single() * descale
     } else {
-        let (y_hi, y_lo) = atan2_inner(ny, nx);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+        let y = atan2_inner(ny, nx).to_semi();
 
-        y_hi * F::frac_1_pi_hi() + (y_hi * F::frac_1_pi_lo() + y_lo * F::frac_1_pi())
+        (y * F::frac_1_pi_ex()).to_single()
     }
 }
 

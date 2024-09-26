@@ -15,10 +15,9 @@ pub(crate) fn asind<F: AsinAcos + RadToDeg>(x: F) -> F {
         // also handles asind(-0) = -0
         x * F::rad_to_deg()
     } else {
-        let (y_hi, y_lo) = asin_inner(x);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+        let y = asin_inner(x).to_semi();
 
-        y_hi * F::rad_to_deg_hi() + (y_hi * F::rad_to_deg_lo() + y_lo * F::rad_to_deg())
+        (y * F::rad_to_deg_ex()).to_single()
     }
 }
 
@@ -40,10 +39,9 @@ pub(crate) fn acosd<F: AsinAcos + RadToDeg>(x: F) -> F {
         // acosd(x) ~= 90
         F::cast_from(90u32)
     } else {
-        let (y_hi, y_lo) = acos_inner(x);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+        let y = acos_inner(x).to_semi();
 
-        y_hi * F::rad_to_deg_hi() + (y_hi * F::rad_to_deg_lo() + y_lo * F::rad_to_deg())
+        (y * F::rad_to_deg_ex()).to_single()
     }
 }
 

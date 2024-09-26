@@ -1,4 +1,5 @@
 use super::{F64Like, LikeF64};
+use crate::double::SemiDouble;
 
 // Generated with `./run-generator.sh f64::rad_to_deg::consts`
 const RAD_TO_DEG: u64 = 0x404CA5DC1A63C1F8; // 5.729577951308232e1
@@ -12,12 +13,7 @@ impl<F: F64Like> crate::generic::RadToDeg<LikeF64> for F {
     }
 
     #[inline]
-    fn rad_to_deg_hi() -> Self {
-        Self::from_raw(RAD_TO_DEG_HI)
-    }
-
-    #[inline]
-    fn rad_to_deg_lo() -> Self {
-        Self::from_raw(RAD_TO_DEG_LO)
+    fn rad_to_deg_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(RAD_TO_DEG_HI), Self::from_raw(RAD_TO_DEG_LO))
     }
 }

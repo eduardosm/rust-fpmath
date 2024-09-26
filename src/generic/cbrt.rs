@@ -1,10 +1,9 @@
+use crate::double::SemiDouble;
 use crate::traits::{Float, Int as _, Like};
 
 pub(crate) trait Cbrt<L = Like<Self>>: Float {
-    fn cbrt_2_hi() -> Self;
-    fn cbrt_2_lo() -> Self;
-    fn cbrt_4_hi() -> Self;
-    fn cbrt_4_lo() -> Self;
+    fn cbrt_2_ex() -> SemiDouble<Self>;
+    fn cbrt_4_ex() -> SemiDouble<Self>;
 
     fn exp_mod_3(e: Self::Exp) -> i8;
 
@@ -32,7 +31,7 @@ fn cbrt_inner<F: Cbrt>(x: F, edelta: F::Exp) -> F {
     // * k mod 3 = 0
     // * 1 <= r < 2
     // * cb0 = cb0_hi + cb0_lo = 1, cbrt(2) or cbrt(4)
-    let (sign, k, r, cb0_hi, cb0_lo) = cbrt_split(x, edelta);
+    let (sign, k, r, cb0) = cbrt_split(x, edelta);
 
     // Based on the algorithm used in SLEEF.
     // https://github.com/shibatch/sleef/wiki/Divisionless-iterative-approximation-method-of-cube-root
@@ -48,32 +47,27 @@ fn cbrt_inner<F: Cbrt>(x: F, edelta: F::Exp) -> F {
 
     // cbrt(r) = r * cbrt(1 / r)^2
     // cbrt(1 / r) is calculated with another Newton iteration
-    let (tb2_hi, tb2_lo) = (tb * tb).split_hi_lo();
-
-    let (tb4_hi, tb4_lo) = (tb2_hi * tb2_hi).split_hi_lo();
-    let tb4_lo = tb4_lo + (F::two() * tb2_hi * tb2_lo + tb2_lo * tb2_lo);
+    let tb2 = SemiDouble::new(tb * tb);
+    let tb4 = tb2.square().to_semi();
 
     // tb4r = tb^4 * r
-    let (r_hi, r_lo) = r.split_hi_lo();
-    let tb4r_hi = r_hi * tb4_hi;
-    let tb4r_lo = r * tb4_lo + r_lo * tb4_hi;
+    let r = SemiDouble::new(r);
+    let tb4r = tb4 * r;
 
     // tc = r * tb^4 - tb
-    let tc = (tb4r_hi - tb) + tb4r_lo;
+    let tc = (tb4r.hi() - tb) + tb4r.lo();
 
     // td = (-2 / 3) * tb * (r * tb^4 - tb) = (-2 / 3) * tb * tc
     let td = ((-F::two() * inv_three) * tb * tc).purify();
 
     // te = tb^2 + (-2 / 3) * tb * (r * tb^4 - tb) = tb^2 + td
-    let te_hi = (tb2_hi + td).split_hi();
-    let te_lo = tb2_lo + ((tb2_hi - te_hi) + td);
+    let te = SemiDouble::new_qadd21(tb2.to_denorm(), td);
 
     // tf = te * r = cbrt(r)
-    let (tf_hi, tf_lo) = (te_hi * r_hi).split_hi_lo();
-    let tf_lo = tf_lo + (te_hi * r_lo + te_lo * r);
+    let tf = (te * r).to_semi();
 
     // tg = cbrt(r) * cb0 = tf * cb0
-    let tg = tf_hi * cb0_hi + (tf_hi * cb0_lo + tf_lo * (cb0_hi + cb0_lo));
+    let tg = (tf * cb0).to_single();
 
     // y = cbrt(r) * 2^(k / 3) * cb0 = tg * 2^(k / 3)
     let y = tg * F::exp2i_fast(k / (F::Exp::ONE + F::Exp::TWO));
@@ -82,22 +76,22 @@ fn cbrt_inner<F: Cbrt>(x: F, edelta: F::Exp) -> F {
 }
 
 /// Returns `(sign, k, r)` as needed by `cbrt_inner`
-fn cbrt_split<F: Cbrt>(x: F, edelta: F::Exp) -> (bool, F::Exp, F, F, F) {
+fn cbrt_split<F: Cbrt>(x: F, edelta: F::Exp) -> (bool, F::Exp, F, SemiDouble<F>) {
     let k = x.exponent() + edelta;
     // 0 <= kmod3 <= 2
     let kmod3 = F::exp_mod_3(k);
 
-    let (cb0_hi, cb0_lo) = match kmod3 {
-        0 => (F::one(), F::ZERO),
-        1 => (F::cbrt_2_hi(), F::cbrt_2_lo()),
-        2 => (F::cbrt_4_hi(), F::cbrt_4_lo()),
+    let cb0 = match kmod3 {
+        0 => SemiDouble::one(),
+        1 => F::cbrt_2_ex(),
+        2 => F::cbrt_4_ex(),
         _ => unreachable!(),
     };
 
     // 1 <= r < 2
     let r = x.abs().set_exp(F::Exp::ZERO);
 
-    (x.sign(), k - F::Exp::from(kmod3), r, cb0_hi, cb0_lo)
+    (x.sign(), k - F::Exp::from(kmod3), r, cb0)
 }
 
 #[cfg(test)]

@@ -1,4 +1,5 @@
 use super::{F32Like, LikeF32};
+use crate::double::SemiDouble;
 
 // Generated with `./run-generator.sh f32::reduce_90_deg::consts`
 const DEG_TO_RAD: u32 = 0x3C8EFA35; // 1.7453292e-2
@@ -12,13 +13,8 @@ impl<F: F32Like> crate::generic::Reduce90Deg<LikeF32> for F {
     }
 
     #[inline]
-    fn deg_to_rad_hi() -> Self {
-        Self::from_raw(DEG_TO_RAD_HI)
-    }
-
-    #[inline]
-    fn deg_to_rad_lo() -> Self {
-        Self::from_raw(DEG_TO_RAD_LO)
+    fn deg_to_rad_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(DEG_TO_RAD_HI), Self::from_raw(DEG_TO_RAD_LO))
     }
 
     type SRaw = i32;

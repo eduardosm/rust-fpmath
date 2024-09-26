@@ -1,4 +1,5 @@
 use super::{F32Like, LikeF32};
+use crate::double::SemiDouble;
 
 // Generated with `./run-generator.sh f32::cbrt::consts`
 const CBRT_2_HI: u32 = 0x3FA14000; // 1.2597656e0
@@ -8,23 +9,13 @@ const CBRT_4_LO: u32 = 0x39FF529F; // 4.8698948e-4
 
 impl<F: F32Like> crate::generic::Cbrt<LikeF32> for F {
     #[inline]
-    fn cbrt_2_hi() -> Self {
-        Self::from_raw(CBRT_2_HI)
+    fn cbrt_2_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(CBRT_2_HI), Self::from_raw(CBRT_2_LO))
     }
 
     #[inline]
-    fn cbrt_2_lo() -> Self {
-        Self::from_raw(CBRT_2_LO)
-    }
-
-    #[inline]
-    fn cbrt_4_hi() -> Self {
-        Self::from_raw(CBRT_4_HI)
-    }
-
-    #[inline]
-    fn cbrt_4_lo() -> Self {
-        Self::from_raw(CBRT_4_LO)
+    fn cbrt_4_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(CBRT_4_HI), Self::from_raw(CBRT_4_LO))
     }
 
     #[inline]

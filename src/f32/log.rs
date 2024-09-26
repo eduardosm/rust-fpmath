@@ -1,4 +1,5 @@
 use super::{F32Like, LikeF32};
+use crate::double::NormDouble;
 
 // Generated with `./run-generator.sh f32::log::consts`
 const SQRT_2: u32 = 0x3FB504F3; // 1.4142135e0
@@ -26,23 +27,13 @@ impl<F: F32Like> crate::generic::Log<LikeF32> for F {
     }
 
     #[inline]
-    fn frac_2_3_hi() -> Self {
-        Self::from_raw(FRAC_2_3_HI)
+    fn frac_2_3_ex() -> NormDouble<Self> {
+        NormDouble::with_parts(Self::from_raw(FRAC_2_3_HI), Self::from_raw(FRAC_2_3_LO))
     }
 
     #[inline]
-    fn frac_2_3_lo() -> Self {
-        Self::from_raw(FRAC_2_3_LO)
-    }
-
-    #[inline]
-    fn frac_4_10_hi() -> Self {
-        Self::from_raw(FRAC_4_10_HI)
-    }
-
-    #[inline]
-    fn frac_4_10_lo() -> Self {
-        Self::from_raw(FRAC_4_10_LO)
+    fn frac_4_10_ex() -> NormDouble<Self> {
+        NormDouble::with_parts(Self::from_raw(FRAC_4_10_HI), Self::from_raw(FRAC_4_10_LO))
     }
 
     #[inline]

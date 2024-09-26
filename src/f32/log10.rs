@@ -1,4 +1,5 @@
 use super::{F32Like, LikeF32};
+use crate::double::SemiDouble;
 
 // Generated with `./run-generator.sh f32::log10::consts`
 const LOG10_E_HI: u32 = 0x3EDE5000; // 4.342041e-1
@@ -8,13 +9,8 @@ const LOG10_2_LO: u32 = 0x369A84FC; // 4.605039e-6
 
 impl<F: F32Like> crate::generic::Log10<LikeF32> for F {
     #[inline]
-    fn log10_e_hi() -> Self {
-        Self::from_raw(LOG10_E_HI)
-    }
-
-    #[inline]
-    fn log10_e_lo() -> Self {
-        Self::from_raw(LOG10_E_LO)
+    fn log10_e_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(LOG10_E_HI), Self::from_raw(LOG10_E_LO))
     }
 
     #[inline]

@@ -1,4 +1,5 @@
 use super::{reduce_half_mul_pi, tan::tan_inner, ReduceHalfMulPi, Tan};
+use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, Int as _};
 
 pub(crate) fn tanpi<F: ReduceHalfMulPi + Tan>(x: F) -> F {
@@ -17,10 +18,9 @@ pub(crate) fn tanpi<F: ReduceHalfMulPi + Tan>(x: F) -> F {
         let scale = F::exp2i_fast(logscale);
         let descale = F::exp2i_fast(-logscale);
 
-        let (x_hi, x_lo) = (x * scale).split_hi_lo();
-        let y_hi = x_hi * F::pi_hi();
-        let y_lo = x_hi * F::pi_lo() + x_lo * F::pi();
-        (y_hi + y_lo) * descale
+        let sx = SemiDouble::new(x * scale);
+        let y = sx * F::pi_ex();
+        y.to_single() * descale
     } else {
         let (n, y_hi, y_lo) = reduce_half_mul_pi(x);
         let inv = (n & 1) != 0;

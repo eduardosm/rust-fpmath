@@ -1,5 +1,6 @@
 use super::sin_cos::{cos_inner, sin_inner};
 use super::{reduce_half_mul_pi, ReduceHalfMulPi, SinCos};
+use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, Int as _};
 
 pub(crate) fn sinpi<F: SinCos + ReduceHalfMulPi>(x: F) -> F {
@@ -19,10 +20,9 @@ pub(crate) fn sinpi<F: SinCos + ReduceHalfMulPi>(x: F) -> F {
             let scale = F::exp2i_fast(logscale);
             let descale = F::exp2i_fast(-logscale);
 
-            let (x_hi, x_lo) = (x * scale).split_hi_lo();
-            let y_hi = x_hi * F::pi_hi();
-            let y_lo = x_hi * F::pi_lo() + x_lo * F::pi();
-            (y_hi + y_lo) * descale
+            let sx = SemiDouble::new(x * scale);
+            let y = sx * F::pi_ex();
+            y.to_single() * descale
         }
     } else {
         let (n, y_hi, y_lo) = reduce_half_mul_pi(x);
@@ -79,10 +79,9 @@ pub(crate) fn sinpi_cospi<F: SinCos + ReduceHalfMulPi>(x: F) -> (F, F) {
             let scale = F::exp2i_fast(logscale);
             let descale = F::exp2i_fast(-logscale);
 
-            let (x_hi, x_lo) = (x * scale).split_hi_lo();
-            let y_hi = x_hi * F::pi_hi();
-            let y_lo = x_hi * F::pi_lo() + x_lo * F::pi();
-            ((y_hi + y_lo) * descale, F::one())
+            let sx = SemiDouble::new(x * scale);
+            let y = sx * F::pi_ex();
+            (y.to_single() * descale, F::one())
         }
     } else {
         let (n, y_hi, y_lo) = reduce_half_mul_pi(x);

@@ -1,4 +1,5 @@
 use super::{F64Like, LikeF64};
+use crate::double::NormDouble;
 
 // Generated with `./run-generator.sh f64::asin_acos::consts`
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
@@ -6,13 +7,8 @@ const FRAC_PI_2_LO: u64 = 0x3C91A62633145C07; // 6.123233995736766e-17
 
 impl<F: F64Like> crate::generic::AsinAcos<LikeF64> for F {
     #[inline]
-    fn frac_pi_2_hi() -> Self {
-        Self::from_raw(FRAC_PI_2_HI)
-    }
-
-    #[inline]
-    fn frac_pi_2_lo() -> Self {
-        Self::from_raw(FRAC_PI_2_LO)
+    fn frac_pi_2_ex() -> NormDouble<Self> {
+        NormDouble::with_parts(Self::from_raw(FRAC_PI_2_HI), Self::from_raw(FRAC_PI_2_LO))
     }
 
     #[inline]

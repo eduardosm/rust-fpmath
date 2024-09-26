@@ -1,10 +1,10 @@
 use super::reduce_pi_2::round_fi;
+use crate::double::SemiDouble;
 use crate::traits::{CastFrom, CastInto, Float, Int as _, Like, SInt};
 
 pub(crate) trait Reduce90Deg<L = Like<Self>>: Float {
     fn deg_to_rad() -> Self;
-    fn deg_to_rad_hi() -> Self;
-    fn deg_to_rad_lo() -> Self;
+    fn deg_to_rad_ex() -> SemiDouble<Self>;
 
     type SRaw: SInt + CastInto<Self> + CastFrom<Self::Raw>;
 }
@@ -24,22 +24,18 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, F, F) {
         let scale = F::exp2i_fast(F::Exp::cast_from(F::MANT_BITS));
         let descale = F::exp2i_fast(-F::Exp::cast_from(F::MANT_BITS));
 
-        let (x_hi, x_lo) = (x * scale).split_hi_lo();
-        let y_hi = x_hi * F::deg_to_rad_hi();
-        let y_lo = x_hi * F::deg_to_rad_lo() + x_lo * F::deg_to_rad();
-        let (y_hi, y_lo) = F::norm_hi_lo_full(y_hi, y_lo);
+        let sx = SemiDouble::new(x * scale);
+        let y = (sx * F::deg_to_rad_ex()).pmul1(descale).to_norm();
 
-        (0, y_hi * descale, y_lo * descale)
+        (0, y.hi(), y.lo())
     } else if xexp <= F::Exp::cast_from(F::MANT_BITS - 4).min(F::Exp::from(31i8)) {
         let (f_n, n) = round_fi(x * (F::one() / F::cast_from(90u32)));
+
         let ydeg = x - f_n * F::cast_from(90u32);
+        let ydeg = SemiDouble::new(ydeg);
+        let y = (ydeg * F::deg_to_rad_ex()).to_norm();
 
-        let (ydeg_hi, ydeg_lo) = ydeg.split_hi_lo();
-        let y_hi = ydeg_hi * F::deg_to_rad_hi();
-        let y_lo = ydeg_hi * F::deg_to_rad_lo() + ydeg_lo * F::deg_to_rad();
-        let (y_hi, y_lo) = F::norm_hi_lo_full(y_hi, y_lo);
-
-        (n as u8 & 3, y_hi, y_lo)
+        (n as u8 & 3, y.hi(), y.lo())
     } else if xexp < F::Exp::cast_from(F::BITS - 1) {
         let xraw = x.to_raw();
 
@@ -66,17 +62,14 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, F, F) {
         let irem = F::SRaw::cast_from(ixint) - F::SRaw::cast_from(F::Raw::from(90u8) * n);
         let frem: F = irem.cast_into();
 
-        let ydeg = xfrac + frem;
-        let (ydeg_hi, ydeg_lo) = ydeg.split_hi_lo();
-        let y_hi = ydeg_hi * F::deg_to_rad_hi();
-        let y_lo = ydeg_hi * F::deg_to_rad_lo() + ydeg_lo * F::deg_to_rad();
-        let (y_hi, y_lo) = F::norm_hi_lo_full(y_hi, y_lo);
+        let ydeg = SemiDouble::new(xfrac + frem);
+        let y = (ydeg * F::deg_to_rad_ex()).to_norm();
 
         let n: u8 = n.cast_into();
         if x.sign() {
-            (n.wrapping_neg() & 3, -y_hi, -y_lo)
+            (n.wrapping_neg() & 3, -y.hi(), -y.lo())
         } else {
-            (n & 3, y_hi, y_lo)
+            (n & 3, y.hi(), y.lo())
         }
     } else {
         // |x| = xm * 2^xe
@@ -102,16 +95,13 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, F, F) {
             rem90 -= 90;
         }
 
-        let ydeg = F::cast_from(rem90);
-
-        let y_hi = ydeg * F::deg_to_rad_hi();
-        let y_lo = ydeg * F::deg_to_rad_lo();
-        let (y_hi, y_lo) = F::norm_hi_lo_full(y_hi, y_lo);
+        let ydeg = SemiDouble::with_parts(F::cast_from(rem90), F::ZERO);
+        let y = (ydeg * F::deg_to_rad_ex()).to_norm();
 
         if x.sign() {
-            (n.wrapping_neg() & 3, -y_hi, -y_lo)
+            (n.wrapping_neg() & 3, -y.hi(), -y.lo())
         } else {
-            (n & 3, y_hi, y_lo)
+            (n & 3, y.hi(), y.lo())
         }
     }
 }

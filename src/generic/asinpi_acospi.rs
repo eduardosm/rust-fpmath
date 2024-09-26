@@ -1,5 +1,6 @@
 use super::asin_acos::{acos_inner, asin_inner};
 use super::{AsinAcos, DivPi};
+use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, Int as _};
 
 pub(crate) fn asinpi<F: AsinAcos + DivPi>(x: F) -> F {
@@ -21,15 +22,13 @@ pub(crate) fn asinpi<F: AsinAcos + DivPi>(x: F) -> F {
         let scale = F::exp2i_fast(logscale);
         let descale = F::exp2i_fast(-logscale);
 
-        let (x_hi, x_lo) = (x * scale).split_hi_lo();
-        let y_hi = x_hi * F::frac_1_pi_hi();
-        let y_lo = x_hi * F::frac_1_pi_lo() + x_lo * F::frac_1_pi();
-        (y_hi + y_lo) * descale
-    } else {
-        let (y_hi, y_lo) = asin_inner(x);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+        let nx = SemiDouble::new(x * scale);
 
-        y_hi * F::frac_1_pi_hi() + (y_hi * F::frac_1_pi_lo() + y_lo * F::frac_1_pi())
+        (nx * F::frac_1_pi_ex()).to_single() * descale
+    } else {
+        let y = asin_inner(x).to_semi();
+
+        (y * F::frac_1_pi_ex()).to_single()
     }
 }
 
@@ -51,10 +50,9 @@ pub(crate) fn acospi<F: AsinAcos + DivPi>(x: F) -> F {
         // acospi(x) ~= 0.5
         F::half()
     } else {
-        let (y_hi, y_lo) = acos_inner(x);
-        let (y_hi, y_lo) = F::norm_hi_lo_splitted(y_hi, y_lo);
+        let y = acos_inner(x).to_semi();
 
-        y_hi * F::frac_1_pi_hi() + (y_hi * F::frac_1_pi_lo() + y_lo * F::frac_1_pi())
+        (y * F::frac_1_pi_ex()).to_single()
     }
 }
 

@@ -1,4 +1,5 @@
 use super::{F64Like, LikeF64};
+use crate::double::NormDouble;
 
 // Generated with `./run-generator.sh f64::log::consts`
 const SQRT_2: u64 = 0x3FF6A09E667F3BCD; // 1.4142135623730951e0
@@ -26,23 +27,13 @@ impl<F: F64Like> crate::generic::Log<LikeF64> for F {
     }
 
     #[inline]
-    fn frac_2_3_hi() -> Self {
-        Self::from_raw(FRAC_2_3_HI)
+    fn frac_2_3_ex() -> NormDouble<Self> {
+        NormDouble::with_parts(Self::from_raw(FRAC_2_3_HI), Self::from_raw(FRAC_2_3_LO))
     }
 
     #[inline]
-    fn frac_2_3_lo() -> Self {
-        Self::from_raw(FRAC_2_3_LO)
-    }
-
-    #[inline]
-    fn frac_4_10_hi() -> Self {
-        Self::from_raw(FRAC_4_10_HI)
-    }
-
-    #[inline]
-    fn frac_4_10_lo() -> Self {
-        Self::from_raw(FRAC_4_10_LO)
+    fn frac_4_10_ex() -> NormDouble<Self> {
+        NormDouble::with_parts(Self::from_raw(FRAC_4_10_HI), Self::from_raw(FRAC_4_10_LO))
     }
 
     #[inline]
