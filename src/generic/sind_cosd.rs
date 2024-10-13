@@ -11,13 +11,13 @@ pub(crate) fn sind<F: SinCos + Reduce90Deg>(x: F) -> F {
         // also handles sind(-0) = -0
         x * F::deg_to_rad()
     } else {
-        let (n, y_hi, y_lo) = reduce_90_deg(x);
+        let (n, y) = reduce_90_deg(x);
 
         match n {
-            0 => sin_inner(y_hi, y_lo),
-            1 => cos_inner(y_hi, y_lo),
-            2 => -sin_inner(y_hi, y_lo),
-            3 => -cos_inner(y_hi, y_lo),
+            0 => sin_inner(y.hi(), y.lo()),
+            1 => cos_inner(y.hi(), y.lo()),
+            2 => -sin_inner(y.hi(), y.lo()),
+            3 => -cos_inner(y.hi(), y.lo()),
             _ => unreachable!(),
         }
     }
@@ -32,13 +32,13 @@ pub(crate) fn cosd<F: SinCos + Reduce90Deg>(x: F) -> F {
         // subnormal or zero, cosd(x) ~= 1
         F::one()
     } else {
-        let (n, y_hi, y_lo) = reduce_90_deg(x);
+        let (n, y) = reduce_90_deg(x);
 
         match n {
-            0 => cos_inner(y_hi, y_lo),
-            1 => -sin_inner(y_hi, y_lo),
-            2 => -cos_inner(y_hi, y_lo),
-            3 => sin_inner(y_hi, y_lo),
+            0 => cos_inner(y.hi(), y.lo()),
+            1 => -sin_inner(y.hi(), y.lo()),
+            2 => -cos_inner(y.hi(), y.lo()),
+            3 => sin_inner(y.hi(), y.lo()),
             _ => unreachable!(),
         }
     }
@@ -57,10 +57,10 @@ pub(crate) fn sind_cosd<F: SinCos + Reduce90Deg>(x: F) -> (F, F) {
         // also handles sind(-0) = -0
         (x * F::deg_to_rad(), F::one())
     } else {
-        let (n, y_hi, y_lo) = reduce_90_deg(x);
+        let (n, y) = reduce_90_deg(x);
 
-        let sin = sin_inner(y_hi, y_lo);
-        let cos = cos_inner(y_hi, y_lo);
+        let sin = sin_inner(y.hi(), y.lo());
+        let cos = cos_inner(y.hi(), y.lo());
         match n {
             0 => (sin, cos),
             1 => (cos, -sin),

@@ -25,13 +25,13 @@ pub(crate) fn sinpi<F: SinCos + ReduceHalfMulPi>(x: F) -> F {
             y.to_single() * descale
         }
     } else {
-        let (n, y_hi, y_lo) = reduce_half_mul_pi(x);
+        let (n, y) = reduce_half_mul_pi(x);
 
         match n {
-            0 => sin_inner(y_hi, y_lo),
-            1 => cos_inner(y_hi, y_lo),
-            2 => -sin_inner(y_hi, y_lo),
-            3 => -cos_inner(y_hi, y_lo),
+            0 => sin_inner(y.hi(), y.lo()),
+            1 => cos_inner(y.hi(), y.lo()),
+            2 => -sin_inner(y.hi(), y.lo()),
+            3 => -cos_inner(y.hi(), y.lo()),
             _ => unreachable!(),
         }
     }
@@ -46,13 +46,13 @@ pub(crate) fn cospi<F: SinCos + ReduceHalfMulPi>(x: F) -> F {
         // subnormal or zero, cospi(x) ~= 1
         F::one()
     } else {
-        let (n, y_hi, y_lo) = reduce_half_mul_pi(x);
+        let (n, y) = reduce_half_mul_pi(x);
 
         match n {
-            0 => cos_inner(y_hi, y_lo),
-            1 => -sin_inner(y_hi, y_lo),
-            2 => -cos_inner(y_hi, y_lo),
-            3 => sin_inner(y_hi, y_lo),
+            0 => cos_inner(y.hi(), y.lo()),
+            1 => -sin_inner(y.hi(), y.lo()),
+            2 => -cos_inner(y.hi(), y.lo()),
+            3 => sin_inner(y.hi(), y.lo()),
             _ => unreachable!(),
         }
     }
@@ -84,10 +84,10 @@ pub(crate) fn sinpi_cospi<F: SinCos + ReduceHalfMulPi>(x: F) -> (F, F) {
             (y.to_single() * descale, F::one())
         }
     } else {
-        let (n, y_hi, y_lo) = reduce_half_mul_pi(x);
+        let (n, y) = reduce_half_mul_pi(x);
 
-        let sin = sin_inner(y_hi, y_lo);
-        let cos = cos_inner(y_hi, y_lo);
+        let sin = sin_inner(y.hi(), y.lo());
+        let cos = cos_inner(y.hi(), y.lo());
         match n {
             0 => (sin, cos),
             1 => (cos, -sin),

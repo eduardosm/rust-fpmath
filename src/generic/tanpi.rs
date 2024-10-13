@@ -22,12 +22,12 @@ pub(crate) fn tanpi<F: ReduceHalfMulPi + Tan>(x: F) -> F {
         let y = sx * F::pi_ex();
         y.to_single() * descale
     } else {
-        let (n, y_hi, y_lo) = reduce_half_mul_pi(x);
+        let (n, y) = reduce_half_mul_pi(x);
         let inv = (n & 1) != 0;
-        if inv && y_hi == F::ZERO {
+        if inv && y.hi() == F::ZERO {
             F::INFINITY.copysign(x)
         } else {
-            tan_inner(y_hi, y_lo, inv)
+            tan_inner(y.hi(), y.lo(), inv)
         }
     }
 }
