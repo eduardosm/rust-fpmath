@@ -206,6 +206,11 @@ pub(crate) struct NormDouble<F: Float> {
 }
 
 impl<F: Float> NormDouble<F> {
+    pub(crate) const ZERO: Self = Self {
+        hi: F::ZERO,
+        lo: F::ZERO,
+    };
+
     #[inline]
     pub(crate) fn with_parts(hi: F, lo: F) -> Self {
         Self { hi, lo }
@@ -234,6 +239,18 @@ impl<F: Float> NormDouble<F> {
         let hi = (self.hi + rhs.hi).purify();
         let lo = ((self.hi - hi) + rhs.hi) + (self.lo + rhs.lo);
         DenormDouble { hi, lo }
+    }
+}
+
+impl<F: Float> core::ops::Neg for NormDouble<F> {
+    type Output = Self;
+
+    #[inline]
+    fn neg(self) -> Self {
+        Self {
+            hi: -self.hi,
+            lo: -self.lo,
+        }
     }
 }
 

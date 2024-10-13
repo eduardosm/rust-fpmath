@@ -1,5 +1,5 @@
 use super::reduce_pi_2::round_fi;
-use crate::double::SemiDouble;
+use crate::double::{NormDouble, SemiDouble};
 use crate::traits::{CastFrom, CastInto, Float, Int as _, Like, SInt};
 
 pub(crate) trait Reduce90Deg<L = Like<Self>>: Float {
@@ -16,7 +16,7 @@ pub(crate) trait Reduce90Deg<L = Like<Self>>: Float {
 /// * `0 <= n <= 3`
 /// * `x = 360*M + 90*n + (y_hi + y_lo)*(180 / π)`
 /// * `M` is an integer
-pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, F, F) {
+pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, NormDouble<F>) {
     let xabs = x.abs();
     let xexp = x.exponent();
     if xabs <= F::cast_from(45u32) {
@@ -27,7 +27,7 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, F, F) {
         let sx = SemiDouble::new(x * scale);
         let y = (sx * F::deg_to_rad_ex()).pmul1(descale).to_norm();
 
-        (0, y.hi(), y.lo())
+        (0, y)
     } else if xexp <= F::Exp::cast_from(F::MANT_BITS - 4).min(F::Exp::from(31i8)) {
         let (f_n, n) = round_fi(x * (F::one() / F::cast_from(90u32)));
 
@@ -35,7 +35,7 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, F, F) {
         let ydeg = SemiDouble::new(ydeg);
         let y = (ydeg * F::deg_to_rad_ex()).to_norm();
 
-        (n as u8 & 3, y.hi(), y.lo())
+        (n as u8 & 3, y)
     } else if xexp < F::Exp::cast_from(F::BITS - 1) {
         let xraw = x.to_raw();
 
@@ -67,9 +67,9 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, F, F) {
 
         let n: u8 = n.cast_into();
         if x.sign() {
-            (n.wrapping_neg() & 3, -y.hi(), -y.lo())
+            (n.wrapping_neg() & 3, -y)
         } else {
-            (n & 3, y.hi(), y.lo())
+            (n & 3, y)
         }
     } else {
         // |x| = xm * 2^xe
@@ -99,9 +99,9 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, F, F) {
         let y = (ydeg * F::deg_to_rad_ex()).to_norm();
 
         if x.sign() {
-            (n.wrapping_neg() & 3, -y.hi(), -y.lo())
+            (n.wrapping_neg() & 3, -y)
         } else {
-            (n & 3, y.hi(), y.lo())
+            (n & 3, y)
         }
     }
 }

@@ -11,12 +11,12 @@ pub(crate) fn tand<F: Reduce90Deg + Tan>(x: F) -> F {
         // also handles tand(-0) = -0
         x * F::deg_to_rad()
     } else {
-        let (n, y_hi, y_lo) = reduce_90_deg(x);
+        let (n, y) = reduce_90_deg(x);
         let inv = (n & 1) != 0;
-        if inv && y_hi == F::ZERO {
+        if inv && y.hi() == F::ZERO {
             F::INFINITY.copysign(x)
         } else {
-            tan_inner(y_hi, y_lo, inv)
+            tan_inner(y.hi(), y.lo(), inv)
         }
     }
 }
