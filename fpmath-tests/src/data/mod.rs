@@ -21,6 +21,7 @@ pub(crate) const GEN_FUNCTIONS: &[(&str, fn(indicatif::ProgressBar))] = &[
     ("f64::exp10", f64::exp::gen_data_10),
     ("f64::exp2", f64::exp::gen_data_2),
     ("f64::hypot", f64::hypot::gen_data),
+    ("f64::lgamma", f64::gamma::gen_data_l),
     ("f64::log", f64::log::gen_data),
     ("f64::log10", f64::log::gen_data_10),
     ("f64::log2", f64::log::gen_data_2),
@@ -36,6 +37,7 @@ pub(crate) const GEN_FUNCTIONS: &[(&str, fn(indicatif::ProgressBar))] = &[
     ("f64::tand", f64::tand::gen_data),
     ("f64::tanh", f64::tanh::gen_data),
     ("f64::tanpi", f64::tanpi::gen_data),
+    ("f64::tgamma", f64::gamma::gen_data_t),
 ];
 
 pub(crate) fn create_prng() -> impl rand::Rng {

@@ -72,6 +72,7 @@ pub(crate) trait Float:
     'static
     + Copy
     + PartialOrd
+    + CastFrom<u8>
     + CastFrom<i16>
     + CastFrom<i32>
     + CastFrom<u32>
@@ -123,6 +124,9 @@ pub(crate) trait Float:
     fn half() -> Self;
     fn one() -> Self;
     fn two() -> Self;
+
+    #[cfg(test)]
+    fn largest() -> Self;
 
     /// Workarounds rustc/LLVM bugs
     fn purify(self) -> Self;

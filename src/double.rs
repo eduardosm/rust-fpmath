@@ -16,6 +16,14 @@ impl<F: Float> DenormDouble<F> {
     }
 
     #[inline]
+    pub(crate) fn one() -> Self {
+        Self {
+            hi: F::one(),
+            lo: F::ZERO,
+        }
+    }
+
+    #[inline]
     pub(crate) fn hi(self) -> F {
         self.hi
     }
@@ -42,6 +50,15 @@ impl<F: Float> DenormDouble<F> {
         let hi = self.hi.split_hi();
         let lo = (self.hi - hi) + self.lo;
         SemiDouble { hi, lo }
+    }
+
+    #[inline]
+    pub(crate) fn normalize(self) -> Self {
+        let norm = self.to_norm();
+        Self {
+            hi: norm.hi,
+            lo: norm.lo,
+        }
     }
 
     #[inline]
@@ -83,11 +100,10 @@ impl<F: Float> DenormDouble<F> {
     #[inline]
     pub(crate) fn new_add11(lhs: F, rhs: F) -> Self {
         let hi = (lhs + rhs).purify();
-        let lo = if lhs > rhs {
-            (lhs - hi) + rhs
-        } else {
-            (rhs - hi) + lhs
-        };
+        let t1 = (hi - lhs).purify();
+        let t2 = (hi - t1).purify();
+        let t3 = (rhs - t1).purify();
+        let lo = (lhs - t2).purify() + t3;
         Self { hi, lo }
     }
 
@@ -95,6 +111,13 @@ impl<F: Float> DenormDouble<F> {
     pub(crate) fn qsub1(self, rhs: F) -> Self {
         let hi = (self.hi - rhs).purify();
         let lo = ((self.hi - hi) - rhs) + self.lo;
+        Self { hi, lo }
+    }
+
+    #[inline]
+    pub(crate) fn qrsub1(self, rhs: F) -> Self {
+        let hi = (rhs - self.hi).purify();
+        let lo = ((rhs - hi) - self.hi) + self.lo;
         Self { hi, lo }
     }
 
@@ -117,6 +140,23 @@ impl<F: Float> DenormDouble<F> {
     pub(crate) fn new_qsub11(lhs: F, rhs: F) -> Self {
         let hi = (lhs - rhs).purify();
         let lo = (lhs - hi) - rhs;
+        Self { hi, lo }
+    }
+
+    #[inline]
+    pub(crate) fn new_qsub12(lhs: F, rhs: Self) -> Self {
+        let hi = (lhs - rhs.hi).purify();
+        let lo = ((lhs - hi) - rhs.hi) - rhs.lo;
+        Self { hi, lo }
+    }
+
+    #[inline]
+    pub(crate) fn new_sub11(lhs: F, rhs: F) -> Self {
+        let hi = (lhs - rhs).purify();
+        let t1 = (hi - lhs).purify();
+        let t2 = (hi - t1).purify();
+        let t3 = (rhs + t1).purify();
+        let lo = (lhs - t2).purify() - t3;
         Self { hi, lo }
     }
 
@@ -187,12 +227,109 @@ impl<F: Float> core::ops::Add<F> for DenormDouble<F> {
     #[inline]
     fn add(self, rhs: F) -> Self {
         let hi = (self.hi + rhs).purify();
-        let lo = if self.hi > rhs {
-            ((self.hi - hi) + rhs) + self.lo
-        } else {
-            ((rhs - hi) + self.hi) + self.lo
-        };
+        let t1 = (hi - self.hi).purify();
+        let t2 = (hi - t1).purify();
+        let t3 = (rhs - t1).purify();
+        let lo = ((self.hi - t2).purify() + t3) + self.lo;
         Self { hi, lo }
+    }
+}
+
+impl<F: Float> core::ops::Add for DenormDouble<F> {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        let hi = (self.hi + rhs.hi).purify();
+        let t1 = (hi - self.hi).purify();
+        let t2 = (hi - t1).purify();
+        let t3 = (rhs.hi - t1).purify();
+        let lo = ((self.hi - t2).purify() + t3) + (self.lo + rhs.lo);
+        Self { hi, lo }
+    }
+}
+
+impl<F: Float> core::ops::Sub<F> for DenormDouble<F> {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, rhs: F) -> Self {
+        let hi = (self.hi - rhs).purify();
+        let t1 = (hi - self.hi).purify();
+        let t2 = (hi - t1).purify();
+        let t3 = (rhs + t1).purify();
+        let lo = ((self.hi - t2).purify() - t3) + self.lo;
+        Self { hi, lo }
+    }
+}
+
+impl<F: Float> core::ops::Sub for DenormDouble<F> {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, rhs: Self) -> Self {
+        let hi = (self.hi - rhs.hi).purify();
+        let t1 = (hi - self.hi).purify();
+        let t2 = (hi - t1).purify();
+        let t3 = (rhs.hi + t1).purify();
+        let lo = ((self.hi - t2).purify() - t3) + (self.lo - rhs.lo);
+        Self { hi, lo }
+    }
+}
+
+impl<F: Float> core::ops::Mul for DenormDouble<F> {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: Self) -> Self {
+        let lhs = self;
+        let (lhs_hihi, lhs_hilo) = lhs.hi.split_hi_lo();
+        let (rhs_hihi, rhs_hilo) = rhs.hi.split_hi_lo();
+
+        let res_hi = (lhs.hi * rhs.hi).purify();
+        let res_lo = lhs_hihi * rhs_hihi - res_hi
+            + lhs_hilo * rhs_hihi
+            + lhs_hihi * rhs_hilo
+            + lhs_hilo * rhs_hilo
+            + lhs.hi * rhs.lo
+            + lhs.lo * rhs.hi;
+
+        Self {
+            hi: res_hi,
+            lo: res_lo,
+        }
+    }
+}
+
+impl<F: Float> core::ops::Div for DenormDouble<F> {
+    type Output = Self;
+
+    #[inline]
+    fn div(self, rhs: Self) -> Self {
+        let lhs = self;
+        let (lhs_hihi, lhs_hilo) = self.hi.split_hi_lo();
+        let (rhs_hihi, rhs_hilo) = rhs.hi.split_hi_lo();
+        let rhs_inv = F::one() / rhs.hi;
+        let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
+
+        let res_hi = (lhs.hi * rhs_inv).purify();
+        let res_lo = -res_hi
+            + lhs_hihi * rhs_inv_hi
+            + lhs_hihi * rhs_inv_lo
+            + lhs_hilo * rhs_inv_hi
+            + lhs_hilo * rhs_inv_lo
+            + res_hi
+                * (F::one()
+                    - rhs_hihi * rhs_inv_hi
+                    - rhs_hihi * rhs_inv_lo
+                    - rhs_hilo * rhs_inv_hi
+                    - rhs_hilo * rhs_inv_lo);
+        let res_lo = res_lo + (lhs.lo - res_hi * rhs.lo) * rhs_inv;
+
+        DenormDouble {
+            hi: res_hi,
+            lo: res_lo,
+        }
     }
 }
 
@@ -232,6 +369,13 @@ impl<F: Float> NormDouble<F> {
             hi: self.hi,
             lo: self.lo,
         }
+    }
+
+    #[inline]
+    pub(crate) fn to_semi(self) -> SemiDouble<F> {
+        let hi = self.hi.split_hi();
+        let lo = (self.hi - hi) + self.lo;
+        SemiDouble { hi, lo }
     }
 
     #[inline]

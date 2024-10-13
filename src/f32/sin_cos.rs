@@ -1,6 +1,16 @@
 use super::{F32Like, LikeF32};
+use crate::double::SemiDouble;
+
+// Generated with `./run-generator.sh f32::sin_cos::consts`
+const FRAC_1_6_HI: u32 = 0x3E2AA000; // 1.6662598e-1
+const FRAC_1_6_LO: u32 = 0x382AAAAB; // 4.0690105e-5
 
 impl<F: F32Like> crate::generic::SinCos<LikeF32> for F {
+    #[inline]
+    fn frac_1_6_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(FRAC_1_6_HI), Self::from_raw(FRAC_1_6_LO))
+    }
+
     #[inline]
     fn sin_poly(x2: Self, x5: Self) -> (Self, Self) {
         // Generated with `./run-generator.sh f32::sin_cos::sin_poly`
@@ -14,6 +24,18 @@ impl<F: F32Like> crate::generic::SinCos<LikeF32> for F {
 
         let r = horner!(x5, x2, [k5, k7]);
         (r, k3)
+    }
+
+    #[inline]
+    fn sin_poly_ex(x2: Self, x5: Self) -> Self {
+        // Generated with `./run-generator.sh f32::sin_cos::sin_poly_ex`
+        const K5: u32 = 0x3C088602; // 8.332731e-3
+        const K7: u32 = 0xB94D49A3; // -1.9577755e-4
+
+        let k5 = Self::from_raw(K5);
+        let k7 = Self::from_raw(K7);
+
+        horner!(x5, x2, [k5, k7])
     }
 
     #[inline]

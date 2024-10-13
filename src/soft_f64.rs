@@ -154,6 +154,13 @@ impl core::fmt::Display for SoftF64 {
     }
 }
 
+impl traits::CastFrom<u8> for SoftF64 {
+    #[inline]
+    fn cast_from(value: u8) -> Self {
+        Self(rustc_apfloat::Float::from_i128(value.into()).value)
+    }
+}
+
 impl traits::CastFrom<i32> for SoftF64 {
     #[inline]
     fn cast_from(value: i32) -> Self {
@@ -236,6 +243,12 @@ impl traits::Float for SoftF64 {
     #[inline]
     fn two() -> Self {
         Self::from_raw(0x4000000000000000)
+    }
+
+    #[cfg(test)]
+    #[inline]
+    fn largest() -> Self {
+        Self(rustc_apfloat::Float::largest())
     }
 
     #[inline]
@@ -501,5 +514,13 @@ impl crate::FloatMath for SoftF64 {
 
     fn atanh(x: Self) -> Self {
         crate::generic::atanh(x)
+    }
+
+    fn tgamma(x: Self) -> Self {
+        crate::generic::tgamma(x)
+    }
+
+    fn lgamma(x: Self) -> (Self, i8) {
+        crate::generic::lgamma(x)
     }
 }

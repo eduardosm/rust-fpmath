@@ -7,6 +7,7 @@ mod div_pi;
 mod exp;
 mod exp10;
 mod exp2;
+mod gamma;
 mod log;
 mod log10;
 mod log2;

@@ -1,6 +1,16 @@
 use super::{F64Like, LikeF64};
+use crate::double::SemiDouble;
+
+// Generated with `./run-generator.sh f64::sin_cos::consts`
+const FRAC_1_6_HI: u64 = 0x3FC5555550000000; // 1.666666641831398e-1
+const FRAC_1_6_LO: u64 = 0x3E25555555555555; // 2.483526865641276e-9
 
 impl<F: F64Like> crate::generic::SinCos<LikeF64> for F {
+    #[inline]
+    fn frac_1_6_ex() -> SemiDouble<Self> {
+        SemiDouble::with_parts(Self::from_raw(FRAC_1_6_HI), Self::from_raw(FRAC_1_6_LO))
+    }
+
     #[inline]
     fn sin_poly(x2: Self, x5: Self) -> (Self, Self) {
         // Generated with `./run-generator.sh f64::sin_cos::sin_poly`
@@ -20,6 +30,24 @@ impl<F: F64Like> crate::generic::SinCos<LikeF64> for F {
 
         let r = horner!(x5, x2, [k5, k7, k9, k11, k13]);
         (r, k3)
+    }
+
+    #[inline]
+    fn sin_poly_ex(x2: Self, x5: Self) -> Self {
+        // Generated with `./run-generator.sh f64::sin_cos::sin_poly_ex`
+        const K5: u64 = 0x3F81111111110750; // 8.333333333329002e-3
+        const K7: u64 = 0xBF2A01A019D9811A; // -1.9841269834142903e-4
+        const K9: u64 = 0x3EC71DE3699EA966; // 2.755731498068118e-6
+        const K11: u64 = 0xBE5AE5F2E4324531; // -2.5050935781110632e-8
+        const K13: u64 = 0x3DE5DC7074147B84; // 1.590603708120961e-10
+
+        let k5 = Self::from_raw(K5);
+        let k7 = Self::from_raw(K7);
+        let k9 = Self::from_raw(K9);
+        let k11 = Self::from_raw(K11);
+        let k13 = Self::from_raw(K13);
+
+        horner!(x5, x2, [k5, k7, k9, k11, k13])
     }
 
     #[inline]

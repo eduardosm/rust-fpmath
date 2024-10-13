@@ -1,19 +1,18 @@
-use std::io::{Read as _, Write as _};
+use std::fmt::Write as _;
+use std::io::Read as _;
 
 #[derive(Debug)]
-pub(crate) enum SollyaError {
+pub(crate) enum JuliaError {
     SpawnFailed(std::io::Error),
-    StdinWriteFailed(std::io::Error),
     StdoutReadFailed(std::io::Error),
     WaitFailed(std::io::Error),
     ExitError(std::process::ExitStatus),
 }
 
-impl std::fmt::Display for SollyaError {
+impl std::fmt::Display for JuliaError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::SpawnFailed(e) => write!(f, "failed to spawn sollya: {e}"),
-            Self::StdinWriteFailed(e) => write!(f, "failed to write to sollya stdin: {e}"),
             Self::StdoutReadFailed(e) => write!(f, "failed to read from sollya stdout: {e}"),
             Self::WaitFailed(e) => write!(f, "failed to wait for sollya process to finish: {e}"),
             Self::ExitError(status) => write!(f, "sollya process exited with status: {status}"),
@@ -21,36 +20,26 @@ impl std::fmt::Display for SollyaError {
     }
 }
 
-fn run_sollya(input: &[u8]) -> Result<Vec<u8>, SollyaError> {
-    let mut child = std::process::Command::new("sollya")
-        .arg("--warnonstderr")
-        .stdin(std::process::Stdio::piped())
+fn run_julia(input: &str) -> Result<Vec<u8>, JuliaError> {
+    let mut child = std::process::Command::new("julia")
+        .arg("-e")
+        .arg(input)
+        .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::inherit())
         .spawn()
-        .map_err(SollyaError::SpawnFailed)?;
+        .map_err(JuliaError::SpawnFailed)?;
 
-    let mut child_stdin = child.stdin.take().unwrap();
     let mut child_stdout = child.stdout.take().unwrap();
 
-    let stdout_reader = std::thread::spawn(move || {
-        let mut data = Vec::new();
-        child_stdout.read_to_end(&mut data)?;
-        Ok(data)
-    });
-    child_stdin
-        .write_all(input)
-        .map_err(SollyaError::StdinWriteFailed)?;
-    drop(child_stdin);
+    let mut stdout_data = Vec::new();
+    child_stdout
+        .read_to_end(&mut stdout_data)
+        .map_err(JuliaError::StdoutReadFailed)?;
 
-    let stdout_data = stdout_reader
-        .join()
-        .expect("stdout reader thread panicked")
-        .map_err(SollyaError::StdoutReadFailed)?;
-
-    let exit_status = child.wait().map_err(SollyaError::WaitFailed)?;
+    let exit_status = child.wait().map_err(JuliaError::WaitFailed)?;
     if !exit_status.success() {
-        return Err(SollyaError::ExitError(exit_status));
+        return Err(JuliaError::ExitError(exit_status));
     }
 
     Ok(stdout_data)
@@ -59,22 +48,20 @@ fn run_sollya(input: &[u8]) -> Result<Vec<u8>, SollyaError> {
 pub(crate) fn run_and_print_remez_f32(
     f: &str,
     range: (f64, f64),
-    poly_i: &[i32],
+    poly_deg: i32,
     poly_i_print_off: i32,
     coeff_prefix: &str,
 ) {
-    let code = gen_remez_code(f, range, poly_i, "printsingle");
-    let result = run_sollya(&code).unwrap();
+    let code = gen_remez_code(f, range, poly_deg, "Float32", "UInt32", 8);
+    let result = run_julia(&code).unwrap();
 
     let mut lines = result.split(|&c| c == b'\n');
-    let first_line = lines.next().unwrap();
-    assert_eq!(first_line, b"The precision has been set to 2048 bits.");
 
     let err_line = lines.next().unwrap();
     let err = parse_f64_hex(err_line);
     println!("// error = {err:e} = 2^({})", err.log2());
 
-    for &i in poly_i.iter() {
+    for i in 0..=poly_deg {
         let coeff_line = lines.next().unwrap();
         let coeff_value = parse_f32_hex(coeff_line);
         println!(
@@ -88,22 +75,20 @@ pub(crate) fn run_and_print_remez_f32(
 pub(crate) fn run_and_print_remez_f64(
     f: &str,
     range: (f64, f64),
-    poly_i: &[i32],
+    poly_deg: i32,
     poly_i_print_off: i32,
     coeff_prefix: &str,
 ) {
-    let code = gen_remez_code(f, range, poly_i, "printdouble");
-    let result = run_sollya(&code).unwrap();
+    let code = gen_remez_code(f, range, poly_deg, "Float64", "UInt64", 16);
+    let result = run_julia(&code).unwrap();
 
     let mut lines = result.split(|&c| c == b'\n');
-    let first_line = lines.next().unwrap();
-    assert_eq!(first_line, b"The precision has been set to 2048 bits.");
 
     let err_line = lines.next().unwrap();
     let err = parse_f64_hex(err_line);
     println!("// error = {err:e} = 2^({})", err.log2());
 
-    for &i in poly_i.iter() {
+    for i in 0..=poly_deg {
         let coeff_line = lines.next().unwrap();
         let coeff_value = parse_f64_hex(coeff_line);
         println!(
@@ -114,35 +99,37 @@ pub(crate) fn run_and_print_remez_f64(
     }
 }
 
-fn gen_remez_code(f: &str, range: (f64, f64), poly_i: &[i32], print_float: &str) -> Vec<u8> {
-    let mut code = Vec::new();
-    code.extend(b"prec = 2048;\n");
-    code.extend(b"f = ");
-    code.extend(f.as_bytes());
-    code.extend(b";\n");
+fn gen_remez_code(
+    f: &str,
+    range: (f64, f64),
+    poly_deg: i32,
+    float_type: &str,
+    float_bits_type: &str,
+    float_nibbles: u8,
+) -> String {
+    let mut code = String::new();
 
-    code.extend(b"p = remez(f, [|");
-    let mut first = true;
-    for &i in poly_i.iter() {
-        if !first {
-            code.extend(b", ");
-        }
-        first = false;
-        write!(code, "{i}").unwrap();
+    code.push_str("import Remez;\n");
+    code.push_str("import Printf;\n");
+    code.push_str("import SpecialFunctions;\n");
+    code.push_str("Remez.setprecision(BigFloat, 512);\n");
+    code.push_str("f = (x) -> ");
+    code.push_str(f);
+    code.push_str(";\n");
+
+    code.push_str("N, D, E, X = Remez.ratfn_minimax(f, ");
+    write!(code, "({}, {}), ", range.0, range.1).unwrap();
+    write!(code, "{poly_deg},").unwrap();
+    code.push_str(" 0);\n");
+
+    code.push_str("Printf.@printf \"0x%016x\\n\" reinterpret(UInt64, Float64(E))\n");
+    for i in 1..=(poly_deg + 1) {
+        writeln!(
+            code,
+            "Printf.@printf \"0x%0{float_nibbles}x\\n\" reinterpret({float_bits_type}, {float_type}(N[{i}]));",
+        )
+        .unwrap();
     }
-    writeln!(code, "|], [{}, {}]);", range.0, range.1).unwrap();
-
-    writeln!(
-        code,
-        "printdouble(dirtyinfnorm(p - f, [{}, {}]));",
-        range.0, range.1,
-    )
-    .unwrap();
-
-    for &i in poly_i.iter() {
-        writeln!(code, "{print_float}(coeff(p, {i}));").unwrap();
-    }
-    code.extend(b"quit;\n");
 
     code
 }

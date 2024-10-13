@@ -152,25 +152,105 @@ pub(super) fn log_hi_lo_inner<F: Log>(x_hi: F, x_lo: F) -> F {
     // p = (log(1 + s) - log(1 - s) - 2 * s) / s
     let p = F::log_special_poly(s);
 
-    // t1 = k * log(2)
+    // t1 = k * log(2) + c
     let kf: F = k.cast_into();
-    let t1_hi = kf * F::ln_2_hi();
-    let t1_lo = kf * F::ln_2_lo();
+    let t1 = DenormDouble::new(F::ln_2_hi(), F::ln_2_lo())
+        .pmul1(kf)
+        .ladd(c);
 
     // log(x) = log(x_hi) + c
     //        = log(1 + r) + k * log(2) + c
-    //        = log(1 + r) + t1 + c
+    //        = log(1 + r) + t1
     // log(1 + r) = p * s + 2 * s
     //            = r - s * (r - p)
     //            = r - (0.5 * r^2 - s * (0.5 * r^2 + p))
     let hr2 = F::half() * r * r;
-    (((s * (hr2 + p) + (t1_lo + c)) - hr2) + r) + t1_hi
+    (((s * (hr2 + p) + t1.lo()) - hr2) + r) + t1.hi()
+}
+
+/// Calculates log(x * 2^edelta)
+pub(super) fn hi_lo_log_inner<F: Log>(x: F, edelta: F::Exp) -> DenormDouble<F> {
+    // Algorithm based on one used by the msun math library:
+    //  * log(1 + r) = p * s + 2 * s
+    //  * s = r / (2 + r)
+    //  * p = (log(1 + s) - log(1 - s) - 2 * s) / s
+
+    // Split x * 2^edelta = 2^k * (1 + r)
+    //  - k is an integer
+    //  - sqrt(2) / 2 <= 1 + r < sqrt(2)
+    let (k, r) = log_split(x, edelta);
+
+    // rp2 = 2 + r
+    let rp2 = SemiDouble::new_qadd11(F::two(), r);
+
+    // s = r / (2 + r)
+    let s = (SemiDouble::new(r) / rp2).to_semi();
+    let s2 = s.square().to_semi();
+
+    // p = (log(1 + s) - log(1 - s) - 2 * s) / s
+    let p = hi_lo_log_special_poly(s2).to_semi();
+
+    // t1 = k * log(2)
+    let kf: F = k.cast_into();
+    let t1 = DenormDouble::new(F::ln_2_hi(), F::ln_2_lo()).pmul1(kf);
+
+    // t2 = log(1 + r) = p * s + 2 * s
+    let ps = p * s;
+    let twos = s.pmul1(F::two());
+    let t2 = twos.to_denorm().qadd2(ps);
+
+    // log(2^k * (1 + r)) = t1 + t2
+    t1.qadd2(t2)
+}
+
+/// Calculates log((x_hi + x_lo) * 2^edelta)
+pub(super) fn hi_lo_log_hi_lo_inner<F: Log>(x: NormDouble<F>, edelta: F::Exp) -> DenormDouble<F> {
+    // Algorithm based on one used by the msun math library:
+    //  * log(1 + r) = p * s + 2 * s
+    //  * s = r / (2 + r)
+    //  * p = (log(1 + s) - log(1 - s) - 2 * s) / s
+
+    // Split x_hi * 2^edelta = 2^k * (1 + r)
+    //  - k is an integer
+    //  - sqrt(2) / 2 <= 1 + r < sqrt(2)
+    let (k, r) = log_split(x.hi(), edelta);
+
+    // Calculate a correction term to handle x_lo:
+    // log(x_hi + x_lo) = log(x_hi) + c
+    // c = log(x_hi + x_lo) - log(x_hi) =
+    //   = log((x_hi + x_lo) / x_hi) =
+    //   = log(1 + x_lo / x_hi) ~= x_lo / x_hi
+    let c = x.lo() / x.hi();
+
+    // rp2 = 2 + r
+    let rp2 = SemiDouble::new_qadd11(F::two(), r);
+
+    // s = r / (2 + r)
+    let s = (SemiDouble::new(r) / rp2).to_semi();
+    let s2 = s.square().to_semi();
+
+    // p = (log(1 + s) - log(1 - s) - 2 * s) / s
+    let p = hi_lo_log_special_poly(s2).to_semi();
+
+    // t1 = k * log(2) + c
+    let kf: F = k.cast_into();
+    let t1 = DenormDouble::new(F::ln_2_hi(), F::ln_2_lo())
+        .pmul1(kf)
+        .ladd(c);
+
+    // t2 = log(1 + r) = p * s + 2 * s
+    let ps = p * s;
+    let twos = s.pmul1(F::two());
+    let t2 = twos.to_denorm().qadd2(ps);
+
+    // log(2^k * (1 + r)) + c = t1 + t2
+    t1.qadd2(t2)
 }
 
 /// Calculates `(log(1 + x) - log(1 - x) - 2 * x) / x`
 ///
 /// `-0.1716 < x < 0.1716`
-pub(super) fn hi_lo_log_special_poly<F: Log>(x2: SemiDouble<F>) -> DenormDouble<F> {
+fn hi_lo_log_special_poly<F: Log>(x2: SemiDouble<F>) -> DenormDouble<F> {
     // p0 = (p - 2/3 * x^2 - 0.4 * x^4) / x^4
     let p0 = F::log_special_poly_ex(x2.to_single());
 

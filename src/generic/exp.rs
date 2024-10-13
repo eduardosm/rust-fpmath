@@ -59,7 +59,7 @@ pub(crate) fn exp_m1<F: Exp>(x: F) -> F {
     }
 }
 
-fn exp_inner<F: Exp>(x: F) -> F {
+pub(super) fn exp_inner<F: Exp>(x: F) -> F {
     // Split x into k, r_hi, r_lo such as:
     //  - x = k*ln(2) + r_hi + r_lo
     //  - k is an integer
@@ -86,6 +86,28 @@ pub(super) fn exp_inner_common<F: Exp>(k: i32, r_hi: F, r_lo: F) -> F {
 
     // exp(x) = exp(r_hi + r_lo) * 2^k = t2 * 2^k
     scalbn_medium(t2, k)
+}
+
+/// Calculates `exp(r_hi + r_lo)`
+pub(super) fn hi_lo_exp_inner_common<F: Exp>(r_hi: F, r_lo: F) -> DenormDouble<F> {
+    // Based on the algorithm used by the msun math library
+
+    let r = r_hi + r_lo;
+    let r2 = r * r;
+
+    // t1 = 2 - 2 * r / (exp(r) - 1)
+    let t1 = DenormDouble::new_qadd11(r, F::exp_special_poly(r2));
+
+    // t2 = (r * t1) / (2 - t1)
+    let rt1 = DenormDouble::new(r_hi, r_lo).to_semi() * t1.to_semi();
+    let twomt1 = t1.qrsub1(F::two());
+    let t2 = rt1.to_semi() / twomt1.to_semi();
+
+    // t3 = exp(r) = 1 + r + t2
+    let t3 = DenormDouble::new(r_hi, r_lo).qadd2(t2).qradd1(F::one());
+
+    // exp(x) = exp(r_hi + r_lo) * 2^k = t2 * 2^k
+    DenormDouble::new(t3.hi(), t3.lo())
 }
 
 fn exp_m1_inner<F: Exp>(x: F) -> F {

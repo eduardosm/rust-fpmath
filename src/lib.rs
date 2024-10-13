@@ -29,6 +29,7 @@
 //!   - Half-revolutions ([`asinpi`], [`acospi`], [`atanpi`], [`atan2pi`]).
 //! * Hyperbolic ([`sinh`], [`cosh`], [`sinh_cosh`], [`tanh`]).
 //! * Inverse hyperbolic ([`asinh`], [`acosh`], [`atanh`]).
+//! * Gamma ([`tgamma`], [`lgamma`]).
 //!
 //! All functions are implemted for the native floating point types [`prim@f32`]
 //! and [`prim@f64`].
@@ -44,7 +45,6 @@
 // TODO:
 // * Error function and complementary (erf, erfc)
 // * Bessel functions (j0, y0, j1, y1, jn, yn)
-// * Gamma function
 
 // Uncomment to use `dbg!`
 //extern crate std;
@@ -261,6 +261,12 @@ pub trait FloatMath: sealed::SealedMath + Sized {
 
     /// See the [`atanh`] function.
     fn atanh(x: Self) -> Self;
+
+    /// See the [`tgamma`] function.
+    fn tgamma(x: Self) -> Self;
+
+    /// See the [`lgamma`] function.
+    fn lgamma(x: Self) -> (Self, i8);
 }
 
 /// Calculates the absolute value of `x`
@@ -868,4 +874,38 @@ pub fn acosh<F: FloatMath>(x: F) -> F {
 /// * Returns negative infinity if `x` is -1
 pub fn atanh<F: FloatMath>(x: F) -> F {
     F::atanh(x)
+}
+
+/// Calculates the gamma function of `x`
+///
+/// When `x` is greater than 0.5, the error is less than 1 ULP, otherwise the
+/// error is less than 2 ULP.
+///
+/// Special cases:
+/// * Returns NaN if `x` is NaN, negative infinity or a negative integer
+/// * Returns positive infinity if `x` is positive infinity
+/// * Returns positive infinity if `x` is positive zero
+/// * Returns negative infinity if `x` is negative zero
+pub fn tgamma<F: FloatMath>(x: F) -> F {
+    F::tgamma(x)
+}
+
+/// Calculates the logarithm of the absolute value of the gamma function of `x`
+///
+/// The integer field of the returned tuple is `1` when the gamma function of
+/// `x` is positive, `-1` when the gamma function of `x` is negative, and `0`
+/// when the sign of the gamma function of `x` is not defined.
+///
+/// The error is less than 2 ULP in most cases. However, for some negative
+/// values of `x`, the error can be in the order of 200 ULP.
+///
+/// Special cases:
+/// * Returns NaN if `x` is NaN or negative infinity
+/// * Returns positive infinity if `x` is positive infinity
+/// * Returns positive infinity if `x` is zero or a negative integer
+///
+/// The sign is considered undefined when `x` is NaN, a negative integer or
+/// negative infinity.
+pub fn lgamma<F: FloatMath>(x: F) -> (F, i8) {
+    F::lgamma(x)
 }
