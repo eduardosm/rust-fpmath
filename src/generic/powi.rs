@@ -1,5 +1,5 @@
 use super::exp::exp_split;
-use super::pow::hi_lo_log_inner;
+use super::log::hi_lo_log_inner;
 use super::{scalbn, Exp, Log};
 use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{CastInto as _, Int as _};

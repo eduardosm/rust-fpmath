@@ -1,5 +1,6 @@
 mod cbrt;
 mod exp;
+mod gamma;
 mod hyperbolic;
 mod hypot;
 mod inv_hyperbolic;

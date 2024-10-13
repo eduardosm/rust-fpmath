@@ -1,8 +1,7 @@
 use super::exp::{exp_inner_common, exp_split};
-use super::log::{hi_lo_log_special_poly, log_split};
+use super::log::hi_lo_log_inner;
 use super::{int_is_odd, is_int, is_odd_int, Exp, Log};
-use crate::double::{DenormDouble, SemiDouble};
-use crate::traits::{CastInto as _, Int as _};
+use crate::traits::Int as _;
 
 pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
     let (nx, xedelta) = x.normalize_arg();
@@ -126,40 +125,6 @@ pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
             absz
         }
     }
-}
-
-pub(super) fn hi_lo_log_inner<F: Log>(x: F, edelta: F::Exp) -> DenormDouble<F> {
-    // Algorithm based on one used by the msun math library:
-    //  * log(1 + r) = p * s + 2 * s
-    //  * s = r / (2 + r)
-    //  * p = (log(1 + s) - log(1 - s) - 2 * s) / s
-
-    // Split x * 2^edelta = 2^k * (1 + r)
-    //  - k is an integer
-    //  - sqrt(2) / 2 <= 1 + r < sqrt(2)
-    let (k, r) = log_split(x, edelta);
-
-    // rp2 = 2 + r
-    let rp2 = SemiDouble::new_qadd11(F::two(), r);
-
-    // s = r / (2 + r)
-    let s = (SemiDouble::new(r) / rp2).to_semi();
-    let s2 = s.square().to_semi();
-
-    // p = (log(1 + s) - log(1 - s) - 2 * s) / s
-    let p = hi_lo_log_special_poly(s2).to_semi();
-
-    // t1 = k * log(2)
-    let kf: F = k.cast_into();
-    let t1 = DenormDouble::new(F::ln_2_hi(), F::ln_2_lo()).pmul1(kf);
-
-    // t2 = log(1 + r) = p * s + 2 * s
-    let ps = p * s;
-    let twos = s.pmul1(F::two());
-    let t2 = twos.to_denorm().qadd2(ps);
-
-    // log(2^k * (1 + r)) = t1 + t2
-    t1.qadd2(t2)
 }
 
 #[cfg(test)]

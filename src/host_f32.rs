@@ -49,6 +49,12 @@ impl traits::Float for f32 {
         2.0
     }
 
+    #[cfg(test)]
+    #[inline]
+    fn largest() -> Self {
+        Self::MAX
+    }
+
     #[inline]
     fn purify(self) -> Self {
         if cfg!(all(
@@ -310,6 +316,14 @@ impl crate::FloatMath for f32 {
 
     fn atanh(x: Self) -> Self {
         crate::generic::atanh(x)
+    }
+
+    fn tgamma(x: Self) -> Self {
+        crate::generic::tgamma(x)
+    }
+
+    fn lgamma(x: Self) -> (Self, i8) {
+        crate::generic::lgamma(x)
     }
 }
 

@@ -1,5 +1,6 @@
 mod cbrt;
 mod exp;
+mod gamma;
 mod hyperbolic;
 mod hypot;
 mod inv_hyperbolic;
@@ -73,7 +74,9 @@ impl RefResult {
     fn calc_error(&self, actual: f32) -> f32 {
         // Use MIN/MAX instead of infinity because with x87 there can be
         // non-infinity values greater than MAX/less than MIN.
-        if actual.is_nan() || self.hi.is_nan() {
+        if actual.is_nan() && self.hi.is_nan() {
+            0.0
+        } else if actual.is_nan() || self.hi.is_nan() {
             f32::NAN
         } else if actual > f32::MAX {
             if self.hi > f32::MAX {

@@ -1,8 +1,26 @@
+use super::{print_f32_const, split_hi_lo, FPREC};
 use crate::sollya;
+
+pub(crate) fn gen_consts() {
+    // 1/6
+    let mut tmp = rug::Float::with_val(FPREC, 6u8).recip();
+    let (hi, lo) = split_hi_lo(&mut tmp, 12);
+    print_f32_const("FRAC_1_6_HI", hi);
+    print_f32_const("FRAC_1_6_LO", lo);
+}
 
 pub(crate) fn gen_sin_poly() {
     let f = "sin(x) / x - 1";
     let poly_i = [2, 4, 6, 99];
+    let range0 = 0.786; // ~= π/4
+    let range = (-range0, range0);
+
+    sollya::run_and_print_remez_f32(f, range, &poly_i, 1, "K");
+}
+
+pub(crate) fn gen_sin_poly_ex() {
+    let f = "sin(x) / x - 1 + x^2 / 6";
+    let poly_i = [4, 6, 99];
     let range0 = 0.786; // ~= π/4
     let range = (-range0, range0);
 

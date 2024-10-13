@@ -6,6 +6,7 @@ pub(crate) mod atan2;
 pub(crate) mod atanh;
 pub(crate) mod cbrt;
 pub(crate) mod exp;
+pub(crate) mod gamma;
 pub(crate) mod hypot;
 pub(crate) mod log;
 pub(crate) mod log_1p;
@@ -79,7 +80,9 @@ impl RefResult {
     pub(crate) fn calc_error(&self, actual: f64) -> f64 {
         // Use MIN/MAX instead of infinity because with x87 there can be
         // non-infinity values greater than MAX/less than MIN.
-        if actual.is_nan() || self.hi.is_nan() {
+        if actual.is_nan() && self.hi.is_nan() {
+            0.0
+        } else if actual.is_nan() || self.hi.is_nan() {
             f64::NAN
         } else if actual > f64::MAX {
             if self.hi > f64::MAX {

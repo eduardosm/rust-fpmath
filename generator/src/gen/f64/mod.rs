@@ -5,6 +5,7 @@ pub(crate) mod div_pi;
 pub(crate) mod exp;
 pub(crate) mod exp10;
 pub(crate) mod exp2;
+pub(crate) mod gamma;
 pub(crate) mod log;
 pub(crate) mod log10;
 pub(crate) mod log2;
