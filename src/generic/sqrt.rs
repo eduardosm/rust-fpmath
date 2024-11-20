@@ -43,7 +43,7 @@ fn sqrt_inner<F: Float>(x: F, edelta: F::Exp) -> F {
     }
 
     // Round to nearest and remove extra bit
-    res = (res + (res & F::Raw::ONE)) >> 1;
+    res = (res + F::Raw::ONE) >> 1;
 
     // Build result with k/2 as exponent and res as mantissa
     let raw_exp = F::exp_to_raw_exp(k >> 1) - F::RawExp::ONE;
