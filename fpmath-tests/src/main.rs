@@ -19,7 +19,7 @@ fn main() -> ExitCode {
     let mut args = std::env::args_os();
     args.next().unwrap();
 
-    if args.next().map_or(false, |arg| arg == "--generate") {
+    if args.next().is_some_and(|arg| arg == "--generate") {
         let mp = indicatif::MultiProgress::new();
 
         let mut args_dedup = BTreeSet::new();
