@@ -57,7 +57,7 @@ fn test_with(mut f: impl FnMut(f32)) {
 
     for e in -126..=127 {
         for _ in 0..6000 {
-            let m = rng.gen::<u32>();
+            let m = rng.random::<u32>();
             f(mkfloat(m, e, false));
             f(mkfloat(m, e, true));
         }

@@ -53,7 +53,7 @@ fn test_with(test_f: fn(f32)) {
         test_f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..10_000 {
-            let m = rng.gen::<u32>();
+            let m = rng.random::<u32>();
             test_f(mkfloat(m, e, true));
             test_f(mkfloat(m, e, false));
         }

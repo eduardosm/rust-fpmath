@@ -33,10 +33,10 @@ fn gen_args() -> Vec<(f64, f64)> {
         }
         for ey in -1022..=1023 {
             for _ in 0..5 {
-                let mx = rng.gen::<u64>();
-                let sx = rng.gen::<bool>();
-                let my = rng.gen::<u64>();
-                let sy = rng.gen::<bool>();
+                let mx = rng.random::<u64>();
+                let sx = rng.random::<bool>();
+                let my = rng.random::<u64>();
+                let sy = rng.random::<bool>();
                 args.push((mkfloat(mx, ex, sx), mkfloat(my, ey, sy)));
             }
         }
@@ -44,22 +44,22 @@ fn gen_args() -> Vec<(f64, f64)> {
 
     for e in -1022..=1023 {
         for _ in 0..1000 {
-            let mx = rng.gen::<u64>();
-            let sx = rng.gen::<bool>();
-            let my = rng.gen::<u64>();
-            let sy = rng.gen::<bool>();
+            let mx = rng.random::<u64>();
+            let sx = rng.random::<bool>();
+            let my = rng.random::<u64>();
+            let sy = rng.random::<bool>();
             args.push((mkfloat(mx, e, sx), mkfloat(my, e, sy)));
 
-            let mx = rng.gen::<u64>();
-            let sx = rng.gen::<bool>();
-            let my = rng.gen::<u64>();
-            let sy = rng.gen::<bool>();
+            let mx = rng.random::<u64>();
+            let sx = rng.random::<bool>();
+            let my = rng.random::<u64>();
+            let sy = rng.random::<bool>();
             args.push((mkfloat(mx, 0, sx), mkfloat(my, e, sy)));
 
-            let mx = rng.gen::<u64>();
-            let sx = rng.gen::<bool>();
-            let my = rng.gen::<u64>();
-            let sy = rng.gen::<bool>();
+            let mx = rng.random::<u64>();
+            let sx = rng.random::<bool>();
+            let my = rng.random::<u64>();
+            let sy = rng.random::<bool>();
             args.push((mkfloat(mx, e, sx), mkfloat(my, 0, sy)));
         }
     }

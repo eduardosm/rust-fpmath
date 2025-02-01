@@ -74,8 +74,8 @@ fn gen_args() -> Vec<(f64, f64)> {
             if matches!(ex, -900..=900) && (ex & 3) != 3 {
                 continue; // speed up tests
             }
-            let my = rng.gen::<u64>();
-            let mx = rng.gen::<u64>();
+            let my = rng.random::<u64>();
+            let mx = rng.random::<u64>();
             args.push((mkfloat(my, ey, false), mkfloat(mx, ex, false)));
             args.push((mkfloat(my, ey, false), mkfloat(mx, ex, true)));
             args.push((mkfloat(my, ey, true), mkfloat(mx, ex, false)));
@@ -85,22 +85,22 @@ fn gen_args() -> Vec<(f64, f64)> {
 
     for e in -1022..=1023 {
         for _ in 0..1000 {
-            let my = rng.gen::<u64>();
-            let sy = rng.gen::<bool>();
-            let mx = rng.gen::<u64>();
-            let sx = rng.gen::<bool>();
+            let my = rng.random::<u64>();
+            let sy = rng.random::<bool>();
+            let mx = rng.random::<u64>();
+            let sx = rng.random::<bool>();
             args.push((mkfloat(my, e, sy), mkfloat(mx, e, sx)));
 
-            let my = rng.gen::<u64>();
-            let sy = rng.gen::<bool>();
-            let mx = rng.gen::<u64>();
-            let sx = rng.gen::<bool>();
+            let my = rng.random::<u64>();
+            let sy = rng.random::<bool>();
+            let mx = rng.random::<u64>();
+            let sx = rng.random::<bool>();
             args.push((mkfloat(my, 0, sy), mkfloat(mx, e, sx)));
 
-            let my = rng.gen::<u64>();
-            let sy = rng.gen::<bool>();
-            let mx = rng.gen::<u64>();
-            let sx = rng.gen::<bool>();
+            let my = rng.random::<u64>();
+            let sy = rng.random::<bool>();
+            let mx = rng.random::<u64>();
+            let sx = rng.random::<bool>();
             args.push((mkfloat(my, e, sy), mkfloat(mx, 0, sx)));
         }
     }

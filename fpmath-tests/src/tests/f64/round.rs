@@ -52,7 +52,7 @@ fn test_round_with(test_f: fn(f64)) {
         test_f(mkfloat(u64::MAX, e, true));
 
         for _ in 0..5000 {
-            let m = rng.gen::<u64>();
+            let m = rng.random::<u64>();
             test_f(mkfloat(m, e, true));
             test_f(mkfloat(m, e, false));
         }

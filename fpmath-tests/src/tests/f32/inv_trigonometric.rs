@@ -118,8 +118,8 @@ fn test_asin_acos_with(mut f: impl FnMut(f32)) {
         f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..10000 {
-            let m = rng.gen::<u32>();
-            let s = rng.gen::<bool>();
+            let m = rng.random::<u32>();
+            let s = rng.random::<bool>();
             f(mkfloat(m, e, s));
         }
     }
@@ -193,8 +193,8 @@ fn test_atan_with(mut f: impl FnMut(f32)) {
         f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..5000 {
-            let m = rng.gen::<u32>();
-            let s = rng.gen::<bool>();
+            let m = rng.random::<u32>();
+            let s = rng.random::<bool>();
             f(mkfloat(m, e, s));
         }
     }
@@ -265,8 +265,8 @@ fn test_atan2_with(mut f: impl FnMut(f32, f32)) {
 
     for ey in -126..=127 {
         for ex in -126..=127 {
-            let my = rng.gen::<u32>();
-            let mx = rng.gen::<u32>();
+            let my = rng.random::<u32>();
+            let mx = rng.random::<u32>();
             f(mkfloat(my, ey, false), mkfloat(mx, ex, false));
             f(mkfloat(my, ey, false), mkfloat(mx, ex, true));
             f(mkfloat(my, ey, true), mkfloat(mx, ex, false));
@@ -276,22 +276,22 @@ fn test_atan2_with(mut f: impl FnMut(f32, f32)) {
 
     for e in -126..=127 {
         for _ in 0..5000 {
-            let my = rng.gen::<u32>();
-            let sy = rng.gen::<bool>();
-            let mx = rng.gen::<u32>();
-            let sx = rng.gen::<bool>();
+            let my = rng.random::<u32>();
+            let sy = rng.random::<bool>();
+            let mx = rng.random::<u32>();
+            let sx = rng.random::<bool>();
             f(mkfloat(my, e, sy), mkfloat(mx, e, sx));
 
-            let my = rng.gen::<u32>();
-            let sy = rng.gen::<bool>();
-            let mx = rng.gen::<u32>();
-            let sx = rng.gen::<bool>();
+            let my = rng.random::<u32>();
+            let sy = rng.random::<bool>();
+            let mx = rng.random::<u32>();
+            let sx = rng.random::<bool>();
             f(mkfloat(my, 0, sy), mkfloat(mx, e, sx));
 
-            let my = rng.gen::<u32>();
-            let sy = rng.gen::<bool>();
-            let mx = rng.gen::<u32>();
-            let sx = rng.gen::<bool>();
+            let my = rng.random::<u32>();
+            let sy = rng.random::<bool>();
+            let mx = rng.random::<u32>();
+            let sx = rng.random::<bool>();
             f(mkfloat(my, e, sy), mkfloat(mx, 0, sx));
         }
     }

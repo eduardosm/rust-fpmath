@@ -45,11 +45,11 @@ fn gen_args() -> Vec<(f64, f64)> {
 
         for yi in min_y..=max_y {
             for _ in 0..50 {
-                let mx = rng.gen::<u64>();
+                let mx = rng.random::<u64>();
                 let sx = false;
                 let x = mkfloat(mx, ex, sx);
 
-                let y = (rng.gen::<f64>() - 0.5) + (yi as f64);
+                let y = (rng.random::<f64>() - 0.5) + (yi as f64);
                 args.push((x, y));
             }
         }
@@ -58,10 +58,10 @@ fn gen_args() -> Vec<(f64, f64)> {
     for ex in -51..=-1 {
         for ey in 1..=1023 {
             for _ in 0..100 {
-                let mx = rng.gen::<u64>();
-                let sx = rng.gen::<bool>();
-                let my = rng.gen::<u64>();
-                let sy = rng.gen::<bool>();
+                let mx = rng.random::<u64>();
+                let sx = rng.random::<bool>();
+                let my = rng.random::<u64>();
+                let sy = rng.random::<bool>();
                 args.push((1.0 + mkfloat(mx, ex, sx), mkfloat(my, ey, sy)));
             }
         }
