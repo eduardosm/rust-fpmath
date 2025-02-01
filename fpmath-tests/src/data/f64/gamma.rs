@@ -67,7 +67,7 @@ fn gen_args() -> Vec<f64> {
     let mut args = Vec::new();
     for e in -1022..=1023 {
         for _ in 0..3000 {
-            let m = rng.gen::<u64>();
+            let m = rng.random::<u64>();
             args.push(mkfloat(m, e, false));
             args.push(mkfloat(m, e, true));
         }

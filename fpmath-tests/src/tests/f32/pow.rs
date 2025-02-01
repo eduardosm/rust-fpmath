@@ -44,11 +44,11 @@ fn test_pow_with(mut f: impl FnMut(f32, f32)) {
 
         for yi in min_y..=max_y {
             for _ in 0..100 {
-                let mx = rng.gen::<u32>();
+                let mx = rng.random::<u32>();
                 let sx = false;
                 let x = mkfloat(mx, ex, sx);
 
-                let y = (rng.gen::<f32>() - 0.5) + (yi as f32);
+                let y = (rng.random::<f32>() - 0.5) + (yi as f32);
                 f(x, purify(y));
             }
         }
@@ -57,10 +57,10 @@ fn test_pow_with(mut f: impl FnMut(f32, f32)) {
     for ex in -22..=-1 {
         for ey in 1..=127 {
             for _ in 0..2000 {
-                let mx = rng.gen::<u32>();
-                let sx = rng.gen::<bool>();
-                let my = rng.gen::<u32>();
-                let sy = rng.gen::<bool>();
+                let mx = rng.random::<u32>();
+                let sx = rng.random::<bool>();
+                let my = rng.random::<u32>();
+                let sy = rng.random::<bool>();
                 f(purify(1.0 + mkfloat(mx, ex, sx)), mkfloat(my, ey, sy));
             }
         }
@@ -101,7 +101,7 @@ fn test_powi_with(mut f: impl FnMut(f32, i32)) {
 
         for y in min_y..=max_y {
             for _ in 0..100 {
-                let mx = rng.gen::<u32>();
+                let mx = rng.random::<u32>();
                 let sx = false;
                 let x = mkfloat(mx, ex, sx);
 
@@ -113,10 +113,10 @@ fn test_powi_with(mut f: impl FnMut(f32, i32)) {
     for ex in -22..=-1 {
         for i in (1..=31).rev() {
             for _ in 0..2000 {
-                let mx = rng.gen::<u32>();
-                let sx = rng.gen::<bool>();
+                let mx = rng.random::<u32>();
+                let sx = rng.random::<bool>();
                 let x = purify(1.0 + mkfloat(mx, ex, sx));
-                let y = ((rng.gen::<u32>() | 0x8000_0000) >> i) as i32;
+                let y = ((rng.random::<u32>() | 0x8000_0000) >> i) as i32;
 
                 f(x, y);
                 f(x, -y);

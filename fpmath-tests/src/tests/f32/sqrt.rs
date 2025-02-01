@@ -27,7 +27,7 @@ fn test_with(mut f: impl FnMut(f32)) {
         f(mkfloat(u32::MAX, e, false));
 
         for _ in 0..10000 {
-            let m = rng.gen::<u32>();
+            let m = rng.random::<u32>();
             f(mkfloat(m, e, false));
         }
     }

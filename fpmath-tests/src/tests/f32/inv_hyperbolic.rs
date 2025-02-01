@@ -29,8 +29,8 @@ fn test_asinh_with(mut f: impl FnMut(f32)) {
         f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..10000 {
-            let m = rng.gen::<u32>();
-            let s = rng.gen::<bool>();
+            let m = rng.random::<u32>();
+            let s = rng.random::<bool>();
             f(mkfloat(m, e, s));
         }
     }
@@ -60,7 +60,7 @@ fn test_acosh_with(mut f: impl FnMut(f32)) {
         f(mkfloat(u32::MAX, e, false));
 
         for _ in 0..10000 {
-            let m = rng.gen::<u32>();
+            let m = rng.random::<u32>();
             f(mkfloat(m, e, false));
         }
     }
@@ -92,8 +92,8 @@ fn test_atanh_with(mut f: impl FnMut(f32)) {
         f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..10000 {
-            let m = rng.gen::<u32>();
-            let s = rng.gen::<bool>();
+            let m = rng.random::<u32>();
+            let s = rng.random::<bool>();
             f(mkfloat(m, e, s));
         }
     }

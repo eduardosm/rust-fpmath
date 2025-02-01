@@ -33,8 +33,8 @@ pub(super) fn gen_args() -> Vec<f64> {
         args.push(mkfloat(u64::MAX, e, true));
 
         for _ in 0..1000 {
-            let m = rng.gen::<u64>();
-            let s = rng.gen::<bool>();
+            let m = rng.random::<u64>();
+            let s = rng.random::<bool>();
             args.push(mkfloat(m, e, s));
         }
     }

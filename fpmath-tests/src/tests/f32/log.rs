@@ -59,7 +59,7 @@ fn test_log_with(mut f: impl FnMut(f32)) {
         f(mkfloat(u32::MAX, e, false));
 
         for _ in 0..10000 {
-            let m = rng.gen::<u32>();
+            let m = rng.random::<u32>();
             f(mkfloat(m, e, false));
         }
     }
@@ -102,7 +102,7 @@ fn test_log1p_with(mut f: impl FnMut(f32)) {
         f(mkfloat(u32::MAX, e, false));
 
         for _ in 0..10000 {
-            let m = rng.gen::<u32>();
+            let m = rng.random::<u32>();
             f(mkfloat(m, e, false));
         }
     }
@@ -120,7 +120,7 @@ fn test_log1p_with(mut f: impl FnMut(f32)) {
         f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..1000 {
-            let m = rng.gen::<u32>();
+            let m = rng.random::<u32>();
             f(mkfloat(m, e, true));
         }
     }

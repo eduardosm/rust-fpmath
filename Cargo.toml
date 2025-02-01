@@ -20,7 +20,7 @@ default = []
 soft-float = ["dep:rustc_apfloat"]
 
 [dependencies]
-rustc_apfloat = { optional = true, version = "0.2.1" }
+rustc_apfloat = { optional = true, version = "0.2.2" }
 
 [workspace]
 members = [
