@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, select_threshold, RefResult};
+use super::{mkfloat, purify, select_threshold, RefResult};
 use crate::data::create_prng;
 
 #[test]
@@ -137,6 +137,7 @@ fn test_atan() {
     test_atan_with(|x| {
         let expected = RefResult::from_f64(fpmath::atan(f64::from(x)));
         let actual = fpmath::atan(x);
+        assert_eq!(purify(fpmath::atan(-x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -153,6 +154,7 @@ fn test_atand() {
     test_atan_with(|x| {
         let expected = RefResult::from_f64(fpmath::atand(f64::from(x)));
         let actual = fpmath::atand(x);
+        assert_eq!(purify(fpmath::atand(-x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -169,6 +171,7 @@ fn test_atanpi() {
     test_atan_with(|x| {
         let expected = RefResult::from_f64(fpmath::atanpi(f64::from(x)));
         let actual = fpmath::atanpi(x);
+        assert_eq!(purify(fpmath::atanpi(-x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -188,14 +191,11 @@ fn test_atan_with(mut f: impl FnMut(f32)) {
 
     for e in -126..=127 {
         f(mkfloat(0, e, false));
-        f(mkfloat(0, e, true));
         f(mkfloat(u32::MAX, e, false));
-        f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..5000 {
             let m = rng.random::<u32>();
-            let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mkfloat(m, e, false));
         }
     }
 }
@@ -206,6 +206,7 @@ fn test_atan2() {
     test_atan2_with(|y, x| {
         let expected = RefResult::from_f64(fpmath::atan2(f64::from(y), f64::from(x)));
         let actual = fpmath::atan2(y, x);
+        assert_eq!(purify(fpmath::atan2(-y, x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -226,6 +227,7 @@ fn test_atan2d() {
     test_atan2_with(|y, x| {
         let expected = RefResult::from_f64(fpmath::atan2d(f64::from(y), f64::from(x)));
         let actual = fpmath::atan2d(y, x);
+        assert_eq!(purify(fpmath::atan2d(-y, x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -246,6 +248,7 @@ fn test_atan2pi() {
     test_atan2_with(|y, x| {
         let expected = RefResult::from_f64(fpmath::atan2pi(f64::from(y), f64::from(x)));
         let actual = fpmath::atan2pi(y, x);
+        assert_eq!(purify(fpmath::atan2pi(-y, x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -269,30 +272,25 @@ fn test_atan2_with(mut f: impl FnMut(f32, f32)) {
             let mx = rng.random::<u32>();
             f(mkfloat(my, ey, false), mkfloat(mx, ex, false));
             f(mkfloat(my, ey, false), mkfloat(mx, ex, true));
-            f(mkfloat(my, ey, true), mkfloat(mx, ex, false));
-            f(mkfloat(my, ey, true), mkfloat(mx, ex, true));
         }
     }
 
     for e in -126..=127 {
         for _ in 0..5000 {
             let my = rng.random::<u32>();
-            let sy = rng.random::<bool>();
             let mx = rng.random::<u32>();
             let sx = rng.random::<bool>();
-            f(mkfloat(my, e, sy), mkfloat(mx, e, sx));
+            f(mkfloat(my, e, false), mkfloat(mx, e, sx));
 
             let my = rng.random::<u32>();
-            let sy = rng.random::<bool>();
             let mx = rng.random::<u32>();
             let sx = rng.random::<bool>();
-            f(mkfloat(my, 0, sy), mkfloat(mx, e, sx));
+            f(mkfloat(my, 0, false), mkfloat(mx, e, sx));
 
             let my = rng.random::<u32>();
-            let sy = rng.random::<bool>();
             let mx = rng.random::<u32>();
             let sx = rng.random::<bool>();
-            f(mkfloat(my, e, sy), mkfloat(mx, 0, sx));
+            f(mkfloat(my, e, false), mkfloat(mx, 0, sx));
         }
     }
 }

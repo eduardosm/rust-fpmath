@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, purify, RefResult};
+use super::{mkfloat, purify, purify2, RefResult};
 use crate::data::create_prng;
 
 #[test]
@@ -17,6 +17,12 @@ fn test_sin_cos() {
         let actual_sin1 = fpmath::sin(x);
         let actual_cos1 = fpmath::cos(x);
         let (actual_sin2, actual_cos2) = fpmath::sin_cos(x);
+        assert_eq!(purify(fpmath::sin(-x)), purify(-actual_sin1));
+        assert_eq!(purify(fpmath::cos(-x)), purify(actual_cos1));
+        assert_eq!(
+            purify2(fpmath::sin_cos(-x)),
+            purify2((-actual_sin2, actual_cos2))
+        );
 
         let sin1_err = expected_sin.calc_error(actual_sin1);
         let sin2_err = expected_sin.calc_error(actual_sin2);
@@ -64,6 +70,7 @@ fn test_tan() {
     test_with(|x| {
         let expected = RefResult::from_f64(fpmath::tan(f64::from(x)));
         let actual = fpmath::tan(x);
+        assert_eq!(purify(fpmath::tan(-x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -79,18 +86,15 @@ fn test_with(mut f: impl FnMut(f32)) {
 
     for e in -126..=127 {
         f(mkfloat(0, e, false));
-        f(mkfloat(0, e, true));
         f(mkfloat(u32::MAX, e, false));
-        f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..1000 {
             let m = rng.random::<u32>();
-            let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mkfloat(m, e, false));
         }
     }
 
-    for arg in -1000..=1000 {
+    for arg in 1..=1000 {
         f(arg as f32);
     }
 
@@ -98,7 +102,7 @@ fn test_with(mut f: impl FnMut(f32)) {
     // "ARGUMENT REDUCTION FOR HUGE ARGUMENTS: Good to the Last Bit"
     f(1.0e22);
 
-    let f2s = [1.0, -1.0, (1 << 9) as f32, -((1 << 9) as f32)];
+    let f2s = [1.0, (1 << 9) as f32];
     let f3s = [
         1.0, 1.1, 1.01, 1.001, 1.0001, 1.00001, 1.000001, 1.0000001, 0.9, 0.99, 0.999, 0.9999,
         0.99999, 0.999999, 0.9999999,

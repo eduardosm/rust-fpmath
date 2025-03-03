@@ -1,4 +1,4 @@
-use super::select_threshold;
+use super::{purify, select_threshold};
 use crate::data::{consume_data, f64 as f64_data};
 
 #[test]
@@ -123,6 +123,7 @@ fn test_atan() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_atan", |f64_data::OneArgData { x, expected }| {
         let actual = fpmath::atan(x);
+        assert_eq!(purify(fpmath::atan(-x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -138,6 +139,7 @@ fn test_atand() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_atand", |f64_data::OneArgData { x, expected }| {
         let actual = fpmath::atand(x);
+        assert_eq!(purify(fpmath::atand(-x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -153,6 +155,7 @@ fn test_atanpi() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_atanpi", |f64_data::OneArgData { x, expected }| {
         let actual = fpmath::atanpi(x);
+        assert_eq!(purify(fpmath::atanpi(-x)), -actual);
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -171,7 +174,8 @@ fn test_atanpi() {
 fn test_atan2() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_atan2", |f64_data::TwoArgData { x, y, expected }| {
-        let actual = fpmath::atan2(x, y);
+        let actual = fpmath::atan2(y, x);
+        assert_eq!(purify(fpmath::atan2(-y, x)), -actual);
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -190,7 +194,8 @@ fn test_atan2() {
 fn test_atan2d() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_atan2d", |f64_data::TwoArgData { x, y, expected }| {
-        let actual = fpmath::atan2d(x, y);
+        let actual = fpmath::atan2d(y, x);
+        assert_eq!(purify(fpmath::atan2d(-y, x)), -actual);
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -209,7 +214,8 @@ fn test_atan2d() {
 fn test_atan2pi() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_atan2pi", |f64_data::TwoArgData { x, y, expected }| {
-        let actual = fpmath::atan2pi(x, y);
+        let actual = fpmath::atan2pi(y, x);
+        assert_eq!(purify(fpmath::atan2pi(-y, x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);

@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, RefResult};
+use super::{mkfloat, purify, purify2, RefResult};
 use crate::data::create_prng;
 
 #[test]
@@ -17,6 +17,12 @@ fn test_sinh_cosh() {
         let actual_sin1 = fpmath::sinh(x);
         let actual_cos1 = fpmath::cosh(x);
         let (actual_sin2, actual_cos2) = fpmath::sinh_cosh(x);
+        assert_eq!(purify(fpmath::sinh(-x)), purify(-actual_sin1));
+        assert_eq!(purify(fpmath::cosh(-x)), purify(actual_cos1));
+        assert_eq!(
+            purify2(fpmath::sinh_cosh(-x)),
+            purify2((-actual_sin2, actual_cos2))
+        );
 
         let sin1_err = expected_sin.calc_error(actual_sin1);
         let sin2_err = expected_sin.calc_error(actual_sin2);
@@ -62,6 +68,7 @@ fn test_tanh() {
     test_with(|x| {
         let expected = RefResult::from_f64(fpmath::tanh(f64::from(x)));
         let actual = fpmath::tanh(x);
+        assert_eq!(fpmath::tanh(-x), -actual);
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -77,18 +84,15 @@ fn test_with(mut f: impl FnMut(f32)) {
 
     for e in -126..=9 {
         f(mkfloat(0, e, false));
-        f(mkfloat(0, e, true));
         f(mkfloat(u32::MAX, e, false));
-        f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..1000 {
             let m = rng.random::<u32>();
-            let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mkfloat(m, e, false));
         }
     }
 
-    for arg in -1000..=1000 {
+    for arg in 1..=1000 {
         f(arg as f32);
     }
 }

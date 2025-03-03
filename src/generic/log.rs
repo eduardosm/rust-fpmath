@@ -13,8 +13,7 @@ pub(crate) trait Log<L = Like<Self>>: Float {
     /// `-0.1716 < x < 0.1716`
     fn log_special_poly(x: Self) -> Self;
 
-    /// Calculates `(log(1 + x) - log(1 - x) - 2 * x - (2/3) * x^3 - 0.4 * x^5)
-    /// / x`
+    /// Calculates `(log(1 + x) - log(1 - x) - 2 * x - (2/3) * x^3 - 0.4 * x^5) / x`
     ///
     /// `-0.1716 < x < 0.1716`
     fn log_special_poly_ex(x2: Self) -> Self;

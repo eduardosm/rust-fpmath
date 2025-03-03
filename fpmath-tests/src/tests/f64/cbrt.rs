@@ -5,6 +5,7 @@ fn test_cbrt() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_cbrt", |f64_data::OneArgData { x, expected }| {
         let actual = fpmath::cbrt(x);
+        assert_eq!(fpmath::cbrt(-x), -actual);
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);

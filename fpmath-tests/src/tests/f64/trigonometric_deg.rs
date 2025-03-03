@@ -1,4 +1,4 @@
-use super::select_threshold;
+use super::{purify, purify2, select_threshold};
 use crate::data::{consume_data, f64 as f64_data};
 
 #[test]
@@ -17,6 +17,12 @@ fn test_sind_cosd() {
             let actual_sin1 = fpmath::sind(x);
             let actual_cos1 = fpmath::cosd(x);
             let (actual_sin2, actual_cos2) = fpmath::sind_cosd(x);
+            assert_eq!(purify(fpmath::sind(-x)), purify(-actual_sin1));
+            assert_eq!(purify(fpmath::cosd(-x)), purify(actual_cos1));
+            assert_eq!(
+                purify2(fpmath::sind_cosd(-x)),
+                purify2((-actual_sin2, actual_cos2))
+            );
 
             let sin1_err = expected_sin.calc_error(actual_sin1);
             let sin2_err = expected_sin.calc_error(actual_sin2);
@@ -66,6 +72,7 @@ fn test_tand() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_tand", |f64_data::OneArgData { x, expected }| {
         let actual = fpmath::tand(x);
+        assert_eq!(purify(fpmath::tand(-x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);

@@ -1,3 +1,4 @@
+use super::{purify, purify2};
 use crate::data::{consume_data, f64 as f64_data};
 
 #[test]
@@ -16,6 +17,12 @@ fn test_sinh_cosh() {
             let actual_sin1 = fpmath::sinh(x);
             let actual_cos1 = fpmath::cosh(x);
             let (actual_sin2, actual_cos2) = fpmath::sinh_cosh(x);
+            assert_eq!(purify(fpmath::sinh(-x)), purify(-actual_sin1));
+            assert_eq!(purify(fpmath::cosh(-x)), purify(actual_cos1));
+            assert_eq!(
+                purify2(fpmath::sinh_cosh(-x)),
+                purify2((-actual_sin2, actual_cos2))
+            );
 
             let sin1_err = expected_sin.calc_error(actual_sin1);
             let sin2_err = expected_sin.calc_error(actual_sin2);
@@ -61,6 +68,7 @@ fn test_tanh() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_tanh", |f64_data::OneArgData { x, expected }| {
         let actual = fpmath::tanh(x);
+        assert_eq!(fpmath::tanh(-x), -actual);
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
