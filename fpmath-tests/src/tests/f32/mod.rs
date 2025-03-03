@@ -119,3 +119,7 @@ fn select_threshold(actual: f32, normal_th: f32, subnormal_th: f32) -> f32 {
 fn purify(x: f32) -> f32 {
     std::hint::black_box(x)
 }
+
+fn purify2((x, y): (f32, f32)) -> (f32, f32) {
+    (std::hint::black_box(x), std::hint::black_box(y))
+}

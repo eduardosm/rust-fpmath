@@ -24,23 +24,19 @@ fn gen_args() -> Vec<f64> {
 
     let mut args = Vec::new();
 
-    for e in -200..=200 {
+    for e in -1022..=1023 {
         args.push(mkfloat(0, e, false));
-        args.push(mkfloat(0, e, true));
         args.push(mkfloat(u64::MAX, e, false));
-        args.push(mkfloat(u64::MAX, e, true));
 
         for _ in 0..5000 {
             let m = rng.random::<u64>();
-            let s = rng.random::<bool>();
-            args.push(mkfloat(m, e, s));
+            args.push(mkfloat(m, e, false));
         }
     }
     for e in -1022..=1023 {
         for _ in 0..5000 {
             let m = rng.random::<u64>();
-            let s = rng.random::<bool>();
-            args.push(mkfloat(m, e, s));
+            args.push(mkfloat(m, e, false));
         }
     }
 
@@ -54,9 +50,7 @@ fn gen_args() -> Vec<f64> {
     // subnormals
     for i in 0..52 {
         args.push(f64::from_bits(1 << i));
-        args.push(-f64::from_bits(1 << i));
         args.push(f64::from_bits((1 << (i + 1)) - 1));
-        args.push(-f64::from_bits((1 << (i + 1)) - 1));
     }
 
     args

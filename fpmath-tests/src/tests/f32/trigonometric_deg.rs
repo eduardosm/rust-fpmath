@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, select_threshold, RefResult};
+use super::{mkfloat, purify, purify2, select_threshold, RefResult};
 use crate::data::create_prng;
 
 #[test]
@@ -17,6 +17,12 @@ fn test_sind_cosd() {
         let actual_sin1 = fpmath::sind(x);
         let actual_cos1 = fpmath::cosd(x);
         let (actual_sin2, actual_cos2) = fpmath::sind_cosd(x);
+        assert_eq!(purify(fpmath::sind(-x)), purify(-actual_sin1));
+        assert_eq!(purify(fpmath::cosd(-x)), purify(actual_cos1));
+        assert_eq!(
+            purify2(fpmath::sind_cosd(-x)),
+            purify2((-actual_sin2, actual_cos2))
+        );
 
         let sin1_err = expected_sin.calc_error(actual_sin1);
         let sin2_err = expected_sin.calc_error(actual_sin2);
@@ -68,6 +74,7 @@ fn test_tand() {
     test_with(|x| {
         let expected = RefResult::from_f64(fpmath::tand(f64::from(x)));
         let actual = fpmath::tand(x);
+        assert_eq!(purify(fpmath::tand(-x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -98,7 +105,7 @@ fn test_with(mut f: impl FnMut(f32)) {
         }
     }
 
-    for arg in -20000..=20000 {
+    for arg in 1..=20000 {
         f((arg as f32) * 0.5);
     }
 }

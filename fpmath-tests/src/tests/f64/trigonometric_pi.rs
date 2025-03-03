@@ -1,4 +1,4 @@
-use super::select_threshold;
+use super::{purify, purify2, select_threshold};
 use crate::data::{consume_data, f64 as f64_data};
 
 #[test]
@@ -17,6 +17,12 @@ fn test_sinpi_cospi() {
             let actual_sin1 = fpmath::sinpi(x);
             let actual_cos1 = fpmath::cospi(x);
             let (actual_sin2, actual_cos2) = fpmath::sinpi_cospi(x);
+            assert_eq!(purify(fpmath::sinpi(-x)), purify(-actual_sin1));
+            assert_eq!(purify(fpmath::cospi(-x)), purify(actual_cos1));
+            assert_eq!(
+                purify2(fpmath::sinpi_cospi(-x)),
+                purify2((-actual_sin2, actual_cos2))
+            );
 
             let sin1_err = expected_sin.calc_error(actual_sin1);
             let sin2_err = expected_sin.calc_error(actual_sin2);
@@ -66,6 +72,7 @@ fn test_tanpi() {
     let mut max_error: f64 = 0.0;
     consume_data("f64_tanpi", |f64_data::OneArgData { x, expected }| {
         let actual = fpmath::tanpi(x);
+        assert_eq!(purify(fpmath::tanpi(-x)), purify(-actual));
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);

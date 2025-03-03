@@ -27,18 +27,15 @@ pub(super) fn gen_args() -> Vec<f64> {
     let mut args = Vec::new();
     for e in -1022..=1023 {
         args.push(mkfloat(0, e, false));
-        args.push(mkfloat(0, e, true));
         args.push(mkfloat(u64::MAX, e, false));
-        args.push(mkfloat(u64::MAX, e, true));
 
         for _ in 0..1000 {
             let m = rng.random::<u64>();
-            let s = rng.random::<bool>();
-            args.push(mkfloat(m, e, s));
+            args.push(mkfloat(m, e, false));
         }
     }
 
-    for arg in -1000..=1000 {
+    for arg in 1..=1000 {
         args.push(arg as f64);
     }
 
@@ -51,10 +48,10 @@ pub(super) fn gen_args() -> Vec<f64> {
     args.push(3.141592033207416);
     args.push(3.141592144966125);
     args.push(3.141592979431152);
-    args.push(-3054214.5490637687);
+    args.push(3054214.5490637687);
     args.push(917340800458.2274);
 
-    let f2s = [1.0, -1.0, (1 << 20) as f64, -((1 << 20) as f64)];
+    let f2s = [1.0, (1 << 20) as f64];
     let f3s = [
         1.0, 1.1, 1.01, 1.001, 1.0001, 1.00001, 1.000001, 1.0000001, 0.9, 0.99, 0.999, 0.9999,
         0.99999, 0.999999, 0.9999999,

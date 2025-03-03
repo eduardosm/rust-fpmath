@@ -9,6 +9,7 @@ fn test_cbrt() {
     test_with(|x| {
         let expected = RefResult::from_f64(fpmath::cbrt(f64::from(x)));
         let actual = fpmath::cbrt(x);
+        assert_eq!(fpmath::cbrt(-x), -actual);
 
         let err = expected.calc_error(actual);
         max_error = max_error.max(err);
@@ -24,14 +25,11 @@ fn test_with(mut f: impl FnMut(f32)) {
 
     for e in -126..=127 {
         f(mkfloat(0, e, false));
-        f(mkfloat(0, e, true));
         f(mkfloat(u32::MAX, e, false));
-        f(mkfloat(u32::MAX, e, true));
 
         for _ in 0..10000 {
             let m = rng.random::<u32>();
-            let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mkfloat(m, e, false));
         }
     }
 
@@ -45,8 +43,6 @@ fn test_with(mut f: impl FnMut(f32)) {
     // subnormals
     for i in 0..23 {
         f(f32::from_bits(1 << i));
-        f(-f32::from_bits(1 << i));
         f(f32::from_bits((1 << (i + 1)) - 1));
-        f(-f32::from_bits((1 << (i + 1)) - 1));
     }
 }
