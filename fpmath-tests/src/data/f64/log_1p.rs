@@ -46,7 +46,7 @@ fn gen_args() -> Vec<f64> {
     args.push(f64::MIN_POSITIVE);
     args.push(f64::MAX);
 
-    // < 0
+    // 1 < x < 0
     for e in -1022..=-1 {
         args.push(mkfloat(0, e, true));
         args.push(mkfloat(u64::MAX, e, true));
@@ -60,7 +60,9 @@ fn gen_args() -> Vec<f64> {
     // subnormals
     for i in 0..52 {
         args.push(f64::from_bits(1 << i));
+        args.push(-f64::from_bits(1 << i));
         args.push(f64::from_bits((1 << (i + 1)) - 1));
+        args.push(-f64::from_bits((1 << (i + 1)) - 1));
     }
 
     args
