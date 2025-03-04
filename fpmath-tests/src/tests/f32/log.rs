@@ -114,7 +114,7 @@ fn test_log1p_with(mut f: impl FnMut(f32)) {
     f(f32::MIN_POSITIVE);
     f(f32::MAX);
 
-    // < 0
+    // 1 < x < 0
     for e in -126..=-1 {
         f(mkfloat(0, e, true));
         f(mkfloat(u32::MAX, e, true));
@@ -128,6 +128,8 @@ fn test_log1p_with(mut f: impl FnMut(f32)) {
     // subnormals
     for i in 0..23 {
         f(f32::from_bits(1 << i));
+        f(-f32::from_bits(1 << i));
         f(f32::from_bits((1 << (i + 1)) - 1));
+        f(-f32::from_bits((1 << (i + 1)) - 1));
     }
 }
