@@ -59,10 +59,10 @@ impl<F: F32Like + FloatConsts> crate::generic::ReducePi2<LikeF32> for F {
         (x_chunks, e0, jk)
     }
 
-    fn reduce_pi_2_compress(qp: &[u64; 20], qe: i16, ih: u32, jz: usize) -> (Self, Self) {
+    fn reduce_pi_2_compress(qp: &[u64], qe: i16, ih: u32) -> (Self, Self) {
         // iw = sum(qp)
         let mut iw = 0;
-        for &qp_i in qp[0..=jz].iter().rev() {
+        for &qp_i in qp.iter().rev() {
             iw = (iw >> 24) + (qp_i << 6);
         }
 
