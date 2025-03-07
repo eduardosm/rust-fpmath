@@ -26,7 +26,7 @@ pub(crate) trait ReducePi2<L = Like<Self>>: FloatConsts {
     fn reduce_pi_2_prepare(x: Self) -> (Self::SrcChunks, i16, usize);
 
     /// Returns `(y0, y1)`
-    fn reduce_pi_2_compress(qp: &[u64; 20], qe: i16, ih: u32, jz: usize) -> (Self, Self);
+    fn reduce_pi_2_compress(qp: &[u64], qe: i16, ih: u32) -> (Self, Self);
 }
 
 /// Reduces the angle argument `x`, returning `(n, y_hi, y_lo)`
@@ -47,7 +47,7 @@ pub(crate) fn reduce_pi_2<F: ReducePi2>(x: F) -> (u8, F, F) {
         let (x_chunks, e0, jk) = F::reduce_pi_2_prepare(x);
         let mut qp: [u64; 20] = [0; 20];
         let (ih, jz, n, qe) = reduce_pi_2_large(x_chunks.as_ref(), e0, jk, &mut qp);
-        let (y_hi, y_lo) = F::reduce_pi_2_compress(&qp, qe, ih, jz);
+        let (y_hi, y_lo) = F::reduce_pi_2_compress(&qp[..=jz], qe, ih);
 
         if x.sign() {
             (n.wrapping_neg() & 3, -y_hi, -y_lo)
