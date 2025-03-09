@@ -825,7 +825,7 @@ pub fn cosh<F: FloatMath>(x: F) -> F {
     F::cosh(x)
 }
 
-/// Calculates the hyerbolic sine and hyerbolic cosine of `x`
+/// Calculates the hyperbolic sine and hyperbolic cosine of `x`
 ///
 /// The same accuracy and special cases of [`sinh`] and [`cosh`] also apply to
 /// this function. Using this function can be faster than using [`sinh`] and
