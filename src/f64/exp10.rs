@@ -1,6 +1,6 @@
 use super::{F64Like, LikeF64};
 
-// Generated with `./run-generator.sh f64::exp10::consts`
+// GENERATE: other f64::exp10::consts
 const LOG2_10: u64 = 0x400A934F0979A371; // 3.321928094887362e0
 const LOG10_2_HI: u64 = 0x3FD3441350000000; // 3.010299950838089e-1
 const LOG10_2_LO: u64 = 0x3E03EF3FDE623E25; // 5.801722962879576e-10

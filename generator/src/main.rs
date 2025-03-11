@@ -7,96 +7,128 @@
 )]
 #![forbid(unsafe_code)]
 
+use std::ffi::OsStr;
+use std::path::Path;
 use std::process::ExitCode;
 
 mod generate;
-mod julia;
-mod sollya;
+
+struct RunError;
 
 fn main() -> ExitCode {
-    for arg in std::env::args_os().skip(1) {
-        println!("{arg:?}:");
-        match &*arg.to_string_lossy() {
-            // common
-            "common::reduce_pi_2_large::FRAC_2_PI_LARGE" => {
-                generate::common::reduce_pi_2_large::gen_frac_2_pi_large();
-            }
-            "common::reduce_pi_2_large::FRAC_PI_2_MEDIUM" => {
-                generate::common::reduce_pi_2_large::gen_frac_pi_2_medium();
-            }
+    let mut args = std::env::args_os();
+    let arg0 = args.next().unwrap();
 
-            // f32
-            "f32::consts" => generate::f32::gen_consts(),
-            "f32::cbrt::consts" => generate::f32::cbrt::gen_consts(),
-            "f32::cbrt::inv_cbrt_poly" => generate::f32::cbrt::gen_inv_cbrt_poly(),
-            "f32::div_pi::consts" => generate::f32::div_pi::gen_consts(),
-            "f32::exp::consts" => generate::f32::exp::gen_consts(),
-            "f32::exp::exp_special_poly" => generate::f32::exp::gen_exp_special_poly(),
-            "f32::exp::exp_m1_special_poly" => generate::f32::exp::gen_exp_m1_special_poly(),
-            "f32::exp2::consts" => generate::f32::exp2::gen_consts(),
-            "f32::exp10::consts" => generate::f32::exp10::gen_consts(),
-            "f32::gamma::consts" => generate::f32::gamma::gen_consts(),
-            "f32::gamma::lgamma_poly_1" => generate::f32::gamma::gen_lgamma_poly_1(),
-            "f32::gamma::lgamma_poly_2" => generate::f32::gamma::gen_lgamma_poly_2(),
-            "f32::gamma::special_poly" => generate::f32::gamma::gen_special_poly(),
-            "f32::log::consts" => generate::f32::log::gen_consts(),
-            "f32::log::log_special_poly" => generate::f32::log::gen_log_special_poly(),
-            "f32::log::log_special_poly_ex" => generate::f32::log::gen_log_special_poly_ex(),
-            "f32::log2::consts" => generate::f32::log2::gen_consts(),
-            "f32::log10::consts" => generate::f32::log10::gen_consts(),
-            "f32::rad_to_deg::consts" => generate::f32::rad_to_deg::gen_consts(),
-            "f32::reduce_90_deg::consts" => generate::f32::reduce_90_deg::gen_consts(),
-            "f32::reduce_half_mul_pi::consts" => generate::f32::reduce_half_mul_pi::gen_consts(),
-            "f32::reduce_pi_2::consts" => generate::f32::reduce_pi_2::gen_consts(),
-            "f32::sin_cos::consts" => generate::f32::sin_cos::gen_consts(),
-            "f32::sin_cos::sin_poly" => generate::f32::sin_cos::gen_sin_poly(),
-            "f32::sin_cos::sin_poly_ex" => generate::f32::sin_cos::gen_sin_poly_ex(),
-            "f32::sin_cos::cos_poly" => generate::f32::sin_cos::gen_cos_poly(),
-            "f32::tan::tan_poly" => generate::f32::tan::gen_tan_poly(),
-            "f32::asin_acos::consts" => generate::f32::asin_acos::gen_consts(),
-            "f32::asin_acos::asin_poly" => generate::f32::asin_acos::gen_asin_poly(),
-            "f32::atan::consts" => generate::f32::atan::gen_consts(),
-            "f32::atan::atan_poly" => generate::f32::atan::gen_atan_poly(),
+    if args.len() == 0 {
+        eprintln!("Usage: {} <paths...>", arg0.to_string_lossy());
+        return ExitCode::FAILURE;
+    }
 
-            // f64
-            "f64::consts" => generate::f64::gen_consts(),
-            "f64::cbrt::consts" => generate::f64::cbrt::gen_consts(),
-            "f64::cbrt::inv_cbrt_poly" => generate::f64::cbrt::gen_inv_cbrt_poly(),
-            "f64::div_pi::consts" => generate::f64::div_pi::gen_consts(),
-            "f64::exp::consts" => generate::f64::exp::gen_consts(),
-            "f64::exp::exp_special_poly" => generate::f64::exp::gen_exp_special_poly(),
-            "f64::exp::exp_m1_special_poly" => generate::f64::exp::gen_exp_m1_special_poly(),
-            "f64::exp2::consts" => generate::f64::exp2::gen_consts(),
-            "f64::exp10::consts" => generate::f64::exp10::gen_consts(),
-            "f64::gamma::consts" => generate::f64::gamma::gen_consts(),
-            "f64::gamma::lgamma_poly_1" => generate::f64::gamma::gen_lgamma_poly_1(),
-            "f64::gamma::lgamma_poly_2" => generate::f64::gamma::gen_lgamma_poly_2(),
-            "f64::gamma::special_poly" => generate::f64::gamma::gen_special_poly(),
-            "f64::log::consts" => generate::f64::log::gen_consts(),
-            "f64::log::log_special_poly" => generate::f64::log::gen_log_special_poly(),
-            "f64::log::log_special_poly_ex" => generate::f64::log::gen_log_special_poly_ex(),
-            "f64::log2::consts" => generate::f64::log2::gen_consts(),
-            "f64::log10::consts" => generate::f64::log10::gen_consts(),
-            "f64::rad_to_deg::consts" => generate::f64::rad_to_deg::gen_consts(),
-            "f64::reduce_90_deg::consts" => generate::f64::reduce_90_deg::gen_consts(),
-            "f64::reduce_half_mul_pi::consts" => generate::f64::reduce_half_mul_pi::gen_consts(),
-            "f64::reduce_pi_2::consts" => generate::f64::reduce_pi_2::gen_consts(),
-            "f64::sin_cos::consts" => generate::f64::sin_cos::gen_consts(),
-            "f64::sin_cos::sin_poly" => generate::f64::sin_cos::gen_sin_poly(),
-            "f64::sin_cos::sin_poly_ex" => generate::f64::sin_cos::gen_sin_poly_ex(),
-            "f64::sin_cos::cos_poly" => generate::f64::sin_cos::gen_cos_poly(),
-            "f64::tan::tan_poly" => generate::f64::tan::gen_tan_poly(),
-            "f64::asin_acos::consts" => generate::f64::asin_acos::gen_consts(),
-            "f64::asin_acos::asin_poly" => generate::f64::asin_acos::gen_asin_poly(),
-            "f64::atan::consts" => generate::f64::atan::gen_consts(),
-            "f64::atan::atan_poly" => generate::f64::atan::gen_atan_poly(),
-
-            arg => {
-                eprintln!("invalid argument {arg:?}");
-                return ExitCode::FAILURE;
-            }
+    for arg in args {
+        if let Err(RunError) = proc_path(Path::new(&arg)) {
+            return ExitCode::FAILURE;
         }
     }
 
     ExitCode::SUCCESS
+}
+
+fn proc_path(path: &Path) -> Result<(), RunError> {
+    let meta = path.metadata().map_err(|e| {
+        eprintln!("Failed to get metadata of {path:?}: {e}");
+        RunError
+    })?;
+
+    if meta.is_dir() {
+        proc_dir(path)
+    } else {
+        proc_file(path)
+    }
+}
+
+fn proc_dir(path: &Path) -> Result<(), RunError> {
+    let dir = path.read_dir().map_err(|e| {
+        eprintln!("Failed to read directory {path:?}: {e}");
+        RunError
+    })?;
+    for entry in dir {
+        let entry = entry.map_err(|e| {
+            eprintln!("Failed to read directory {path:?}: {e}");
+            RunError
+        })?;
+        proc_path(&entry.path())?;
+    }
+    Ok(())
+}
+
+fn proc_file(path: &Path) -> Result<(), RunError> {
+    if path.extension() != Some(OsStr::new("rs")) {
+        return Ok(());
+    }
+
+    eprintln!("Processing file {path:?}");
+
+    let file_data = std::fs::read_to_string(path).map_err(|e| {
+        eprintln!("Failed to read file {path:?}: {e}");
+        RunError
+    })?;
+    let mut result = String::new();
+
+    let mut num_generates = 0usize;
+    let mut lines = file_data.lines();
+    while let Some(line) = lines.next() {
+        result.push_str(line);
+        result.push('\n');
+        if let Some((ident, txt)) = check_comment(line, check_generate) {
+            let end_line = lines
+                .find_map(|line| {
+                    let line_ident_len = line.find(|c| c != ' ').unwrap_or(0);
+                    if line_ident_len < ident.len() || line.trim_matches(' ').is_empty() {
+                        Some(Ok(line))
+                    } else if check_comment(line, check_generate).is_some() {
+                        eprintln!("Another \"GENERATE\" found before expected");
+                        Some(Err(RunError))
+                    } else {
+                        None
+                    }
+                })
+                .ok_or_else(|| {
+                    eprintln!("End line not found for \"GENERATE\" block");
+                    RunError
+                })??;
+            let generated = generate::generate(txt)?;
+            for generated_line in generated.lines() {
+                result.push_str(ident);
+                result.push_str(generated_line);
+                result.push('\n');
+            }
+            result.push_str(end_line);
+            result.push('\n');
+            num_generates += 1;
+        }
+    }
+
+    std::fs::write(path, result).map_err(|e| {
+        eprintln!("Failed to write file {path:?}: {e}");
+        RunError
+    })?;
+
+    eprintln!("Processed {num_generates} \"GENERATE\" blocks");
+
+    Ok(())
+}
+
+fn check_comment<'a, R: 'a>(
+    line: &'a str,
+    f: impl FnOnce(&'a str) -> Option<R>,
+) -> Option<(&'a str, R)> {
+    let no_sp_i = line.find(|c| c != ' ')?;
+    let (ident, txt) = line.split_at(no_sp_i);
+    let txt = txt.strip_prefix("//")?.trim_start_matches(' ');
+    f(txt).map(|r| (ident, r))
+}
+
+fn check_generate(txt: &str) -> Option<&str> {
+    txt.strip_prefix("GENERATE:")
+        .map(|s| s.trim_start_matches(' '))
 }

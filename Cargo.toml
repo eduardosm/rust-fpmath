@@ -26,6 +26,7 @@ rustc_apfloat = { optional = true, version = "0.2.2" }
 members = [
     "fpmath-tests",
     "generator",
+    "generator-aux",
 ]
 
 [workspace.dependencies]

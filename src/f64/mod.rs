@@ -23,7 +23,7 @@ pub(crate) struct LikeF64;
 
 pub(crate) trait F64Like: Float<Like = LikeF64, Raw = u64, RawExp = u16, Exp = i16> {}
 
-// Generated with `./run-generator.sh f64::consts`
+// GENERATE: other f64::consts
 const PI: u64 = 0x400921FB54442D18; // 3.141592653589793e0
 const FRAC_PI_2: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
 const FRAC_PI_4: u64 = 0x3FE921FB54442D18; // 7.853981633974483e-1

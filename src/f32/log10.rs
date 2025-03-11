@@ -1,7 +1,7 @@
 use super::{F32Like, LikeF32};
 use crate::double::SemiDouble;
 
-// Generated with `./run-generator.sh f32::log10::consts`
+// GENERATE: other f32::log10::consts
 const LOG10_E_HI: u32 = 0x3EDE5000; // 4.342041e-1
 const LOG10_E_LO: u32 = 0x38BD8A93; // 9.038034e-5
 const LOG10_2_HI: u32 = 0x3E9A2000; // 3.010254e-1

@@ -11,7 +11,7 @@ pub(crate) fn gen_consts() {
 
 pub(crate) fn gen_sin_poly() {
     let f = "sin(x) / x - 1";
-    let poly_i = [2, 4, 6, 99];
+    let poly_i = [2, 4, 6];
     let range0 = 0.786; // ~= π/4
     let range = (-range0, range0);
 
@@ -20,7 +20,7 @@ pub(crate) fn gen_sin_poly() {
 
 pub(crate) fn gen_sin_poly_ex() {
     let f = "sin(x) / x - 1 + x^2 / 6";
-    let poly_i = [4, 6, 99];
+    let poly_i = [4, 6];
     let range0 = 0.786; // ~= π/4
     let range = (-range0, range0);
 
@@ -29,7 +29,7 @@ pub(crate) fn gen_sin_poly_ex() {
 
 pub(crate) fn gen_cos_poly() {
     let f = "cos(x) - (1 - 0.5 * x^2)";
-    let poly_i = [4, 6, 8, 99];
+    let poly_i = [4, 6, 8];
     let range0 = 0.786; // ~= π/4
     let range = (-range0, range0);
 

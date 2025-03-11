@@ -1,7 +1,7 @@
 use super::{F64Like, LikeF64};
 use crate::double::SemiDouble;
 
-// Generated with `./run-generator.sh f64::log2::consts`
+// GENERATE: other f64::log2::consts
 const LOG2_E_HI: u64 = 0x3FF7154760000000; // 1.4426950216293335e0
 const LOG2_E_LO: u64 = 0x3E54AE0BF85DDF44; // 1.9259629911266175e-8
 

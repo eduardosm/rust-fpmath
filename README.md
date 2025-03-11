@@ -38,6 +38,20 @@ fpmath is a pure-Rust floating point library that implements math functions for
 * Hypotenuse
 * Power (floating point and integer exponent)
 
+## Development
+
+The code contains some generated constants. They can be identified with a
+comment that starts with `// GENERATE:`.
+
+They can be regenerated with:
+
+```sh
+cargo run -p generator -- src
+```
+
+The generator needs [Sollya](https://www.sollya.org/) and
+[Julia](https://julialang.org/) to be installed.
+
 ## License
 
 Licensed under either of

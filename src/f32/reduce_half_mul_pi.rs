@@ -1,7 +1,7 @@
 use super::{F32Like, LikeF32};
 use crate::double::SemiDouble;
 
-// Generated with `./run-generator.sh f32::reduce_half_mul_pi::consts`
+// GENERATE: other f32::reduce_half_mul_pi::consts
 const PI_HI: u32 = 0x40490000; // 3.140625e0
 const PI_LO: u32 = 0x3A7DAA22; // 9.676536e-4
 

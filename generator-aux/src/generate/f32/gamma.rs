@@ -15,7 +15,7 @@ pub(crate) fn gen_lgamma_poly_1() {
     let o = 1.0;
     let range = (0.5 - o, 1.201 - o);
 
-    julia::run_and_print_remez_f32(f, range, poly_deg, 0, "K");
+    julia::run_and_print_remez_f32(f, range, poly_deg, 0, "K", &[0]);
 }
 
 pub(crate) fn gen_lgamma_poly_2() {
@@ -24,7 +24,7 @@ pub(crate) fn gen_lgamma_poly_2() {
     let o = 2.0;
     let range = (1.199 - o, 2.301 - o);
 
-    julia::run_and_print_remez_f32(f, range, poly_deg, 0, "K");
+    julia::run_and_print_remez_f32(f, range, poly_deg, 0, "K", &[0]);
 }
 
 pub(crate) fn gen_special_poly() {
@@ -32,5 +32,5 @@ pub(crate) fn gen_special_poly() {
     let poly_deg = 8;
     let range = (1.0e-10, 1.0 / 2.299);
 
-    julia::run_and_print_remez_f32(f, range, poly_deg, 0, "K");
+    julia::run_and_print_remez_f32(f, range, poly_deg, 0, "K", &[]);
 }

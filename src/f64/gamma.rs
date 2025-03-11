@@ -31,7 +31,7 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
 
     #[inline]
     fn half_ln_2_pi() -> NormDouble<Self> {
-        // Generated with `./run-generator.sh f32::gamma::consts`
+        // GENERATE: other f64::gamma::consts
         const HALF_LN_2_PI_HI: u64 = 0x3FED67F1C864BEB4; // 9.189385332046727e-1
         const HALF_LN_2_PI_LO: u64 = 0x3C94D252F2400510; // 7.223936088184323e-17
 
@@ -43,7 +43,7 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
 
     #[inline]
     fn lgamma_poly_1(x: Self) -> (Self, Self, Self, Self) {
-        // Generated with `./run-generator.sh f64::gamma::lgamma_poly_1`
+        // GENERATE: other f64::gamma::lgamma_poly_1
         const K1: u64 = 0xBFE2788CFC6FB619; // -5.772156649015329e-1
         const K2: u64 = 0x3FEA51A6625307D3; // 8.224670334241132e-1
         const K3: u64 = 0xBFD9A4D55BEAB2C7; // -4.0068563438653054e-1
@@ -111,7 +111,7 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
 
     #[inline]
     fn lgamma_poly_2(x: Self) -> (Self, Self, Self, Self) {
-        // Generated with `./run-generator.sh f64::gamma::lgamma_poly_2`
+        // GENERATE: other f64::gamma::lgamma_poly_2
         const K1: u64 = 0x3FDB0EE6072093CE; // 4.2278433509846713e-1
         const K2: u64 = 0x3FD4A34CC4A60FA6; // 3.224670334241132e-1
         const K3: u64 = 0xBFB13E001A557607; // -6.73523010531981e-2
@@ -179,7 +179,7 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
 
     #[inline]
     fn special_poly(x: Self) -> Self {
-        // Generated with `./run-generator.sh f64::gamma::special_poly`
+        // GENERATE: other f64::gamma::special_poly
         const K0: u64 = 0x3FB5555555555555; // 8.333333333333333e-2
         const K1: u64 = 0x3F6C71C71C71C71D; // 3.4722222222222225e-3
         const K2: u64 = 0xBF65F7268EDAB562; // -2.681327160493894e-3

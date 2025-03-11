@@ -1,6 +1,6 @@
 use super::{F32Like, LikeF32};
 
-// Generated with `./run-generator.sh f32::exp10::consts`
+// GENERATE: other f32::exp10::consts
 const LOG2_10: u32 = 0x40549A78; // 3.321928e0
 const LOG10_2_HI: u32 = 0x3E9A2000; // 3.010254e-1
 const LOG10_2_LO: u32 = 0x369A84FC; // 4.605039e-6

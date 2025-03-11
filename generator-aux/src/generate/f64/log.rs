@@ -28,7 +28,7 @@ pub(crate) fn gen_consts() {
 
 pub(crate) fn gen_log_special_poly() {
     let f = "(log1p(x) - log(1 - x) - 2 * x) / x";
-    let poly_i = [2, 4, 6, 8, 10, 12, 14, 99];
+    let poly_i = [2, 4, 6, 8, 10, 12, 14];
     let range0 = 0.1716;
     let range = (-range0, range0);
 

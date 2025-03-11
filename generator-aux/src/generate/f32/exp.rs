@@ -16,7 +16,7 @@ pub(crate) fn gen_consts() {
 
 pub(crate) fn gen_exp_special_poly() {
     let f = "2 - 2 * x / expm1(x) - x";
-    let poly_i = [2, 4, 99];
+    let poly_i = [2, 4];
     let range0 = 0.3466; // ~= 0.5*ln(2)
     let range = (-range0, range0);
 
@@ -25,7 +25,7 @@ pub(crate) fn gen_exp_special_poly() {
 
 pub(crate) fn gen_exp_m1_special_poly() {
     let f = "6/x * ((exp(x) + 1)/expm1(x) - 2/x) - 1";
-    let poly_i = [2, 4, 99];
+    let poly_i = [2, 4];
     let range0 = 0.3466; // ~= 0.5*ln(2)
     let range = (-range0, range0);
 

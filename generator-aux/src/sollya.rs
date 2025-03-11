@@ -72,7 +72,7 @@ pub(crate) fn run_and_print_remez_f32(
 
     let err_line = lines.next().unwrap();
     let err = parse_f64_hex(err_line);
-    println!("// error = {err:e} = 2^({})", err.log2());
+    eprintln!("error = {err:e} = 2^({})", err.log2());
 
     for &i in poly_i.iter() {
         let coeff_line = lines.next().unwrap();
@@ -101,7 +101,7 @@ pub(crate) fn run_and_print_remez_f64(
 
     let err_line = lines.next().unwrap();
     let err = parse_f64_hex(err_line);
-    println!("// error = {err:e} = 2^({})", err.log2());
+    eprintln!("error = {err:e} = 2^({})", err.log2());
 
     for &i in poly_i.iter() {
         let coeff_line = lines.next().unwrap();
