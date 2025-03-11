@@ -88,6 +88,10 @@ dependencies = [
 [[package]]
 name = "generator"
 version = "0.0.0"
+
+[[package]]
+name = "generator-aux"
+version = "0.0.0"
 dependencies = [
  "gmp-mpfr-sys",
  "rug",

@@ -23,7 +23,7 @@ pub(crate) struct LikeF32;
 
 pub(crate) trait F32Like: Float<Like = LikeF32, Raw = u32, RawExp = u8, Exp = i16> {}
 
-// Generated with `./run-generator.sh f32::consts`
+// GENERATE: other f32::consts
 const PI: u32 = 0x40490FDB; // 3.1415927e0
 const FRAC_PI_2: u32 = 0x3FC90FDB; // 1.5707964e0
 const FRAC_PI_4: u32 = 0x3F490FDB; // 7.853982e-1

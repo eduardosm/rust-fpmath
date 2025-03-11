@@ -1,7 +1,7 @@
 use super::{F32Like, LikeF32};
 use crate::double::NormDouble;
 
-// Generated with `./run-generator.sh f32::log::consts`
+// GENERATE: other f32::log::consts
 const SQRT_2: u32 = 0x3FB504F3; // 1.4142135e0
 const LN_2_HI: u32 = 0x3F317000; // 6.9311523e-1
 const LN_2_LO: u32 = 0x3805FDF4; // 3.1946183e-5
@@ -38,7 +38,7 @@ impl<F: F32Like> crate::generic::Log<LikeF32> for F {
 
     #[inline]
     fn log_special_poly(x: Self) -> Self {
-        // Generated with `./run-generator.sh f32::log::log_special_poly`
+        // GENERATE: other f32::log::log_special_poly
         const K2: u32 = 0x3F2AAAAA; // 6.666666e-1
         const K4: u32 = 0x3ECCCD3D; // 4.0000334e-1
         const K6: u32 = 0x3E921C64; // 2.8537285e-1
@@ -55,9 +55,9 @@ impl<F: F32Like> crate::generic::Log<LikeF32> for F {
 
     #[inline]
     fn log_special_poly_ex(x2: Self) -> Self {
-        // Generated with `./run-generator.sh f32::log::log_special_poly_ex`
+        // GENERATE: other f32::log::log_special_poly_ex
         const K6: u32 = 0x3E92495E; // 2.85716e-1
-        const K8: u32 = 0x3E634F16; // 2.2198138e-1
+        const K8: u32 = 0x3E634F17; // 2.2198139e-1
         const K10: u32 = 0x3E454D62; // 1.92678e-1
 
         let k6 = Self::from_raw(K6);

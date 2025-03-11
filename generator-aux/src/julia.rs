@@ -51,6 +51,7 @@ pub(crate) fn run_and_print_remez_f32(
     poly_deg: i32,
     poly_i_print_off: i32,
     coeff_prefix: &str,
+    exclude_coeffs: &[i32],
 ) {
     let code = gen_remez_code(f, range, poly_deg, "Float32", "UInt32", 8);
     let result = run_julia(&code).unwrap();
@@ -59,16 +60,18 @@ pub(crate) fn run_and_print_remez_f32(
 
     let err_line = lines.next().unwrap();
     let err = parse_f64_hex(err_line);
-    println!("// error = {err:e} = 2^({})", err.log2());
+    eprintln!("error = {err:e} = 2^({})", err.log2());
 
     for i in 0..=poly_deg {
         let coeff_line = lines.next().unwrap();
         let coeff_value = parse_f32_hex(coeff_line);
-        println!(
-            "const {coeff_prefix}{}: u32 = 0x{:08X}; // {coeff_value:e}",
-            i + poly_i_print_off,
-            coeff_value.to_bits(),
-        );
+        if !exclude_coeffs.contains(&i) {
+            println!(
+                "const {coeff_prefix}{}: u32 = 0x{:08X}; // {coeff_value:e}",
+                i + poly_i_print_off,
+                coeff_value.to_bits(),
+            );
+        }
     }
 }
 
@@ -78,6 +81,7 @@ pub(crate) fn run_and_print_remez_f64(
     poly_deg: i32,
     poly_i_print_off: i32,
     coeff_prefix: &str,
+    exclude_coeffs: &[i32],
 ) {
     let code = gen_remez_code(f, range, poly_deg, "Float64", "UInt64", 16);
     let result = run_julia(&code).unwrap();
@@ -86,16 +90,18 @@ pub(crate) fn run_and_print_remez_f64(
 
     let err_line = lines.next().unwrap();
     let err = parse_f64_hex(err_line);
-    println!("// error = {err:e} = 2^({})", err.log2());
+    eprintln!("error = {err:e} = 2^({})", err.log2());
 
     for i in 0..=poly_deg {
         let coeff_line = lines.next().unwrap();
         let coeff_value = parse_f64_hex(coeff_line);
-        println!(
-            "const {coeff_prefix}{}: u64 = 0x{:016X}; // {coeff_value:e}",
-            i + poly_i_print_off,
-            coeff_value.to_bits(),
-        );
+        if !exclude_coeffs.contains(&i) {
+            println!(
+                "const {coeff_prefix}{}: u64 = 0x{:016X}; // {coeff_value:e}",
+                i + poly_i_print_off,
+                coeff_value.to_bits(),
+            );
+        }
     }
 }
 

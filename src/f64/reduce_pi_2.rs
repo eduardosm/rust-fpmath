@@ -2,7 +2,7 @@ use super::{F64Like, LikeF64};
 use crate::generic::scalbn_medium;
 use crate::traits::FloatConsts;
 
-// Generated with `./run-generator.sh f64::reduce_pi_2::consts`
+// GENERATE: other f64::reduce_pi_2::consts
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54400000; // 1.5707963267341256e0
 const FRAC_PI_2_HIEX: u64 = 0x3DD0B4611A626331; // 6.077100506506192e-11
 const FRAC_PI_2_MI: u64 = 0x3DD0B4611A600000; // 6.077100506303966e-11
