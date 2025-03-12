@@ -1,7 +1,7 @@
 use super::{F32Like, LikeF32};
 use crate::double::SemiDouble;
 
-// GENERATE: other f32::rad_to_deg::consts
+// GENERATE: f32::rad_to_deg::consts
 const RAD_TO_DEG: u32 = 0x42652EE1; // 5.729578e1
 const RAD_TO_DEG_HI: u32 = 0x42652000; // 5.728125e1
 const RAD_TO_DEG_LO: u32 = 0x3C6E0D32; // 1.4529513e-2

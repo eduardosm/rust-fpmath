@@ -1,7 +1,7 @@
 use super::{F64Like, LikeF64};
 use crate::double::SemiDouble;
 
-// GENERATE: other f64::cbrt::consts
+// GENERATE: f64::cbrt::consts
 const CBRT_2_HI: u64 = 0x3FF428A2F8000000; // 1.2599210441112518e0
 const CBRT_2_LO: u64 = 0x3E38D728AE223DDB; // 5.783621333712523e-9
 const CBRT_4_HI: u64 = 0x3FF965FEA0000000; // 1.587401032447815e0
@@ -25,7 +25,7 @@ impl<F: F64Like> crate::generic::Cbrt<LikeF64> for F {
 
     #[inline]
     fn inv_cbrt_poly(x: Self) -> Self {
-        // GENERATE: other f64::cbrt::inv_cbrt_poly
+        // GENERATE: f64::cbrt::inv_cbrt_poly
         const K0: u64 = 0x3FFC880B69FCA3C8; // 1.7832140102493543e0
         const K1: u64 = 0xBFF92D75CD846C60; // -1.573598673631544e0
         const K2: u64 = 0x3FF4116F47A08958; // 1.2542565153058458e0
