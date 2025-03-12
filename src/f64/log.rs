@@ -1,7 +1,7 @@
 use super::{F64Like, LikeF64};
 use crate::double::NormDouble;
 
-// GENERATE: other f64::log::consts
+// GENERATE: f64::log::consts
 const SQRT_2: u64 = 0x3FF6A09E667F3BCD; // 1.4142135623730951e0
 const LN_2_HI: u64 = 0x3FE62E42F8000000; // 6.931471675634384e-1
 const LN_2_LO: u64 = 0x3E4BE8E7BCD5E4F2; // 1.2996506893889889e-8
@@ -38,7 +38,7 @@ impl<F: F64Like> crate::generic::Log<LikeF64> for F {
 
     #[inline]
     fn log_special_poly(x: Self) -> Self {
-        // GENERATE: other f64::log::log_special_poly
+        // GENERATE: f64::log::log_special_poly
         const K2: u64 = 0x3FE5555555555592; // 6.666666666666734e-1
         const K4: u64 = 0x3FD999999997FCEC; // 3.999999999941355e-1
         const K6: u64 = 0x3FD24924941FD4A8; // 2.8571428742663807e-1
@@ -61,7 +61,7 @@ impl<F: F64Like> crate::generic::Log<LikeF64> for F {
 
     #[inline]
     fn log_special_poly_ex(x2: Self) -> Self {
-        // GENERATE: other f64::log::log_special_poly_ex
+        // GENERATE: f64::log::log_special_poly_ex
         const K6: u64 = 0x3FD24924924812EE; // 2.8571428571039703e-1
         const K8: u64 = 0x3FCC71C71F9F60BA; // 2.222222237021521e-1
         const K10: u64 = 0x3FC745CF9D840A43; // 1.8181796256256363e-1

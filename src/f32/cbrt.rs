@@ -1,7 +1,7 @@
 use super::{F32Like, LikeF32};
 use crate::double::SemiDouble;
 
-// GENERATE: other f32::cbrt::consts
+// GENERATE: f32::cbrt::consts
 const CBRT_2_HI: u32 = 0x3FA14000; // 1.2597656e0
 const CBRT_2_LO: u32 = 0x3922F98D; // 1.5542489e-4
 const CBRT_4_HI: u32 = 0x3FCB2000; // 1.5869141e0
@@ -25,7 +25,7 @@ impl<F: F32Like> crate::generic::Cbrt<LikeF32> for F {
 
     #[inline]
     fn inv_cbrt_poly(x: Self) -> Self {
-        // GENERATE: other f32::cbrt::inv_cbrt_poly
+        // GENERATE: f32::cbrt::inv_cbrt_poly
         const K0: u32 = 0x3FB21939; // 1.3913947e0
         const K1: u32 = 0xBEF9C752; // -4.8784882e-1
         const K2: u32 = 0x3DC257A9; // 9.489376e-2

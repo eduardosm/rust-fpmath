@@ -1,6 +1,6 @@
 use super::{F64Like, LikeF64};
 
-// GENERATE: other f64::exp2::consts
+// GENERATE: f64::exp2::consts
 const LN_2: u64 = 0x3FE62E42FEFA39EF; // 6.931471805599453e-1
 
 impl<F: F64Like> crate::generic::Exp2<LikeF64> for F {

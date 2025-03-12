@@ -1,6 +1,6 @@
 use super::{F32Like, LikeF32};
 
-// GENERATE: other f32::atan::consts
+// GENERATE: f32::atan::consts
 const FRAC_PI_2_HI: u32 = 0x3FC90FDA; // 1.5707963e0
 const FRAC_PI_2_LO: u32 = 0x33A22169; // 7.54979e-8
 const FRAC_3PI_4: u32 = 0x4016CBE4; // 2.3561945e0
@@ -23,7 +23,7 @@ impl<F: F32Like> crate::generic::Atan<LikeF32> for F {
 
     #[inline]
     fn atan_poly(x2: Self) -> (Self, Self) {
-        // GENERATE: other f32::atan::atan_poly
+        // GENERATE: f32::atan::atan_poly
         const K3: u32 = 0xBEAAAA93; // -3.3333263e-1
         const K5: u32 = 0x3E4CC690; // 1.999762e-1
         const K7: u32 = 0xBE11F9D7; // -1.4255463e-1

@@ -1,6 +1,6 @@
 use super::{F32Like, LikeF32};
 
-// GENERATE: other f32::exp2::consts
+// GENERATE: f32::exp2::consts
 const LN_2: u32 = 0x3F317218; // 6.931472e-1
 
 impl<F: F32Like> crate::generic::Exp2<LikeF32> for F {
