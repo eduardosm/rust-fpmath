@@ -16,7 +16,6 @@ pub(crate) mod sin_cos;
 pub(crate) mod sind_cosd;
 pub(crate) mod sinh_cosh;
 pub(crate) mod sinpi_cospi;
-pub(crate) mod sqrt;
 pub(crate) mod tan;
 pub(crate) mod tand;
 pub(crate) mod tanh;

@@ -1,16 +1,45 @@
-use crate::data::{consume_data, f64 as f64_data};
+use rand::Rng as _;
+
+use crate::data::{create_prng, f64::mkfloat};
 
 #[test]
 fn test_sqrt() {
-    let mut max_error: f64 = 0.0;
-    consume_data("f64_sqrt", |f64_data::OneArgData { x, expected }| {
+    test_with(|x| {
         let actual = fpmath::sqrt(x);
-
-        let err = expected.calc_error(actual);
-        max_error = max_error.max(err);
-
-        assert!(err <= 0.5, "sqrt({x:e}) = {actual:e} (error = {err} ULP)");
+        let expected = rug::Float::with_val(53, x).sqrt();
+        assert_eq!(actual, expected);
     });
-    eprintln!("max sqrt error = {max_error}");
-    assert!(max_error == 0.5);
+}
+
+fn test_with(mut f: impl FnMut(f64)) {
+    let mut rng = create_prng();
+
+    for e in -200..=200 {
+        f(mkfloat(0, e, false));
+        f(mkfloat(u64::MAX, e, false));
+
+        for _ in 0..5000 {
+            let m = rng.random::<u64>();
+            f(mkfloat(m, e, false));
+        }
+    }
+    for e in -1022..=1023 {
+        for _ in 0..5000 {
+            let m = rng.random::<u64>();
+            f(mkfloat(m, e, false));
+        }
+    }
+
+    for arg in 1..=10000 {
+        f(arg as f64);
+    }
+
+    f(f64::MIN_POSITIVE);
+    f(f64::MAX);
+
+    // subnormals
+    for i in 0..52 {
+        f(f64::from_bits(1 << i));
+        f(f64::from_bits((1 << (i + 1)) - 1));
+    }
 }

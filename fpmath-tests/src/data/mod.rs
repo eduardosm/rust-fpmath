@@ -32,7 +32,6 @@ pub(crate) const GEN_FUNCTIONS: &[(&str, fn(indicatif::ProgressBar))] = &[
     ("f64::sind_cosd", f64::sind_cosd::gen_data),
     ("f64::sinh_cosh", f64::sinh_cosh::gen_data),
     ("f64::sinpi_cospi", f64::sinpi_cospi::gen_data),
-    ("f64::sqrt", f64::sqrt::gen_data),
     ("f64::tan", f64::tan::gen_data),
     ("f64::tand", f64::tand::gen_data),
     ("f64::tanh", f64::tanh::gen_data),
