@@ -30,15 +30,13 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
 }
 
 pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
-    let conv = 180u8 / rug::Float::with_val(53 * 3, rug::float::Constant::Pi);
-
     generate_data(
         "f64_asind_acosd",
         gen_args,
         |x| {
             let bigx = rug::Float::with_val(53, x);
-            let tmp_asin = rug::Float::with_val(53 * 3, bigx.asin_ref()) * &conv;
-            let tmp_acos = rug::Float::with_val(53 * 3, bigx.acos_ref()) * &conv;
+            let tmp_asin = rug::Float::with_val(53 * 2, bigx.asin_u_ref(360));
+            let tmp_acos = rug::Float::with_val(53 * 2, bigx.acos_u_ref(360));
 
             Data {
                 x,

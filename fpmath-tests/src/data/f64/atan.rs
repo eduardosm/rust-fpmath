@@ -20,13 +20,11 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
 }
 
 pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
-    let conv = 180u8 / rug::Float::with_val(53 * 3, rug::float::Constant::Pi);
-
     generate_data(
         "f64_atand",
         gen_args,
         |x| {
-            let tmp = rug::Float::with_val(53 * 3, x).atan() * &conv;
+            let tmp = rug::Float::with_val(53 * 2, x).atan_u(360);
 
             super::OneArgData {
                 x,

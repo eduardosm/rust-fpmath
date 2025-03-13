@@ -8,9 +8,9 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_sind_cosd",
         gen_args,
         |x| {
-            let tmp_arg = (rug::Float::with_val(53 * 3, x) % 360u16) / 180u8;
-            let tmp_sin = rug::Float::with_val(53 * 2, tmp_arg.sin_pi_ref());
-            let tmp_cos = rug::Float::with_val(53 * 2, tmp_arg.cos_pi_ref());
+            let bigx = rug::Float::with_val(53, x);
+            let tmp_sin = rug::Float::with_val(53 * 2, bigx.sin_u_ref(360));
+            let tmp_cos = rug::Float::with_val(53 * 2, bigx.cos_u_ref(360));
 
             super::SinCosData {
                 x,
