@@ -1,16 +1,16 @@
 use rand::Rng as _;
 
-use super::{mkfloat, purify, RefResult};
+use super::{calc_error_ulp, mkfloat, purify};
 use crate::data::create_prng;
 
 #[test]
 fn test_tgamma() {
     let mut max_error: f32 = 0.0;
     test_with(|x| {
-        let expected = RefResult::from_f64(fpmath::tgamma(f64::from(x)));
+        let expected = fpmath::tgamma(f64::from(x));
         let actual = fpmath::tgamma(x);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = if x < 0.5 { 1.9 } else { 0.9 };
@@ -28,10 +28,9 @@ fn test_lgamma() {
     let mut max_error: f32 = 0.0;
     test_with(|x| {
         let (expected, expected_sign) = fpmath::lgamma(f64::from(x));
-        let expected = RefResult::from_f64(expected);
         let (actual, actual_sign) = fpmath::lgamma(x);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = if (-5.0..=-2.0).contains(&x) {

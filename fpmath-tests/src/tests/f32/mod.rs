@@ -13,90 +13,37 @@ mod trigonometric_deg;
 mod trigonometric_pi;
 mod trigonometric_rad;
 
-#[derive(Debug)]
-struct RefResult {
-    exp: i32,
-    hi: f32,
-    lo: f32,
-}
+fn calc_error_ulp(actual: f32, expected: f64) -> f32 {
+    let actual = purify(actual);
 
-impl RefResult {
-    fn from_f64(value: f64) -> Self {
-        use rustc_apfloat::ieee::{Double, Single};
-        use rustc_apfloat::Float as _;
-        use rustc_apfloat::FloatConvert as _;
-
-        // Use soft-float to avoid X87 compiler bugs
-        let mut tmp = Double::from_bits(value.to_bits().into());
-        if tmp.is_nan() {
-            Self {
-                exp: 0,
-                hi: f32::NAN,
-                lo: f32::NAN,
-            }
-        } else if tmp > Single::largest().convert(&mut false).value {
-            Self {
-                exp: 0,
-                hi: f32::INFINITY,
-                lo: f32::INFINITY,
-            }
-        } else if tmp < -Single::largest().convert(&mut false).value {
-            Self {
-                exp: 0,
-                hi: f32::NEG_INFINITY,
-                lo: f32::NEG_INFINITY,
-            }
-        } else if tmp.is_zero() {
-            Self {
-                exp: 0,
-                hi: 0.0,
-                lo: 0.0,
-            }
-        } else {
-            let e_real = tmp.ilogb() + 1;
-            let e_sat = e_real.max(-126);
-            tmp = tmp.scalbn(-e_sat);
-
-            let hi: Single = tmp
-                .convert_r(rustc_apfloat::Round::TowardZero, &mut false)
-                .value;
-            tmp = (tmp - hi.convert(&mut false).value).value;
-            let lo: Single = tmp.convert(&mut false).value;
-
-            Self {
-                exp: e_sat,
-                hi: f32::from_bits(hi.to_bits() as _),
-                lo: f32::from_bits(lo.to_bits() as _),
-            }
-        }
-    }
-
-    fn calc_error(&self, actual: f32) -> f32 {
-        // Use MIN/MAX instead of infinity because with x87 there can be
-        // non-infinity values greater than MAX/less than MIN.
-        if actual.is_nan() && self.hi.is_nan() {
+    if expected.is_nan() {
+        if actual.is_nan() {
             0.0
-        } else if actual.is_nan() || self.hi.is_nan() {
-            f32::NAN
-        } else if actual > f32::MAX {
-            if self.hi > f32::MAX {
-                0.0
-            } else {
-                f32::INFINITY
-            }
-        } else if actual < f32::MIN {
-            if self.hi < f32::MIN {
-                0.0
-            } else {
-                f32::INFINITY
-            }
-        } else if self.hi.abs() > f32::MAX {
-            f32::INFINITY
         } else {
-            let scaled = fpmath::scalbn(actual, -self.exp);
-            let abs_err = ((scaled - self.hi) - self.lo).abs();
-            fpmath::scalbn(abs_err, 24)
+            f32::INFINITY
         }
+    } else if expected > f64::from(f32::MAX) {
+        if actual == f32::INFINITY {
+            0.0
+        } else {
+            f32::INFINITY
+        }
+    } else if expected < f64::from(f32::MIN) {
+        if actual == f32::NEG_INFINITY {
+            0.0
+        } else {
+            f32::INFINITY
+        }
+    } else if actual.is_infinite() {
+        f32::INFINITY
+    } else {
+        let exp = if expected == 0.0 {
+            -126
+        } else {
+            (fpmath::frexp(expected).1 - 1).max(-126)
+        };
+        let dif = fpmath::scalbn((expected - f64::from(actual)).abs(), 23 - exp);
+        dif as f32
     }
 }
 

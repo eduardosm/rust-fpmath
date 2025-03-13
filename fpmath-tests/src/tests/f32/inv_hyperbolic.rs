@@ -1,16 +1,16 @@
 use rand::Rng as _;
 
-use super::{mkfloat, RefResult};
+use super::{calc_error_ulp, mkfloat};
 use crate::data::create_prng;
 
 #[test]
 fn test_asinh() {
     let mut max_error: f32 = 0.0;
     test_asinh_with(|x| {
-        let expected = RefResult::from_f64(fpmath::asinh(f64::from(x)));
+        let expected = fpmath::asinh(f64::from(x));
         let actual = fpmath::asinh(x);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         assert!(err < 0.9, "asinh({x:e}) = {actual:e} (error = {err} ULP)");
@@ -40,10 +40,10 @@ fn test_asinh_with(mut f: impl FnMut(f32)) {
 fn test_acosh() {
     let mut max_error: f32 = 0.0;
     test_acosh_with(|x| {
-        let expected = RefResult::from_f64(fpmath::acosh(f64::from(x)));
+        let expected = fpmath::acosh(f64::from(x));
         let actual = fpmath::acosh(x);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         assert!(err < 0.9, "acosh({x:e}) = {actual:e} (error = {err} ULP)");
@@ -70,10 +70,10 @@ fn test_acosh_with(mut f: impl FnMut(f32)) {
 fn test_atanh() {
     let mut max_error: f32 = 0.0;
     test_atanh_with(|x| {
-        let expected = RefResult::from_f64(fpmath::atanh(f64::from(x)));
+        let expected = fpmath::atanh(f64::from(x));
         let actual = fpmath::atanh(x);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         assert!(err < 0.9, "atanh({x:e}) = {actual:e} (error = {err} ULP)");

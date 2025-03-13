@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, purify, select_threshold, RefResult};
+use super::{calc_error_ulp, mkfloat, purify, select_threshold};
 use crate::data::create_prng;
 
 #[test]
@@ -8,14 +8,14 @@ fn test_asin_acos() {
     let mut max_asin_error: f32 = 0.0;
     let mut max_acos_error: f32 = 0.0;
     test_asin_acos_with(|x| {
-        let expected_asin = RefResult::from_f64(fpmath::asin(f64::from(x)));
-        let expected_acos = RefResult::from_f64(fpmath::acos(f64::from(x)));
+        let expected_asin = fpmath::asin(f64::from(x));
+        let expected_acos = fpmath::acos(f64::from(x));
 
         let actual_asin = fpmath::asin(x);
         let actual_acos = fpmath::acos(x);
 
-        let asin_err = expected_asin.calc_error(actual_asin);
-        let acos_err = expected_acos.calc_error(actual_acos);
+        let asin_err = calc_error_ulp(actual_asin, expected_asin);
+        let acos_err = calc_error_ulp(actual_acos, expected_acos);
 
         max_asin_error = max_asin_error.max(asin_err);
         max_acos_error = max_acos_error.max(acos_err);
@@ -43,14 +43,14 @@ fn test_asind_acosd() {
     let mut max_asin_error: f32 = 0.0;
     let mut max_acos_error: f32 = 0.0;
     test_asin_acos_with(|x| {
-        let expected_asin = RefResult::from_f64(fpmath::asind(f64::from(x)));
-        let expected_acos = RefResult::from_f64(fpmath::acosd(f64::from(x)));
+        let expected_asin = fpmath::asind(f64::from(x));
+        let expected_acos = fpmath::acosd(f64::from(x));
 
         let actual_asin = fpmath::asind(x);
         let actual_acos = fpmath::acosd(x);
 
-        let asin_err = expected_asin.calc_error(actual_asin);
-        let acos_err = expected_acos.calc_error(actual_acos);
+        let asin_err = calc_error_ulp(actual_asin, expected_asin);
+        let acos_err = calc_error_ulp(actual_acos, expected_acos);
 
         max_asin_error = max_asin_error.max(asin_err);
         max_acos_error = max_acos_error.max(acos_err);
@@ -78,14 +78,14 @@ fn test_asinpi_acospi() {
     let mut max_asin_error: f32 = 0.0;
     let mut max_acos_error: f32 = 0.0;
     test_asin_acos_with(|x| {
-        let expected_asin = RefResult::from_f64(fpmath::asinpi(f64::from(x)));
-        let expected_acos = RefResult::from_f64(fpmath::acospi(f64::from(x)));
+        let expected_asin = fpmath::asinpi(f64::from(x));
+        let expected_acos = fpmath::acospi(f64::from(x));
 
         let actual_asin = fpmath::asinpi(x);
         let actual_acos = fpmath::acospi(x);
 
-        let asin_err = expected_asin.calc_error(actual_asin);
-        let acos_err = expected_acos.calc_error(actual_acos);
+        let asin_err = calc_error_ulp(actual_asin, expected_asin);
+        let acos_err = calc_error_ulp(actual_acos, expected_acos);
 
         max_asin_error = max_asin_error.max(asin_err);
         max_acos_error = max_acos_error.max(acos_err);
@@ -135,11 +135,11 @@ fn test_asin_acos_with(mut f: impl FnMut(f32)) {
 fn test_atan() {
     let mut max_error: f32 = 0.0;
     test_atan_with(|x| {
-        let expected = RefResult::from_f64(fpmath::atan(f64::from(x)));
+        let expected = fpmath::atan(f64::from(x));
         let actual = fpmath::atan(x);
         assert_eq!(purify(fpmath::atan(-x)), purify(-actual));
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         assert!(err < 0.9, "atan({x:e}) = {actual:e} (error = {err} ULP)");
@@ -152,11 +152,11 @@ fn test_atan() {
 fn test_atand() {
     let mut max_error: f32 = 0.0;
     test_atan_with(|x| {
-        let expected = RefResult::from_f64(fpmath::atand(f64::from(x)));
+        let expected = fpmath::atand(f64::from(x));
         let actual = fpmath::atand(x);
         assert_eq!(purify(fpmath::atand(-x)), purify(-actual));
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         assert!(err < 0.9, "atand({x:e}) = {actual:e} (error = {err} ULP)");
@@ -169,11 +169,11 @@ fn test_atand() {
 fn test_atanpi() {
     let mut max_error: f32 = 0.0;
     test_atan_with(|x| {
-        let expected = RefResult::from_f64(fpmath::atanpi(f64::from(x)));
+        let expected = fpmath::atanpi(f64::from(x));
         let actual = fpmath::atanpi(x);
         assert_eq!(purify(fpmath::atanpi(-x)), purify(-actual));
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
@@ -204,11 +204,11 @@ fn test_atan_with(mut f: impl FnMut(f32)) {
 fn test_atan2() {
     let mut max_error: f32 = 0.0;
     test_atan2_with(|y, x| {
-        let expected = RefResult::from_f64(fpmath::atan2(f64::from(y), f64::from(x)));
+        let expected = fpmath::atan2(f64::from(y), f64::from(x));
         let actual = fpmath::atan2(y, x);
         assert_eq!(purify(fpmath::atan2(-y, x)), purify(-actual));
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
@@ -225,11 +225,11 @@ fn test_atan2() {
 fn test_atan2d() {
     let mut max_error: f32 = 0.0;
     test_atan2_with(|y, x| {
-        let expected = RefResult::from_f64(fpmath::atan2d(f64::from(y), f64::from(x)));
+        let expected = fpmath::atan2d(f64::from(y), f64::from(x));
         let actual = fpmath::atan2d(y, x);
         assert_eq!(purify(fpmath::atan2d(-y, x)), purify(-actual));
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
@@ -246,11 +246,11 @@ fn test_atan2d() {
 fn test_atan2pi() {
     let mut max_error: f32 = 0.0;
     test_atan2_with(|y, x| {
-        let expected = RefResult::from_f64(fpmath::atan2pi(f64::from(y), f64::from(x)));
+        let expected = fpmath::atan2pi(f64::from(y), f64::from(x));
         let actual = fpmath::atan2pi(y, x);
         assert_eq!(purify(fpmath::atan2pi(-y, x)), purify(-actual));
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.95, 1.9);

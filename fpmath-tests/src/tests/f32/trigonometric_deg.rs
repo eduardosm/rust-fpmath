@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, purify, purify2, select_threshold, RefResult};
+use super::{calc_error_ulp, mkfloat, purify, purify2, select_threshold};
 use crate::data::create_prng;
 
 #[test]
@@ -11,8 +11,6 @@ fn test_sind_cosd() {
     let mut max_cos2_error: f32 = 0.0;
     test_with(|x| {
         let (expected_sin, expected_cos) = fpmath::sind_cosd(f64::from(x));
-        let expected_sin = RefResult::from_f64(expected_sin);
-        let expected_cos = RefResult::from_f64(expected_cos);
 
         let actual_sin1 = fpmath::sind(x);
         let actual_cos1 = fpmath::cosd(x);
@@ -24,10 +22,10 @@ fn test_sind_cosd() {
             purify2((-actual_sin2, actual_cos2))
         );
 
-        let sin1_err = expected_sin.calc_error(actual_sin1);
-        let sin2_err = expected_sin.calc_error(actual_sin2);
-        let cos1_err = expected_cos.calc_error(actual_cos1);
-        let cos2_err = expected_cos.calc_error(actual_cos2);
+        let sin1_err = calc_error_ulp(actual_sin1, expected_sin);
+        let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
+        let cos1_err = calc_error_ulp(actual_cos1, expected_cos);
+        let cos2_err = calc_error_ulp(actual_cos2, expected_cos);
 
         max_sin1_error = max_sin1_error.max(sin1_err);
         max_sin2_error = max_sin2_error.max(sin2_err);
@@ -72,11 +70,11 @@ fn test_sind_cosd() {
 fn test_tand() {
     let mut max_error: f32 = 0.0;
     test_with(|x| {
-        let expected = RefResult::from_f64(fpmath::tand(f64::from(x)));
+        let expected = fpmath::tand(f64::from(x));
         let actual = fpmath::tand(x);
         assert_eq!(purify(fpmath::tand(-x)), purify(-actual));
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);

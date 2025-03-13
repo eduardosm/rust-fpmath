@@ -1,17 +1,17 @@
 use rand::Rng as _;
 
-use super::{mkfloat, RefResult};
+use super::{calc_error_ulp, mkfloat};
 use crate::data::create_prng;
 
 #[test]
 fn test_cbrt() {
     let mut max_error: f32 = 0.0;
     test_with(|x| {
-        let expected = RefResult::from_f64(fpmath::cbrt(f64::from(x)));
+        let expected = fpmath::cbrt(f64::from(x));
         let actual = fpmath::cbrt(x);
         assert_eq!(fpmath::cbrt(-x), -actual);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         assert!(err < 0.9, "cbrt({x:e}) = {actual:e} (error = {err} ULP)");
