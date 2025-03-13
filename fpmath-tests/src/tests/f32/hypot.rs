@@ -1,16 +1,16 @@
 use rand::Rng as _;
 
-use super::{mkfloat, select_threshold, RefResult};
+use super::{calc_error_ulp, mkfloat, select_threshold};
 use crate::data::create_prng;
 
 #[test]
 fn test_hypot() {
     let mut max_error: f32 = 0.0;
     test_with(|x, y| {
-        let expected = RefResult::from_f64(fpmath::hypot(f64::from(x), f64::from(y)));
+        let expected = fpmath::hypot(f64::from(x), f64::from(y));
         let actual = fpmath::hypot(x, y);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);

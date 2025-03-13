@@ -1,16 +1,16 @@
 use rand::Rng as _;
 
-use super::{mkfloat, purify, select_threshold, RefResult};
+use super::{calc_error_ulp, mkfloat, purify, select_threshold};
 use crate::data::create_prng;
 
 #[test]
 fn test_pow() {
     let mut max_error: f32 = 0.0;
     test_pow_with(|x, y| {
-        let expected = RefResult::from_f64(fpmath::pow(f64::from(x), f64::from(y)));
+        let expected = fpmath::pow(f64::from(x), f64::from(y));
         let actual = fpmath::pow(x, y);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
@@ -71,10 +71,10 @@ fn test_pow_with(mut f: impl FnMut(f32, f32)) {
 fn test_powi() {
     let mut max_error: f32 = 0.0;
     test_powi_with(|x, y| {
-        let expected = RefResult::from_f64(fpmath::powi(f64::from(x), y));
+        let expected = fpmath::powi(f64::from(x), y);
         let actual = fpmath::powi(x, y);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);

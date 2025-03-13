@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, select_threshold, RefResult};
+use super::{calc_error_ulp, mkfloat, select_threshold};
 use crate::data::create_prng;
 
 #[test]
@@ -8,14 +8,14 @@ fn test_exp() {
     let mut max_exp_error: f32 = 0.0;
     let mut max_expm1_error: f32 = 0.0;
     test_with(|x| {
-        let expected_exp = RefResult::from_f64(fpmath::exp(f64::from(x)));
-        let expected_expm1 = RefResult::from_f64(fpmath::exp_m1(f64::from(x)));
+        let expected_exp = fpmath::exp(f64::from(x));
+        let expected_expm1 = fpmath::exp_m1(f64::from(x));
 
         let actual_exp = fpmath::exp(x);
         let actual_expm1 = fpmath::exp_m1(x);
 
-        let exp_err = expected_exp.calc_error(actual_exp);
-        let expm1_err = expected_expm1.calc_error(actual_expm1);
+        let exp_err = calc_error_ulp(actual_exp, expected_exp);
+        let expm1_err = calc_error_ulp(actual_expm1, expected_expm1);
 
         max_exp_error = max_exp_error.max(exp_err);
         max_expm1_error = max_expm1_error.max(expm1_err);
@@ -42,10 +42,10 @@ fn test_exp() {
 fn test_exp2() {
     let mut max_error: f32 = 0.0;
     test_with(|x| {
-        let expected = RefResult::from_f64(fpmath::exp2(f64::from(x)));
+        let expected = fpmath::exp2(f64::from(x));
         let actual = fpmath::exp2(x);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
@@ -62,10 +62,10 @@ fn test_exp2() {
 fn test_exp10() {
     let mut max_error: f32 = 0.0;
     test_with(|x| {
-        let expected = RefResult::from_f64(fpmath::exp10(f64::from(x)));
+        let expected = fpmath::exp10(f64::from(x));
         let actual = fpmath::exp10(x);
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);

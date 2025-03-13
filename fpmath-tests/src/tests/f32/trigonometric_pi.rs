@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, purify, purify2, select_threshold, RefResult};
+use super::{calc_error_ulp, mkfloat, purify, purify2, select_threshold};
 use crate::data::create_prng;
 
 #[test]
@@ -11,8 +11,6 @@ fn test_sinpi_cospi() {
     let mut max_cos2_error: f32 = 0.0;
     test_with(|x| {
         let (expected_sin, expected_cos) = fpmath::sinpi_cospi(f64::from(x));
-        let expected_sin = RefResult::from_f64(expected_sin);
-        let expected_cos = RefResult::from_f64(expected_cos);
 
         let actual_sin1 = fpmath::sinpi(x);
         let actual_cos1 = fpmath::cospi(x);
@@ -24,10 +22,10 @@ fn test_sinpi_cospi() {
             purify2((-actual_sin2, actual_cos2))
         );
 
-        let sin1_err = expected_sin.calc_error(actual_sin1);
-        let sin2_err = expected_sin.calc_error(actual_sin2);
-        let cos1_err = expected_cos.calc_error(actual_cos1);
-        let cos2_err = expected_cos.calc_error(actual_cos2);
+        let sin1_err = calc_error_ulp(actual_sin1, expected_sin);
+        let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
+        let cos1_err = calc_error_ulp(actual_cos1, expected_cos);
+        let cos2_err = calc_error_ulp(actual_cos2, expected_cos);
 
         max_sin1_error = max_sin1_error.max(sin1_err);
         max_sin2_error = max_sin2_error.max(sin2_err);
@@ -72,11 +70,11 @@ fn test_sinpi_cospi() {
 fn test_tanpi() {
     let mut max_error: f32 = 0.0;
     test_with(|x| {
-        let expected = RefResult::from_f64(fpmath::tanpi(f64::from(x)));
+        let expected = fpmath::tanpi(f64::from(x));
         let actual = fpmath::tanpi(x);
         assert_eq!(purify(fpmath::tanpi(-x)), purify(-actual));
 
-        let err = expected.calc_error(actual);
+        let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
         let threshold = select_threshold(actual, 0.9, 1.9);
