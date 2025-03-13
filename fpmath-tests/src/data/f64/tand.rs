@@ -6,8 +6,7 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_tand",
         gen_args,
         |x| {
-            let tmp_arg = (rug::Float::with_val(53 * 3, x) % 360u16) / 180u8;
-            let mut tmp_tan = rug::Float::with_val(53 * 2, tmp_arg.tan_pi());
+            let mut tmp_tan = rug::Float::with_val(53 * 2, x).tan_u(360);
 
             if !(f64::MIN..=f64::MAX).contains(&tmp_tan) {
                 rug::Assign::assign(

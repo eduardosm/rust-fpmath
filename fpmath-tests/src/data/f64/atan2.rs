@@ -23,15 +23,13 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
 }
 
 pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
-    let conv = 180u8 / rug::Float::with_val(53 * 3, rug::float::Constant::Pi);
-
     generate_data(
         "f64_atan2d",
         gen_args,
         |(y, x)| {
             let bigy = rug::Float::with_val(53, y);
             let bigx = rug::Float::with_val(53, x);
-            let tmp = rug::Float::with_val(53 * 3, bigy.atan2_ref(&bigx)) * &conv;
+            let tmp = rug::Float::with_val(53 * 2, bigy.atan2_u_ref(&bigx, 360));
 
             super::TwoArgData {
                 x,
