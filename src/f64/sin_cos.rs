@@ -1,7 +1,7 @@
 use super::{F64Like, LikeF64};
 use crate::double::SemiDouble;
 
-// GENERATE: f64::sin_cos::consts
+// GENERATE: sin_cos::consts f64
 const FRAC_1_6_HI: u64 = 0x3FC5555550000000; // 1.666666641831398e-1
 const FRAC_1_6_LO: u64 = 0x3E25555555555555; // 2.483526865641276e-9
 
@@ -13,7 +13,7 @@ impl<F: F64Like> crate::generic::SinCos<LikeF64> for F {
 
     #[inline]
     fn sin_poly(x2: Self, x5: Self) -> (Self, Self) {
-        // GENERATE: f64::sin_cos::sin_poly
+        // GENERATE: sin_cos::sin_poly f64 6
         const K3: u64 = 0xBFC5555555555549; // -1.6666666666666632e-1
         const K5: u64 = 0x3F8111111110F850; // 8.33333333332234e-3
         const K7: u64 = 0xBF2A01A019C0C17F; // -1.9841269829746694e-4
@@ -34,7 +34,7 @@ impl<F: F64Like> crate::generic::SinCos<LikeF64> for F {
 
     #[inline]
     fn sin_poly_ex(x2: Self, x5: Self) -> Self {
-        // GENERATE: f64::sin_cos::sin_poly_ex
+        // GENERATE: sin_cos::sin_poly_ex f64 5
         const K5: u64 = 0x3F81111111110750; // 8.333333333329002e-3
         const K7: u64 = 0xBF2A01A019D9811B; // -1.9841269834142906e-4
         const K9: u64 = 0x3EC71DE3699EAA4A; // 2.7557314980682144e-6
@@ -52,7 +52,7 @@ impl<F: F64Like> crate::generic::SinCos<LikeF64> for F {
 
     #[inline]
     fn cos_poly(x2: Self, x4: Self) -> Self {
-        // GENERATE: f64::sin_cos::cos_poly
+        // GENERATE: sin_cos::cos_poly f64 6
         const K4: u64 = 0x3FA555555555554C; // 4.16666666666666e-2
         const K6: u64 = 0xBF56C16C16C15150; // -1.3888888888874025e-3
         const K8: u64 = 0x3EFA01A019CAD16E; // 2.4801587289417634e-5

@@ -2,7 +2,7 @@ use super::{F32Like, LikeF32};
 use crate::generic::scalbn_medium;
 use crate::traits::FloatConsts;
 
-// GENERATE: f32::reduce_pi_2::consts
+// GENERATE: reduce_pi_2::consts f32
 const FRAC_PI_2_HI: u32 = 0x3FC90E00; // 1.5707397e0
 const FRAC_PI_2_HIEX: u32 = 0x386D5111; // 5.6580702e-5
 const FRAC_PI_2_MI: u32 = 0x386D5000; // 5.657971e-5

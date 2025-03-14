@@ -1,6 +1,10 @@
 use std::fmt::Write as _;
 
-pub(crate) fn gen_frac_2_pi_large() -> String {
+use super::super::arg_utils;
+
+pub(in super::super) fn gen_frac_2_pi_large(args: &[&str]) -> Result<String, String> {
+    arg_utils::expect_0_args(args)?;
+
     let mut out = String::new();
 
     let num_words = 66;
@@ -29,10 +33,12 @@ pub(crate) fn gen_frac_2_pi_large() -> String {
     }
     out.push_str("];\n");
 
-    out
+    Ok(out)
 }
 
-pub(crate) fn gen_frac_pi_2_medium() -> String {
+pub(in super::super) fn gen_frac_pi_2_medium(args: &[&str]) -> Result<String, String> {
+    arg_utils::expect_0_args(args)?;
+
     let mut out = String::new();
 
     let num_words = 8;
@@ -62,5 +68,5 @@ pub(crate) fn gen_frac_pi_2_medium() -> String {
     }
     out.push_str("];\n");
 
-    out
+    Ok(out)
 }

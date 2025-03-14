@@ -31,7 +31,7 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
 
     #[inline]
     fn half_ln_2_pi() -> NormDouble<Self> {
-        // GENERATE: f64::gamma::consts
+        // GENERATE: gamma::consts f64
         const HALF_LN_2_PI_HI: u64 = 0x3FED67F1C864BEB4; // 9.189385332046727e-1
         const HALF_LN_2_PI_LO: u64 = 0x3C94D252F2400510; // 7.223936088184323e-17
 
@@ -43,7 +43,7 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
 
     #[inline]
     fn lgamma_poly_1(x: Self) -> (Self, Self, Self, Self) {
-        // GENERATE: f64::gamma::lgamma_poly_1
+        // GENERATE: gamma::lgamma_poly_1 f64 26 1.1
         const K1: u64 = 0xBFE2788CFC6FB619; // -5.772156649015329e-1
         const K2: u64 = 0x3FEA51A6625307D3; // 8.224670334241132e-1
         const K3: u64 = 0xBFD9A4D55BEAB2C7; // -4.0068563438653054e-1
@@ -111,7 +111,7 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
 
     #[inline]
     fn lgamma_poly_2(x: Self) -> (Self, Self, Self, Self) {
-        // GENERATE: f64::gamma::lgamma_poly_2
+        // GENERATE: gamma::lgamma_poly_2 f64 26 1.1 2.3
         const K1: u64 = 0x3FDB0EE6072093CE; // 4.2278433509846713e-1
         const K2: u64 = 0x3FD4A34CC4A60FA6; // 3.224670334241132e-1
         const K3: u64 = 0xBFB13E001A557607; // -6.73523010531981e-2
@@ -127,17 +127,17 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
         const K13: u64 = 0xBEE3CCAFCE27C2A3; // -9.441164768171395e-6
         const K14: u64 = 0x3ED257F162658760; // 4.373437639011924e-6
         const K15: u64 = 0xBEC0FEBAD845E64A; // -2.0259664685301373e-6
-        const K16: u64 = 0x3EB0A769AB5E6EDE; // 9.926531396646936e-7
-        const K17: u64 = 0xBE9F079F7E2B40B5; // -4.6237971511061113e-7
-        const K18: u64 = 0xBE5586C53F557385; // -2.0048066281186047e-8
-        const K19: u64 = 0xBEA0F68137677B0F; // -5.055340881984831e-7
-        const K20: u64 = 0x3E7B1D0666DEFB91; // 1.0100520750256383e-7
-        const K21: u64 = 0x3EB6181175C86A69; // 1.3169060003650432e-6
-        const K22: u64 = 0x3EC5B2CD6B0C00D8; // 2.5866564431487964e-6
-        const K23: u64 = 0x3EC63140B7C8FE0E; // 2.64553949438896e-6
-        const K24: u64 = 0x3EBB94EE67D692AD; // 1.6440011728426484e-6
-        const K25: u64 = 0x3EA39324890BEFA8; // 5.83373792023113e-7
-        const K26: u64 = 0x3E797EF31705BA15; // 9.497961684309844e-8
+        const K16: u64 = 0x3EB0A769AB5E6EDC; // 9.926531396646932e-7
+        const K17: u64 = 0xBE9F079F7E2B40C9; // -4.623797151106122e-7
+        const K18: u64 = 0xBE5586C53F5574E9; // -2.0048066281187224e-8
+        const K19: u64 = 0xBEA0F68137677AFF; // -5.055340881984814e-7
+        const K20: u64 = 0x3E7B1D0666DEFDCB; // 1.0100520750257138e-7
+        const K21: u64 = 0x3EB6181175C86AA4; // 1.3169060003650557e-6
+        const K22: u64 = 0x3EC5B2CD6B0C00F5; // 2.5866564431488087e-6
+        const K23: u64 = 0x3EC63140B7C8FE21; // 2.645539494388968e-6
+        const K24: u64 = 0x3EBB94EE67D692BC; // 1.6440011728426515e-6
+        const K25: u64 = 0x3EA39324890BEFAF; // 5.833737920231137e-7
+        const K26: u64 = 0x3E797EF31705BA1B; // 9.497961684309852e-8
 
         let k1 = Self::from_raw(K1);
         let k2 = Self::from_raw(K2);
@@ -179,7 +179,7 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
 
     #[inline]
     fn special_poly(x: Self) -> Self {
-        // GENERATE: f64::gamma::special_poly
+        // GENERATE: gamma::special_poly f64 22 2.3
         const K0: u64 = 0x3FB5555555555555; // 8.333333333333333e-2
         const K1: u64 = 0x3F6C71C71C71C71D; // 3.4722222222222225e-3
         const K2: u64 = 0xBF65F7268EDAB562; // -2.681327160493894e-3

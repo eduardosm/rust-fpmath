@@ -1,6 +1,6 @@
 use super::{F64Like, LikeF64};
 
-// GENERATE: f64::atan::consts
+// GENERATE: atan::consts f64
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
 const FRAC_PI_2_LO: u64 = 0x3C91A62633145C07; // 6.123233995736766e-17
 const FRAC_3PI_4: u64 = 0x4002D97C7F3321D2; // 2.356194490192345e0
@@ -23,7 +23,7 @@ impl<F: F64Like> crate::generic::Atan<LikeF64> for F {
 
     #[inline]
     fn atan_poly(x2: Self) -> (Self, Self) {
-        // GENERATE: f64::atan::atan_poly
+        // GENERATE: atan::atan_poly f64 20
         const K3: u64 = 0xBFD55555555554A8; // -3.333333333333237e-1
         const K5: u64 = 0x3FC999999998DDDB; // 1.99999999998666e-1
         const K7: u64 = 0xBFC2492492222261; // -1.428571427861867e-1

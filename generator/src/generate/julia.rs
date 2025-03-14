@@ -4,7 +4,7 @@ use std::io::Read as _;
 use super::FloatKind;
 
 #[derive(Debug)]
-pub(crate) enum JuliaError {
+enum JuliaError {
     SpawnFailed(std::io::Error),
     StdoutReadFailed(std::io::Error),
     WaitFailed(std::io::Error),
@@ -47,7 +47,7 @@ fn run_julia(input: &str) -> Result<Vec<u8>, JuliaError> {
     Ok(stdout_data)
 }
 
-fn run_and_render_remez(
+pub(super) fn run_and_render_remez(
     fkind: FloatKind,
     func: &str,
     range: (f64, f64),
@@ -95,48 +95,6 @@ fn run_and_render_remez(
             }
         }
     }
-}
-
-pub(crate) fn run_and_render_remez_f32(
-    func: &str,
-    range: (f64, f64),
-    poly_deg: i32,
-    poly_i_print_off: i32,
-    coeff_prefix: &str,
-    exclude_coeffs: &[i32],
-    out: &mut String,
-) {
-    run_and_render_remez(
-        FloatKind::F32,
-        func,
-        range,
-        poly_deg,
-        poly_i_print_off,
-        coeff_prefix,
-        exclude_coeffs,
-        out,
-    );
-}
-
-pub(crate) fn run_and_render_remez_f64(
-    func: &str,
-    range: (f64, f64),
-    poly_deg: i32,
-    poly_i_print_off: i32,
-    coeff_prefix: &str,
-    exclude_coeffs: &[i32],
-    out: &mut String,
-) {
-    run_and_render_remez(
-        FloatKind::F64,
-        func,
-        range,
-        poly_deg,
-        poly_i_print_off,
-        coeff_prefix,
-        exclude_coeffs,
-        out,
-    );
 }
 
 fn gen_remez_code(func: &str, range: (f64, f64), poly_deg: i32) -> String {

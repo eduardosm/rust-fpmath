@@ -1,7 +1,7 @@
 use super::{F32Like, LikeF32};
 use crate::double::SemiDouble;
 
-// GENERATE: f32::div_pi::consts
+// GENERATE: div_pi::consts f32
 const FRAC_1_PI_HI: u32 = 0x3EA2F000; // 3.182373e-1
 const FRAC_1_PI_LO: u32 = 0x389836E5; // 7.25815e-5
 

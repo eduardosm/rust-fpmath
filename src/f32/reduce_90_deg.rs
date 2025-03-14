@@ -1,7 +1,7 @@
 use super::{F32Like, LikeF32};
 use crate::double::SemiDouble;
 
-// GENERATE: f32::reduce_90_deg::consts
+// GENERATE: reduce_90_deg::consts f32
 const DEG_TO_RAD: u32 = 0x3C8EFA35; // 1.7453292e-2
 const DEG_TO_RAD_HI: u32 = 0x3C8EF000; // 1.7448425e-2
 const DEG_TO_RAD_LO: u32 = 0x36A35129; // 4.867227e-6
