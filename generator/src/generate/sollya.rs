@@ -1,6 +1,8 @@
 use std::fmt::Write as _;
 use std::io::{Read as _, Write as _};
 
+use super::FloatKind;
+
 #[derive(Debug)]
 pub(crate) enum SollyaError {
     SpawnFailed(std::io::Error),
@@ -57,15 +59,16 @@ fn run_sollya(input: &[u8]) -> Result<Vec<u8>, SollyaError> {
     Ok(stdout_data)
 }
 
-pub(crate) fn run_and_render_remez_f32(
-    f: &str,
+fn run_and_render_remez(
+    fkind: FloatKind,
+    func: &str,
     range: (f64, f64),
     poly_i: &[i32],
     poly_i_print_off: i32,
     coeff_prefix: &str,
     out: &mut String,
 ) {
-    let code = gen_remez_code(f, range, poly_i, "printsingle");
+    let code = gen_remez_code(func, range, poly_i);
     let result = run_sollya(&code).unwrap();
 
     let mut lines = result.split(|&c| c == b'\n');
@@ -73,59 +76,79 @@ pub(crate) fn run_and_render_remez_f32(
     assert_eq!(first_line, b"The precision has been set to 2048 bits.");
 
     let err_line = lines.next().unwrap();
-    let err = parse_f64_hex(err_line);
+    let err = parse_f64(err_line);
     eprintln!("error = {err:e} = 2^({})", err.log2());
 
     for &i in poly_i.iter() {
         let coeff_line = lines.next().unwrap();
-        let coeff_value = parse_f32_hex(coeff_line);
-        writeln!(
-            out,
-            "const {coeff_prefix}{}: u32 = 0x{:08X}; // {coeff_value:e}",
-            i + poly_i_print_off,
-            coeff_value.to_bits(),
-        )
-        .unwrap();
+        match fkind {
+            FloatKind::F32 => {
+                let coeff_value = parse_f32(coeff_line);
+                writeln!(
+                    out,
+                    "const {coeff_prefix}{}: u32 = 0x{:08X}; // {coeff_value:e}",
+                    i + poly_i_print_off,
+                    coeff_value.to_bits(),
+                )
+                .unwrap();
+            }
+            FloatKind::F64 => {
+                let coeff_value = parse_f64(coeff_line);
+                writeln!(
+                    out,
+                    "const {coeff_prefix}{}: u64 = 0x{:016X}; // {coeff_value:e}",
+                    i + poly_i_print_off,
+                    coeff_value.to_bits(),
+                )
+                .unwrap();
+            }
+        }
     }
+}
+
+pub(crate) fn run_and_render_remez_f32(
+    func: &str,
+    range: (f64, f64),
+    poly_i: &[i32],
+    poly_i_print_off: i32,
+    coeff_prefix: &str,
+    out: &mut String,
+) {
+    run_and_render_remez(
+        FloatKind::F32,
+        func,
+        range,
+        poly_i,
+        poly_i_print_off,
+        coeff_prefix,
+        out,
+    );
 }
 
 pub(crate) fn run_and_render_remez_f64(
-    f: &str,
+    func: &str,
     range: (f64, f64),
     poly_i: &[i32],
     poly_i_print_off: i32,
     coeff_prefix: &str,
     out: &mut String,
 ) {
-    let code = gen_remez_code(f, range, poly_i, "printdouble");
-    let result = run_sollya(&code).unwrap();
-
-    let mut lines = result.split(|&c| c == b'\n');
-    let first_line = lines.next().unwrap();
-    assert_eq!(first_line, b"The precision has been set to 2048 bits.");
-
-    let err_line = lines.next().unwrap();
-    let err = parse_f64_hex(err_line);
-    eprintln!("error = {err:e} = 2^({})", err.log2());
-
-    for &i in poly_i.iter() {
-        let coeff_line = lines.next().unwrap();
-        let coeff_value = parse_f64_hex(coeff_line);
-        writeln!(
-            out,
-            "const {coeff_prefix}{}: u64 = 0x{:016X}; // {coeff_value:e}",
-            i + poly_i_print_off,
-            coeff_value.to_bits(),
-        )
-        .unwrap();
-    }
+    run_and_render_remez(
+        FloatKind::F64,
+        func,
+        range,
+        poly_i,
+        poly_i_print_off,
+        coeff_prefix,
+        out,
+    );
 }
 
-fn gen_remez_code(f: &str, range: (f64, f64), poly_i: &[i32], print_float: &str) -> Vec<u8> {
+fn gen_remez_code(func: &str, range: (f64, f64), poly_i: &[i32]) -> Vec<u8> {
     let mut code = Vec::new();
     code.extend(b"prec = 2048;\n");
     code.extend(b"f = ");
-    code.extend(f.as_bytes());
+    code.extend(func.as_bytes());
     code.extend(b";\n");
 
     code.extend(b"p = remez(f, [|");
@@ -141,45 +164,25 @@ fn gen_remez_code(f: &str, range: (f64, f64), poly_i: &[i32], print_float: &str)
 
     writeln!(
         code,
-        "printdouble(dirtyinfnorm(p - f, [{}, {}]));",
+        "print(dirtyinfnorm(p - f, [{}, {}]));",
         range.0, range.1,
     )
     .unwrap();
 
     for &i in poly_i.iter() {
-        writeln!(code, "{print_float}(coeff(p, {i}));").unwrap();
+        writeln!(code, "print(coeff(p, {i}));").unwrap();
     }
     code.extend(b"quit;\n");
 
     code
 }
 
-fn parse_f32_hex(s: &[u8]) -> f32 {
-    assert!(s.len() == 10 && s.starts_with(b"0x"));
-    let mut x: u32 = 0;
-    for &c in s[2..].iter() {
-        x <<= 4;
-        match c {
-            b'0'..=b'9' => x += u32::from(c - b'0'),
-            b'A'..=b'F' => x += u32::from(c - b'A' + 10),
-            b'a'..=b'f' => x += u32::from(c - b'a' + 10),
-            _ => panic!("invalid hex digit"),
-        }
-    }
-    f32::from_bits(x)
+fn parse_f32(s: &[u8]) -> f32 {
+    let s = std::str::from_utf8(s).unwrap();
+    s.parse().unwrap()
 }
 
-fn parse_f64_hex(s: &[u8]) -> f64 {
-    assert!(s.len() == 18 && s.starts_with(b"0x"));
-    let mut x: u64 = 0;
-    for &c in s[2..].iter() {
-        x <<= 4;
-        match c {
-            b'0'..=b'9' => x += u64::from(c - b'0'),
-            b'A'..=b'F' => x += u64::from(c - b'A' + 10),
-            b'a'..=b'f' => x += u64::from(c - b'a' + 10),
-            _ => panic!("invalid hex digit"),
-        }
-    }
-    f64::from_bits(x)
+fn parse_f64(s: &[u8]) -> f64 {
+    let s = std::str::from_utf8(s).unwrap();
+    s.parse().unwrap()
 }
