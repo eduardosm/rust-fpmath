@@ -1,6 +1,8 @@
 use std::fmt::Write as _;
 use std::io::Read as _;
 
+use super::FloatKind;
+
 #[derive(Debug)]
 pub(crate) enum JuliaError {
     SpawnFailed(std::io::Error),
@@ -45,8 +47,9 @@ fn run_julia(input: &str) -> Result<Vec<u8>, JuliaError> {
     Ok(stdout_data)
 }
 
-pub(crate) fn run_and_render_remez_f32(
-    f: &str,
+fn run_and_render_remez(
+    fkind: FloatKind,
+    func: &str,
     range: (f64, f64),
     poly_deg: i32,
     poly_i_print_off: i32,
@@ -54,32 +57,69 @@ pub(crate) fn run_and_render_remez_f32(
     exclude_coeffs: &[i32],
     out: &mut String,
 ) {
-    let code = gen_remez_code(f, range, poly_deg, "Float32", "UInt32", 8);
+    let code = gen_remez_code(func, range, poly_deg);
     let result = run_julia(&code).unwrap();
 
     let mut lines = result.split(|&c| c == b'\n');
 
     let err_line = lines.next().unwrap();
-    let err = parse_f64_hex(err_line);
+    let err = parse_f64(err_line);
     eprintln!("error = {err:e} = 2^({})", err.log2());
 
     for i in 0..=poly_deg {
         let coeff_line = lines.next().unwrap();
-        let coeff_value = parse_f32_hex(coeff_line);
-        if !exclude_coeffs.contains(&i) {
-            writeln!(
-                out,
-                "const {coeff_prefix}{}: u32 = 0x{:08X}; // {coeff_value:e}",
-                i + poly_i_print_off,
-                coeff_value.to_bits(),
-            )
-            .unwrap();
+        match fkind {
+            FloatKind::F32 => {
+                let coeff_value = parse_f32(coeff_line);
+                if !exclude_coeffs.contains(&i) {
+                    writeln!(
+                        out,
+                        "const {coeff_prefix}{}: u32 = 0x{:08X}; // {coeff_value:e}",
+                        i + poly_i_print_off,
+                        coeff_value.to_bits(),
+                    )
+                    .unwrap();
+                }
+            }
+            FloatKind::F64 => {
+                let coeff_value = parse_f64(coeff_line);
+                if !exclude_coeffs.contains(&i) {
+                    writeln!(
+                        out,
+                        "const {coeff_prefix}{}: u64 = 0x{:016X}; // {coeff_value:e}",
+                        i + poly_i_print_off,
+                        coeff_value.to_bits(),
+                    )
+                    .unwrap();
+                }
+            }
         }
     }
+}
+
+pub(crate) fn run_and_render_remez_f32(
+    func: &str,
+    range: (f64, f64),
+    poly_deg: i32,
+    poly_i_print_off: i32,
+    coeff_prefix: &str,
+    exclude_coeffs: &[i32],
+    out: &mut String,
+) {
+    run_and_render_remez(
+        FloatKind::F32,
+        func,
+        range,
+        poly_deg,
+        poly_i_print_off,
+        coeff_prefix,
+        exclude_coeffs,
+        out,
+    );
 }
 
 pub(crate) fn run_and_render_remez_f64(
-    f: &str,
+    func: &str,
     range: (f64, f64),
     poly_deg: i32,
     poly_i_print_off: i32,
@@ -87,38 +127,19 @@ pub(crate) fn run_and_render_remez_f64(
     exclude_coeffs: &[i32],
     out: &mut String,
 ) {
-    let code = gen_remez_code(f, range, poly_deg, "Float64", "UInt64", 16);
-    let result = run_julia(&code).unwrap();
-
-    let mut lines = result.split(|&c| c == b'\n');
-
-    let err_line = lines.next().unwrap();
-    let err = parse_f64_hex(err_line);
-    eprintln!("error = {err:e} = 2^({})", err.log2());
-
-    for i in 0..=poly_deg {
-        let coeff_line = lines.next().unwrap();
-        let coeff_value = parse_f64_hex(coeff_line);
-        if !exclude_coeffs.contains(&i) {
-            writeln!(
-                out,
-                "const {coeff_prefix}{}: u64 = 0x{:016X}; // {coeff_value:e}",
-                i + poly_i_print_off,
-                coeff_value.to_bits(),
-            )
-            .unwrap();
-        }
-    }
+    run_and_render_remez(
+        FloatKind::F64,
+        func,
+        range,
+        poly_deg,
+        poly_i_print_off,
+        coeff_prefix,
+        exclude_coeffs,
+        out,
+    );
 }
 
-fn gen_remez_code(
-    f: &str,
-    range: (f64, f64),
-    poly_deg: i32,
-    float_type: &str,
-    float_bits_type: &str,
-    float_nibbles: u8,
-) -> String {
+fn gen_remez_code(func: &str, range: (f64, f64), poly_deg: i32) -> String {
     let mut code = String::new();
 
     code.push_str("import Remez;\n");
@@ -126,7 +147,7 @@ fn gen_remez_code(
     code.push_str("import SpecialFunctions;\n");
     code.push_str("Remez.setprecision(BigFloat, 512);\n");
     code.push_str("f = (x) -> ");
-    code.push_str(f);
+    code.push_str(func);
     code.push_str(";\n");
 
     code.push_str("N, D, E, X = Remez.ratfn_minimax(f, ");
@@ -134,44 +155,20 @@ fn gen_remez_code(
     write!(code, "{poly_deg},").unwrap();
     code.push_str(" 0);\n");
 
-    code.push_str("Printf.@printf \"0x%016x\\n\" reinterpret(UInt64, Float64(E))\n");
+    code.push_str("println(E);\n");
     for i in 1..=(poly_deg + 1) {
-        writeln!(
-            code,
-            "Printf.@printf \"0x%0{float_nibbles}x\\n\" reinterpret({float_bits_type}, {float_type}(N[{i}]));",
-        )
-        .unwrap();
+        writeln!(code, "println(N[{i}]);",).unwrap();
     }
 
     code
 }
 
-fn parse_f32_hex(s: &[u8]) -> f32 {
-    assert!(s.len() == 10 && s.starts_with(b"0x"));
-    let mut x: u32 = 0;
-    for &c in s[2..].iter() {
-        x <<= 4;
-        match c {
-            b'0'..=b'9' => x += u32::from(c - b'0'),
-            b'A'..=b'F' => x += u32::from(c - b'A' + 10),
-            b'a'..=b'f' => x += u32::from(c - b'a' + 10),
-            _ => panic!("invalid hex digit"),
-        }
-    }
-    f32::from_bits(x)
+fn parse_f32(s: &[u8]) -> f32 {
+    let s = std::str::from_utf8(s).unwrap();
+    s.parse().unwrap()
 }
 
-fn parse_f64_hex(s: &[u8]) -> f64 {
-    assert!(s.len() == 18 && s.starts_with(b"0x"));
-    let mut x: u64 = 0;
-    for &c in s[2..].iter() {
-        x <<= 4;
-        match c {
-            b'0'..=b'9' => x += u64::from(c - b'0'),
-            b'A'..=b'F' => x += u64::from(c - b'A' + 10),
-            b'a'..=b'f' => x += u64::from(c - b'a' + 10),
-            _ => panic!("invalid hex digit"),
-        }
-    }
-    f64::from_bits(x)
+fn parse_f64(s: &[u8]) -> f64 {
+    let s = std::str::from_utf8(s).unwrap();
+    s.parse().unwrap()
 }

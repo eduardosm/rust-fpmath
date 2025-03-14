@@ -89,3 +89,9 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
     };
     Ok(out)
 }
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum FloatKind {
+    F32,
+    F64,
+}
