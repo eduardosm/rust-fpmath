@@ -1,7 +1,7 @@
 use super::{F32Like, LikeF32};
 use crate::double::NormDouble;
 
-// GENERATE: f32::asin_acos::consts
+// GENERATE: asin_acos::consts f32
 const FRAC_PI_2_HI: u32 = 0x3FC90FDA; // 1.5707963e0
 const FRAC_PI_2_LO: u32 = 0x33A22169; // 7.54979e-8
 
@@ -13,7 +13,7 @@ impl<F: F32Like> crate::generic::AsinAcos<LikeF32> for F {
 
     #[inline]
     fn asin_poly(x2: Self) -> Self {
-        // GENERATE: f32::asin_acos::asin_poly
+        // GENERATE: asin_acos::asin_poly f32 5
         const K0: u32 = 0x3E2AAB15; // 1.6666825e-1
         const K2: u32 = 0x3D99749A; // 7.492943e-2
         const K4: u32 = 0x3D3B48FF; // 4.572391e-2

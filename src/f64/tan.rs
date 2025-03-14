@@ -3,7 +3,7 @@ use super::{F64Like, LikeF64};
 impl<F: F64Like> crate::generic::Tan<LikeF64> for F {
     #[inline]
     fn tan_poly(x2: Self, x3: Self) -> Self {
-        // GENERATE: f64::tan::tan_poly
+        // GENERATE: tan::tan_poly f64 9
         const K3: u64 = 0x3FD5555555555575; // 3.333333333333351e-1
         const K5: u64 = 0x3FC111111110D100; // 1.333333333328781e-1
         const K7: u64 = 0x3FABA1BA1BFA9D71; // 5.396825400867556e-2

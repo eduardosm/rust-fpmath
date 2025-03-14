@@ -4,7 +4,7 @@ use std::io::{Read as _, Write as _};
 use super::FloatKind;
 
 #[derive(Debug)]
-pub(crate) enum SollyaError {
+enum SollyaError {
     SpawnFailed(std::io::Error),
     StdinWriteFailed(std::io::Error),
     StdoutReadFailed(std::io::Error),
@@ -59,7 +59,7 @@ fn run_sollya(input: &[u8]) -> Result<Vec<u8>, SollyaError> {
     Ok(stdout_data)
 }
 
-fn run_and_render_remez(
+pub(super) fn run_and_render_remez(
     fkind: FloatKind,
     func: &str,
     range: (f64, f64),
@@ -104,44 +104,6 @@ fn run_and_render_remez(
             }
         }
     }
-}
-
-pub(crate) fn run_and_render_remez_f32(
-    func: &str,
-    range: (f64, f64),
-    poly_i: &[i32],
-    poly_i_print_off: i32,
-    coeff_prefix: &str,
-    out: &mut String,
-) {
-    run_and_render_remez(
-        FloatKind::F32,
-        func,
-        range,
-        poly_i,
-        poly_i_print_off,
-        coeff_prefix,
-        out,
-    );
-}
-
-pub(crate) fn run_and_render_remez_f64(
-    func: &str,
-    range: (f64, f64),
-    poly_i: &[i32],
-    poly_i_print_off: i32,
-    coeff_prefix: &str,
-    out: &mut String,
-) {
-    run_and_render_remez(
-        FloatKind::F64,
-        func,
-        range,
-        poly_i,
-        poly_i_print_off,
-        coeff_prefix,
-        out,
-    );
 }
 
 fn gen_remez_code(func: &str, range: (f64, f64), poly_i: &[i32]) -> Vec<u8> {

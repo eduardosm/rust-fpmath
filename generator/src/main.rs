@@ -131,5 +131,4 @@ fn check_comment<'a, R: 'a>(
 
 fn check_generate(txt: &str) -> Option<&str> {
     txt.strip_prefix("GENERATE:")
-        .map(|s| s.trim_start_matches(' '))
 }

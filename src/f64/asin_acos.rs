@@ -1,7 +1,7 @@
 use super::{F64Like, LikeF64};
 use crate::double::NormDouble;
 
-// GENERATE: f64::asin_acos::consts
+// GENERATE: asin_acos::consts f64
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
 const FRAC_PI_2_LO: u64 = 0x3C91A62633145C07; // 6.123233995736766e-17
 
@@ -13,7 +13,7 @@ impl<F: F64Like> crate::generic::AsinAcos<LikeF64> for F {
 
     #[inline]
     fn asin_poly(x2: Self) -> Self {
-        // GENERATE: f64::asin_acos::asin_poly
+        // GENERATE: asin_acos::asin_poly f64 13
         const K0: u64 = 0x3FC55555555555D2; // 1.6666666666667013e-1
         const K2: u64 = 0x3FB3333333324C2E; // 7.499999999917925e-2
         const K4: u64 = 0x3FA6DB6DB77D26B9; // 4.464285721640011e-2
