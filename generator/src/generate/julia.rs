@@ -14,10 +14,10 @@ pub(crate) enum JuliaError {
 impl std::fmt::Display for JuliaError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::SpawnFailed(e) => write!(f, "failed to spawn sollya: {e}"),
-            Self::StdoutReadFailed(e) => write!(f, "failed to read from sollya stdout: {e}"),
-            Self::WaitFailed(e) => write!(f, "failed to wait for sollya process to finish: {e}"),
-            Self::ExitError(status) => write!(f, "sollya process exited with status: {status}"),
+            Self::SpawnFailed(e) => write!(f, "failed to spawn julia: {e}"),
+            Self::StdoutReadFailed(e) => write!(f, "failed to read from julia stdout: {e}"),
+            Self::WaitFailed(e) => write!(f, "failed to wait for julia process to finish: {e}"),
+            Self::ExitError(status) => write!(f, "julia process exited with status: {status}"),
         }
     }
 }
