@@ -50,7 +50,6 @@ fi
 
 crates=(
   "fpmath"
-  "fpmath-tests"
   "generator"
 )
 

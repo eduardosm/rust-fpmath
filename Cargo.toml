@@ -22,9 +22,17 @@ soft-float = ["dep:rustc_apfloat"]
 [dependencies]
 rustc_apfloat = { optional = true, version = "0.2.2" }
 
+[dev-dependencies]
+rand = { version = "0.9.0", default-features = false }
+rand_pcg = "0.9.0"
+
+[dev-dependencies.rug]
+version = "1.27.0"
+default-features = false
+features = ["float", "integer", "std"]
+
 [workspace]
 members = [
-    "fpmath-tests",
     "generator",
 ]
 

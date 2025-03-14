@@ -19,10 +19,6 @@ begin_group "Doc"
 cargo doc --frozen --workspace "${features[@]}"
 end_group
 
-begin_group "Generate test data"
-./run-all-test-data-gen.sh
-end_group
-
 begin_group "Test"
 cargo test --frozen --workspace "${features[@]}"
 end_group
