@@ -29,6 +29,8 @@ pub(crate) fn mkfloat(m: u64, e: i16, s: bool) -> f64 {
     f64::from_bits(m | e | s)
 }
 
+const RUG_PREC: u32 = 53 + 20;
+
 #[derive(Debug, bincode::Encode, bincode::Decode)]
 pub(crate) struct RefResult {
     exp: i32,

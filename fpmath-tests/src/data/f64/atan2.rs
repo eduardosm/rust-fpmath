@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, RefResult};
+use super::{mkfloat, RefResult, RUG_PREC};
 use crate::data::{create_prng, generate_data};
 
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
@@ -10,7 +10,7 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         |(y, x)| {
             let bigy = rug::Float::with_val(53, y);
             let bigx = rug::Float::with_val(53, x);
-            let tmp = rug::Float::with_val(53 * 2, bigy.atan2_ref(&bigx));
+            let tmp = rug::Float::with_val(RUG_PREC, bigy.atan2_ref(&bigx));
 
             super::TwoArgData {
                 x,
@@ -29,7 +29,7 @@ pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
         |(y, x)| {
             let bigy = rug::Float::with_val(53, y);
             let bigx = rug::Float::with_val(53, x);
-            let tmp = rug::Float::with_val(53 * 2, bigy.atan2_u_ref(&bigx, 360));
+            let tmp = rug::Float::with_val(RUG_PREC, bigy.atan2_u_ref(&bigx, 360));
 
             super::TwoArgData {
                 x,
@@ -48,7 +48,7 @@ pub(crate) fn gen_data_pi(pb: indicatif::ProgressBar) {
         |(y, x)| {
             let bigy = rug::Float::with_val(53, y);
             let bigx = rug::Float::with_val(53, x);
-            let tmp = rug::Float::with_val(53 * 2, bigy.atan2_pi_ref(&bigx));
+            let tmp = rug::Float::with_val(RUG_PREC, bigy.atan2_pi_ref(&bigx));
 
             super::TwoArgData {
                 x,

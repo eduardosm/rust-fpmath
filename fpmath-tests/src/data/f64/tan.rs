@@ -1,4 +1,4 @@
-use super::{sin_cos::gen_args, RefResult};
+use super::{sin_cos::gen_args, RefResult, RUG_PREC};
 use crate::data::generate_data;
 
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
@@ -6,7 +6,7 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_tan",
         gen_args,
         |x| {
-            let tmp = rug::Float::with_val(53 * 2, x).tan();
+            let tmp = rug::Float::with_val(RUG_PREC, x).tan();
 
             super::OneArgData {
                 x,

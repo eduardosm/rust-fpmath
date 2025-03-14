@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, RefResult};
+use super::{mkfloat, RefResult, RUG_PREC};
 use crate::data::{create_prng, generate_data};
 
 #[derive(bincode::Encode, bincode::Decode)]
@@ -16,8 +16,8 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         gen_args,
         |x| {
             let bigx = rug::Float::with_val(53, x);
-            let tmp_asin = rug::Float::with_val(53 * 2, bigx.asin_ref());
-            let tmp_acos = rug::Float::with_val(53 * 2, bigx.acos_ref());
+            let tmp_asin = rug::Float::with_val(RUG_PREC, bigx.asin_ref());
+            let tmp_acos = rug::Float::with_val(RUG_PREC, bigx.acos_ref());
 
             Data {
                 x,
@@ -35,8 +35,8 @@ pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
         gen_args,
         |x| {
             let bigx = rug::Float::with_val(53, x);
-            let tmp_asin = rug::Float::with_val(53 * 2, bigx.asin_u_ref(360));
-            let tmp_acos = rug::Float::with_val(53 * 2, bigx.acos_u_ref(360));
+            let tmp_asin = rug::Float::with_val(RUG_PREC, bigx.asin_u_ref(360));
+            let tmp_acos = rug::Float::with_val(RUG_PREC, bigx.acos_u_ref(360));
 
             Data {
                 x,
@@ -54,8 +54,8 @@ pub(crate) fn gen_data_pi(pb: indicatif::ProgressBar) {
         gen_args,
         |x| {
             let bigx = rug::Float::with_val(53, x);
-            let tmp_asin = rug::Float::with_val(53 * 2, bigx.asin_pi_ref());
-            let tmp_acos = rug::Float::with_val(53 * 2, bigx.acos_pi_ref());
+            let tmp_asin = rug::Float::with_val(RUG_PREC, bigx.asin_pi_ref());
+            let tmp_acos = rug::Float::with_val(RUG_PREC, bigx.acos_pi_ref());
 
             Data {
                 x,
