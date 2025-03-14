@@ -27,28 +27,15 @@ pub(crate) struct LgammaData {
 }
 
 pub(crate) fn gen_data_l(pb: indicatif::ProgressBar) {
-    let pi = rug::Float::with_val(53 * 2, rug::float::Constant::Pi);
-
     generate_data(
         "f64_lgamma",
         gen_args,
         |x| {
-            let mut sign = 1;
-            let tmp = if x < 0.5 {
-                let bigx = rug::Float::with_val(53 * 2, x);
-
-                let lgamma_omx = rug::Float::with_val(53 * 2, 1u8 - &bigx).ln_gamma();
-
-                let pi_sinpi = &pi / bigx.sin_pi();
-                if x < 0.0 && x.fract() == 0.0 {
-                    sign = 0;
-                } else if pi_sinpi.is_sign_negative() {
-                    sign = -1;
-                }
-
-                pi_sinpi.abs().ln() - lgamma_omx
+            let (tmp, ord) = rug::Float::with_val(53 * 2, x).ln_abs_gamma();
+            let sign = if x < 0.0 && x.fract() == 0.0 {
+                0
             } else {
-                rug::Float::with_val(53 * 2, x).ln_gamma()
+                ord as i8
             };
 
             LgammaData {
