@@ -6,6 +6,7 @@
     unused_qualifications
 )]
 #![forbid(unsafe_code)]
+#![allow(clippy::too_many_arguments)]
 
 use std::ffi::OsStr;
 use std::path::Path;
