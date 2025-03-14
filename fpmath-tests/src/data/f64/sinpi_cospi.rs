@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, RefResult};
+use super::{mkfloat, RefResult, RUG_PREC};
 use crate::data::{create_prng, generate_data};
 
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
@@ -9,8 +9,8 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         gen_args,
         |x| {
             let tmp_arg = rug::Float::with_val(53, x);
-            let tmp_sin = rug::Float::with_val(53 * 2, tmp_arg.sin_pi_ref());
-            let tmp_cos = rug::Float::with_val(53 * 2, tmp_arg.cos_pi_ref());
+            let tmp_sin = rug::Float::with_val(RUG_PREC, tmp_arg.sin_pi_ref());
+            let tmp_cos = rug::Float::with_val(RUG_PREC, tmp_arg.cos_pi_ref());
 
             super::SinCosData {
                 x,

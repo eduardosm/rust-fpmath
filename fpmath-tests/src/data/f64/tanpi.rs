@@ -1,4 +1,4 @@
-use super::{sind_cosd::gen_args, RefResult};
+use super::{sind_cosd::gen_args, RefResult, RUG_PREC};
 use crate::data::generate_data;
 
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
@@ -6,7 +6,7 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_tanpi",
         gen_args,
         |x| {
-            let mut tmp = rug::Float::with_val(53 * 2, x).tan_pi();
+            let mut tmp = rug::Float::with_val(RUG_PREC, x).tan_pi();
 
             if !(f64::MIN..=f64::MAX).contains(&tmp) {
                 rug::Assign::assign(

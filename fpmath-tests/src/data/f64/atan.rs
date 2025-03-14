@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, RefResult};
+use super::{mkfloat, RefResult, RUG_PREC};
 use crate::data::{create_prng, generate_data};
 
 pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
@@ -8,7 +8,7 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         "f64_atan",
         gen_args,
         |x| {
-            let tmp = rug::Float::with_val(53 * 2, x).atan();
+            let tmp = rug::Float::with_val(RUG_PREC, x).atan();
 
             super::OneArgData {
                 x,
@@ -24,7 +24,7 @@ pub(crate) fn gen_data_d(pb: indicatif::ProgressBar) {
         "f64_atand",
         gen_args,
         |x| {
-            let tmp = rug::Float::with_val(53 * 2, x).atan_u(360);
+            let tmp = rug::Float::with_val(RUG_PREC, x).atan_u(360);
 
             super::OneArgData {
                 x,
@@ -40,7 +40,7 @@ pub(crate) fn gen_data_pi(pb: indicatif::ProgressBar) {
         "f64_atanpi",
         gen_args,
         |x| {
-            let tmp = rug::Float::with_val(53 * 2, x).atan_pi();
+            let tmp = rug::Float::with_val(RUG_PREC, x).atan_pi();
 
             super::OneArgData {
                 x,

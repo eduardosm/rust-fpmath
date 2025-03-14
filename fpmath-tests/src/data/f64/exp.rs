@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{mkfloat, RefResult};
+use super::{mkfloat, RefResult, RUG_PREC};
 use crate::data::{create_prng, generate_data};
 
 #[derive(bincode::Encode, bincode::Decode)]
@@ -16,8 +16,8 @@ pub(crate) fn gen_data(pb: indicatif::ProgressBar) {
         gen_args,
         |x| {
             let bigx = rug::Float::with_val(53, x);
-            let tmp_exp = rug::Float::with_val(53 * 2, bigx.exp_ref());
-            let tmp_expm1 = rug::Float::with_val(53 * 2, bigx.exp_m1_ref());
+            let tmp_exp = rug::Float::with_val(RUG_PREC, bigx.exp_ref());
+            let tmp_expm1 = rug::Float::with_val(RUG_PREC, bigx.exp_m1_ref());
 
             ExpExpM1Data {
                 x,
@@ -34,7 +34,7 @@ pub(crate) fn gen_data_2(pb: indicatif::ProgressBar) {
         "f64_exp2",
         gen_args,
         |x| {
-            let tmp = rug::Float::with_val(53 * 2, x).exp2();
+            let tmp = rug::Float::with_val(RUG_PREC, x).exp2();
 
             super::OneArgData {
                 x,
@@ -50,7 +50,7 @@ pub(crate) fn gen_data_10(pb: indicatif::ProgressBar) {
         "f64_exp10",
         gen_args,
         |x| {
-            let tmp = rug::Float::with_val(53 * 2, x).exp10();
+            let tmp = rug::Float::with_val(RUG_PREC, x).exp10();
 
             super::OneArgData {
                 x,
