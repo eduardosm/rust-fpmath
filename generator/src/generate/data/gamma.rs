@@ -16,30 +16,32 @@ pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
 }
 
 pub(in super::super) fn gen_lgamma_poly_1(args: &[&str]) -> Result<String, String> {
-    let (fkind, poly_deg, range_end): (_, _, f64) = arg_utils::parse_3_args(args)?;
+    let (fkind, poly_deg, range_end): (_, i32, f64) = arg_utils::parse_3_args(args)?;
 
     let mut out = String::new();
 
-    let func = "SpecialFunctions.lgamma(x + 1)";
+    let func = "SpecialFunctions.lgamma(x + 1) / x";
+    let wfunc = "1 / fx";
     let o = 1.0;
-    let range = (0.5 - o, range_end + 0.001 - o);
+    let range = (0.5 - o, range_end + 0.0001 - o);
 
-    julia::run_and_render_remez(fkind, func, range, poly_deg, 0, "K", &[0], &mut out);
+    julia::run_and_render_remez(fkind, func, wfunc, range, poly_deg - 1, 1, "K", &mut out);
 
     Ok(out)
 }
 
 pub(in super::super) fn gen_lgamma_poly_2(args: &[&str]) -> Result<String, String> {
-    let (fkind, poly_deg, range_start, range_end): (_, _, f64, f64) =
+    let (fkind, poly_deg, range_start, range_end): (_, i32, f64, f64) =
         arg_utils::parse_4_args(args)?;
 
     let mut out = String::new();
 
-    let func = "SpecialFunctions.lgamma(x + 2)";
+    let func = "SpecialFunctions.lgamma(x + 2) / x";
+    let wfunc = "1 / fx";
     let o = 2.0;
-    let range = (range_start - 0.001 - o, range_end + 0.001 - o);
+    let range = (range_start - 0.0001 - o, range_end + 0.0001 - o);
 
-    julia::run_and_render_remez(fkind, func, range, poly_deg, 0, "K", &[0], &mut out);
+    julia::run_and_render_remez(fkind, func, wfunc, range, poly_deg - 1, 1, "K", &mut out);
 
     Ok(out)
 }
@@ -49,10 +51,12 @@ pub(in super::super) fn gen_special_poly(args: &[&str]) -> Result<String, String
 
     let mut out = String::new();
 
-    let func = "(SpecialFunctions.gamma(1 / x) / ((1 / x)^(1/x - 0.5) * exp(-1/x) * sqrt(2*BigFloat(pi))) - 1) / x";
-    let range = (1.0e-10, 1.0 / (range_end - 0.001));
+    // (SpecialFunctions.gamma(1 / x) / ((1 / x)^(1/x - 0.5) * exp(-1/x) * sqrt(2*BigFloat(pi))) - 1) / x
+    let func = "(exp(SpecialFunctions.lgamma(1 / x) + (1/x - 0.5) * log(x) + 1 / x - log(sqrt(2*BigFloat(pi)))) - 1) / x";
+    let wfunc = "1";
+    let range = (1.0e-100, 1.0 / (range_end - 0.0001));
 
-    julia::run_and_render_remez(fkind, func, range, poly_deg, 0, "K", &[], &mut out);
+    julia::run_and_render_remez(fkind, func, wfunc, range, poly_deg, 0, "K", &mut out);
 
     Ok(out)
 }
