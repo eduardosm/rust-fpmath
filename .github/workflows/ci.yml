@@ -16,6 +16,7 @@ jobs:
       - build-and-test
       - test-i586
       - build-no_std
+      - check-generator
       - package-crate
     # '!cancelled()' is needed because GitHub treats a skipped job (due to a
     # failed dependency) a success.
@@ -108,6 +109,23 @@ jobs:
       - name: Install Rust
         run: ./ci/install-rust.sh stable --profile minimal -t x86_64-unknown-none
       - run: ./ci/build-no_std.sh
+
+  check-generator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Sollya
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends sollya
+      - name: Install Julia
+        run: |
+          wget "https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.9-linux-x86_64.tar.gz"
+          sudo tar -xvf julia-1.10.9-linux-x86_64.tar.gz -C /opt
+          echo "/opt/julia-1.10.9/bin" >> "$GITHUB_PATH"
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable --profile minimal
+      - run: ./ci/check-generator.sh
 
   package-crate:
     runs-on: ubuntu-24.04
