@@ -15,33 +15,22 @@ pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
-pub(in super::super) fn gen_lgamma_poly_1(args: &[&str]) -> Result<String, String> {
-    let (fkind, poly_deg, range_end): (_, i32, f64) = arg_utils::parse_3_args(args)?;
+pub(in super::super) fn gen_lgamma_poly(args: &[&str]) -> Result<String, String> {
+    let (fkind, poly_deg, offset, range_start, range_end): (_, i32, u8, f64, f64) =
+        arg_utils::parse_5_args(args)?;
+
+    if !matches!(offset, 1 | 2) {
+        return Err("offset must be 1 or 2".into());
+    }
+    let offset = f64::from(offset);
 
     let mut out = String::new();
 
-    let func = "SpecialFunctions.lgamma(x + 1) / x";
+    let func = format!("SpecialFunctions.lgamma(x + {offset}) / x");
     let wfunc = "1 / fx";
-    let o = 1.0;
-    let range = (0.5 - o, range_end + 0.0001 - o);
+    let range = (range_start - offset, range_end - offset);
 
-    julia::run_and_render_remez(fkind, func, wfunc, range, poly_deg - 1, 1, "K", &mut out);
-
-    Ok(out)
-}
-
-pub(in super::super) fn gen_lgamma_poly_2(args: &[&str]) -> Result<String, String> {
-    let (fkind, poly_deg, range_start, range_end): (_, i32, f64, f64) =
-        arg_utils::parse_4_args(args)?;
-
-    let mut out = String::new();
-
-    let func = "SpecialFunctions.lgamma(x + 2) / x";
-    let wfunc = "1 / fx";
-    let o = 2.0;
-    let range = (range_start - 0.0001 - o, range_end + 0.0001 - o);
-
-    julia::run_and_render_remez(fkind, func, wfunc, range, poly_deg - 1, 1, "K", &mut out);
+    julia::run_and_render_remez(fkind, &func, wfunc, range, poly_deg - 1, 1, "K", &mut out);
 
     Ok(out)
 }
