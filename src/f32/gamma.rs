@@ -43,7 +43,7 @@ impl<F: F32Like> crate::generic::Gamma<LikeF32> for F {
 
     #[inline]
     fn lgamma_poly_1(x: Self) -> (Self, Self, Self, Self) {
-        // GENERATE: gamma::lgamma_poly_1 f32 12 1.2
+        // GENERATE: gamma::lgamma_poly f32 12 1 0.5 1.2001
         const K1: u32 = 0xBF13C468; // -5.772157e-1
         const K2: u32 = 0x3F528D34; // 8.224671e-1
         const K3: u32 = 0xBECD26B9; // -4.0068606e-1
@@ -76,7 +76,7 @@ impl<F: F32Like> crate::generic::Gamma<LikeF32> for F {
 
     #[inline]
     fn lgamma_poly_2(x: Self) -> (Self, Self, Self, Self) {
-        // GENERATE: gamma::lgamma_poly_2 f32 12 1.2 2.3
+        // GENERATE: gamma::lgamma_poly f32 12 2 1.1999 2.3001
         const K1: u32 = 0x3ED87730; // 4.2278433e-1
         const K2: u32 = 0x3EA51A66; // 3.2246703e-1
         const K3: u32 = 0xBD89F002; // -6.735231e-2
