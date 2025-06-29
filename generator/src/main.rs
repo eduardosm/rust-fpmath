@@ -97,6 +97,7 @@ fn proc_file(path: &Path) -> Result<(), RunError> {
                     eprintln!("End line not found for \"GENERATE\" block");
                     RunError
                 })??;
+            eprintln!("GENERATE: {}", txt.trim());
             let generated = generate::generate(txt)?;
             for generated_line in generated.lines() {
                 result.push_str(ident);
