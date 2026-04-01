@@ -1,5 +1,5 @@
-use super::log::log_hi_lo_inner;
 use super::Log;
+use super::log::log_hi_lo_inner;
 use crate::double::SemiDouble;
 use crate::traits::Int as _;
 
@@ -40,8 +40,8 @@ fn atanh_inner<F: Log>(x: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::atanh;

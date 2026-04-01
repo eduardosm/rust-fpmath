@@ -66,11 +66,7 @@ pub(crate) fn atan2<F: Atan>(y: F, x: F) -> F {
         F::frac_pi_2().copysign(ny)
     } else if nyexp == F::RawExp::ZERO {
         // y = ±0
-        if nx.sign() {
-            F::pi().copysign(ny)
-        } else {
-            ny
-        }
+        if nx.sign() { F::pi().copysign(ny) } else { ny }
     } else if nxexp == F::RawExp::ZERO {
         // x = ±0
         F::frac_pi_2().copysign(ny)

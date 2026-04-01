@@ -83,10 +83,6 @@ impl<F: F64Like + FloatConsts> crate::generic::ReducePi2<LikeF64> for F {
         y0 = scalbn_medium(y0, scale);
         y1 = scalbn_medium(y1, scale);
 
-        if ih == 0 {
-            (y0, y1)
-        } else {
-            (-y0, -y1)
-        }
+        if ih == 0 { (y0, y1) } else { (-y0, -y1) }
     }
 }

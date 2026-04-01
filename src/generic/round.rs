@@ -62,8 +62,8 @@ pub(crate) fn round_as_i_f<F: Float>(x: F) -> (i32, F) {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test_round<F: Float + FloatMath>() {
         use crate::round;

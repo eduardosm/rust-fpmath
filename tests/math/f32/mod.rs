@@ -22,11 +22,7 @@ fn calc_error_ulp(actual: f32, expected: f64) -> f32 {
     let actual = purify(actual);
 
     if expected.is_nan() {
-        if actual.is_nan() {
-            0.0
-        } else {
-            f32::INFINITY
-        }
+        if actual.is_nan() { 0.0 } else { f32::INFINITY }
     } else if expected > f64::from(f32::MAX) {
         if actual == f32::INFINITY {
             0.0

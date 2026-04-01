@@ -60,8 +60,8 @@ pub(crate) fn hypot<F: Float>(x: F, y: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::hypot;

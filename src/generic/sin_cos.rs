@@ -1,5 +1,5 @@
 use crate::double::{DenormDouble, NormDouble, SemiDouble};
-use crate::generic::{reduce_pi_2, ReducePi2};
+use crate::generic::{ReducePi2, reduce_pi_2};
 use crate::traits::{Float, Int as _, Like};
 
 pub(crate) trait SinCos<L = Like<Self>>: Float {
@@ -176,8 +176,8 @@ pub(super) fn hi_lo_cos_inner<F: SinCos>(x: NormDouble<F>) -> DenormDouble<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::{cos, sin, sin_cos};

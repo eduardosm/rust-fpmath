@@ -1,4 +1,4 @@
-use super::super::{arg_utils, render_const, FloatKind};
+use super::super::{FloatKind, arg_utils, render_const};
 
 pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     let fkind: FloatKind = arg_utils::parse_1_arg(args)?;

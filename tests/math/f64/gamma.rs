@@ -1,6 +1,6 @@
 use rand::Rng as _;
 
-use super::{calc_error_ulp, mkfloat, RUG_PREC};
+use super::{RUG_PREC, calc_error_ulp, mkfloat};
 use crate::create_prng;
 
 #[test]

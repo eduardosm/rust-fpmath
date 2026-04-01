@@ -1,5 +1,5 @@
 use super::sin_cos::{cos_inner, sin_inner};
-use super::{reduce_half_mul_pi, ReduceHalfMulPi, SinCos};
+use super::{ReduceHalfMulPi, SinCos, reduce_half_mul_pi};
 use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, Int as _};
 
@@ -100,8 +100,8 @@ pub(crate) fn sinpi_cospi<F: SinCos + ReduceHalfMulPi>(x: F) -> (F, F) {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::{cospi, sinpi, sinpi_cospi};

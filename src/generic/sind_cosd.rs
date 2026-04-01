@@ -1,5 +1,5 @@
 use super::sin_cos::{cos_inner, sin_inner};
-use super::{reduce_90_deg, Reduce90Deg, SinCos};
+use super::{Reduce90Deg, SinCos, reduce_90_deg};
 
 pub(crate) fn sind<F: SinCos + Reduce90Deg>(x: F) -> F {
     let e = x.raw_exp();
@@ -73,8 +73,8 @@ pub(crate) fn sind_cosd<F: SinCos + Reduce90Deg>(x: F) -> (F, F) {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::{cosd, sind, sind_cosd};

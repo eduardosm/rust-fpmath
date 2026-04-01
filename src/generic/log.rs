@@ -268,8 +268,8 @@ fn hi_lo_log_special_poly<F: Log>(x2: SemiDouble<F>) -> DenormDouble<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test_log<F: Float + FloatMath>() {
         use crate::log;

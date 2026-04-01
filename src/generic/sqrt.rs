@@ -96,8 +96,8 @@ pub(super) fn hi_lo_sqrt_hi_lo_inner<F: Float>(x: DenormDouble<F>) -> DenormDoub
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>(
         full_e_mants: impl Clone + Iterator<Item = u64>,

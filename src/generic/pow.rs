@@ -1,6 +1,6 @@
 use super::exp::{exp_inner_common, exp_split};
 use super::log::hi_lo_log_inner;
-use super::{int_is_odd, is_int, is_odd_int, Exp, Log};
+use super::{Exp, Log, int_is_odd, is_int, is_odd_int};
 use crate::traits::Int as _;
 
 pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
@@ -129,8 +129,8 @@ pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::pow;

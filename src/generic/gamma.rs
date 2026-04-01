@@ -2,7 +2,7 @@ use super::exp::{exp_split, hi_lo_exp_inner_common};
 use super::log::hi_lo_log_hi_lo_inner;
 use super::scalbn;
 use super::sin_cos::{hi_lo_cos_inner, hi_lo_sin_inner};
-use super::{is_int, reduce_half_mul_pi, Exp, Log, ReduceHalfMulPi, SinCos};
+use super::{Exp, Log, ReduceHalfMulPi, SinCos, is_int, reduce_half_mul_pi};
 use crate::double::{DenormDouble, NormDouble, SemiDouble};
 use crate::traits::{Float, FloatConsts, Int as _, Like};
 
@@ -213,8 +213,8 @@ fn finish_poly<F: Float>(y: F, r: F, k1: F, k2: F, k3: F) -> DenormDouble<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test_tgamma<F: Float + FloatMath>() {
         use crate::tgamma;

@@ -50,8 +50,8 @@ fn scalbn_split3<F: Float>(e: i32) -> (F::Exp, F::Exp, F::Exp) {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::{Float, Int as _};
     use crate::FloatMath;
+    use crate::traits::{Float, Int as _};
 
     fn test<F: Float + FloatMath>() {
         use crate::scalbn;

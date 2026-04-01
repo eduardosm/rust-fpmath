@@ -1,4 +1,4 @@
-use super::atan::{atan2_inner, atan_inner};
+use super::atan::{atan_inner, atan2_inner};
 use super::{Atan, DivPi};
 use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, CastInto as _, Int as _};
@@ -72,11 +72,7 @@ pub(crate) fn atan2pi<F: Atan + DivPi>(y: F, x: F) -> F {
         F::half().copysign(ny)
     } else if nyexp == F::RawExp::ZERO {
         // y = ±0
-        if nx.sign() {
-            F::one().copysign(ny)
-        } else {
-            ny
-        }
+        if nx.sign() { F::one().copysign(ny) } else { ny }
     } else if nxexp == F::RawExp::ZERO {
         // x = ±0
         F::half().copysign(ny)
@@ -104,8 +100,8 @@ pub(crate) fn atan2pi<F: Atan + DivPi>(y: F, x: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test_atanpi<F: Float + FloatMath>() {
         use crate::atanpi;

@@ -1,4 +1,4 @@
-use super::{arg_utils, render_const, FloatKind};
+use super::{FloatKind, arg_utils, render_const};
 
 pub(super) mod asin_acos;
 pub(super) mod atan;
