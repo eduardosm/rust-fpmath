@@ -42,7 +42,7 @@ fn test_trunc() {
 }
 
 fn test_round_with(test_f: fn(f64)) {
-    use rand::Rng as _;
+    use rand::RngExt as _;
 
     let mut rng = create_prng();
 

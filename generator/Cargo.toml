@@ -9,7 +9,7 @@ publish = false
 [dependencies]
 
 [dependencies.rug]
-version = "1.27.0"
+version = "1.29.0"
 default-features = false
 features = ["float", "integer", "std"]
 
