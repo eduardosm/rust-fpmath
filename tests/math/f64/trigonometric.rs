@@ -1,4 +1,4 @@
-use rand::Rng as _;
+use rand::RngExt as _;
 
 use super::{RUG_PREC, calc_error_ulp, mkfloat, purify, purify2, select_threshold};
 use crate::create_prng;
