@@ -1,5 +1,5 @@
 use super::exp::exp_split;
-use super::{scalbn_medium, Exp};
+use super::{Exp, scalbn_medium};
 use crate::double::DenormDouble;
 use crate::traits::{CastInto as _, Float, Int as _, Like};
 
@@ -171,8 +171,8 @@ pub(super) fn sinh_cosh_inner_common_2<F: Float>(
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>(hi_th: &str) {
         use crate::{cosh, sinh, sinh_cosh};

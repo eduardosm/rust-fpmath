@@ -1,4 +1,4 @@
-use super::{log::log_split, Log};
+use super::{Log, log::log_split};
 use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{CastInto as _, Int as _, Like};
 
@@ -74,8 +74,8 @@ fn log10_inner<F: Log10>(x: F, edelta: F::Exp) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::log10;

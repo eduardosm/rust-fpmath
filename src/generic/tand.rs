@@ -1,4 +1,4 @@
-use super::{reduce_90_deg, tan::tan_inner, Reduce90Deg, Tan};
+use super::{Reduce90Deg, Tan, reduce_90_deg, tan::tan_inner};
 
 pub(crate) fn tand<F: Reduce90Deg + Tan>(x: F) -> F {
     let e = x.raw_exp();
@@ -23,8 +23,8 @@ pub(crate) fn tand<F: Reduce90Deg + Tan>(x: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::tand;

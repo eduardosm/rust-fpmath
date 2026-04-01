@@ -2,7 +2,7 @@
 name = "fpmath"
 version = "0.1.1"
 authors = ["Eduardo Sánchez Muñoz <eduardosm-dev@e64.io>"]
-edition = "2021"
+edition = "2024"
 rust-version = "1.85"
 description = "A floating point math library"
 repository = "https://github.com/eduardosm/rust-fpmath"

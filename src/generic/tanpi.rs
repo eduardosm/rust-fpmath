@@ -1,4 +1,4 @@
-use super::{reduce_half_mul_pi, tan::tan_inner, ReduceHalfMulPi, Tan};
+use super::{ReduceHalfMulPi, Tan, reduce_half_mul_pi, tan::tan_inner};
 use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, Int as _};
 
@@ -34,8 +34,8 @@ pub(crate) fn tanpi<F: ReduceHalfMulPi + Tan>(x: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::tanpi;

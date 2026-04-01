@@ -1,5 +1,5 @@
 use super::exp::exp_inner_common;
-use super::{round_as_i_f, Exp};
+use super::{Exp, round_as_i_f};
 use crate::traits::{Int as _, Like};
 
 pub(crate) trait Exp10<L = Like<Self>>: Exp {
@@ -71,8 +71,8 @@ fn exp10_split<F: Exp10>(x: F) -> (i32, F, F) {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>(lo_th: &str, hi_th: &str) {
         use crate::exp10;

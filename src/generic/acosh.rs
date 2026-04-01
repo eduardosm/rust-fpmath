@@ -1,6 +1,6 @@
+use super::Log;
 use super::log::{log_hi_lo_inner, log_inner};
 use super::sqrt::hi_lo_sqrt_hi_lo_inner;
-use super::Log;
 use crate::double::DenormDouble;
 use crate::traits::Int as _;
 
@@ -52,8 +52,8 @@ fn acosh_inner<F: Log>(x: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::acosh;

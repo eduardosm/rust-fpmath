@@ -58,8 +58,8 @@ pub(crate) fn acospi<F: AsinAcos + DivPi>(x: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test_asinpi<F: Float + FloatMath>() {
         use crate::asinpi;

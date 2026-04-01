@@ -171,8 +171,8 @@ pub(super) fn exp_split<F: Exp>(x: F) -> (i32, F, F) {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test_exp<F: Float + FloatMath>(lo_th: &str, hi_th: &str) {
         use crate::exp;

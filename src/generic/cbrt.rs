@@ -96,8 +96,8 @@ fn cbrt_split<F: Cbrt>(x: F, edelta: F::Exp) -> (bool, F::Exp, F, SemiDouble<F>)
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>(
         full_e_mants: impl Clone + Iterator<Item = u64>,

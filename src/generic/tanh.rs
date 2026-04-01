@@ -55,8 +55,8 @@ fn tanh_inner<F: Exp>(x: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>(hi_th: &str) {
         use crate::tanh;

@@ -47,8 +47,8 @@ pub(crate) fn acosd<F: AsinAcos + RadToDeg>(x: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test_asind<F: Float + FloatMath>() {
         use crate::asind;

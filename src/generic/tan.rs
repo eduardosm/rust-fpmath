@@ -1,4 +1,4 @@
-use super::{reduce_pi_2, ReducePi2};
+use super::{ReducePi2, reduce_pi_2};
 use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{Float, Int as _, Like};
 
@@ -63,8 +63,8 @@ pub(super) fn tan_inner<F: Tan>(x_hi: F, x_lo: F, inv: bool) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test<F: Float + FloatMath>() {
         use crate::tan;

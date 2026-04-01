@@ -1,4 +1,4 @@
-use super::atan::{atan2_inner, atan_inner};
+use super::atan::{atan_inner, atan2_inner};
 use super::{Atan, RadToDeg};
 use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, CastInto as _, Int as _};
@@ -93,8 +93,8 @@ pub(crate) fn atan2d<F: Atan + RadToDeg>(y: F, x: F) -> F {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Float;
     use crate::FloatMath;
+    use crate::traits::Float;
 
     fn test_atand<F: Float + FloatMath>() {
         use crate::atand;
