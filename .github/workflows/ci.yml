@@ -47,7 +47,7 @@ jobs:
         run: ./ci/install-rust.sh stable --profile minimal
       - run: ./ci/extract-changelog.sh
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: version-changelog
           path: version-changelog
@@ -135,7 +135,7 @@ jobs:
         run: ./ci/install-rust.sh stable --profile minimal
       - run: ./ci/package-crate.sh
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: packaged-crate
           path: output
