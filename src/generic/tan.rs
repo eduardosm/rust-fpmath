@@ -1,8 +1,8 @@
 use super::{ReducePi2, reduce_pi_2};
 use crate::double::{DenormDouble, SemiDouble};
-use crate::traits::{Float, Int as _, Like};
+use crate::traits::{Float, Int as _};
 
-pub(crate) trait Tan<L = Like<Self>>: Float {
+pub(crate) trait Tan: Float {
     /// Calculates `tan(x) - x`
     ///
     /// Where:

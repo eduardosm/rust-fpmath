@@ -1,9 +1,9 @@
 use super::exp::exp_split;
 use super::{Exp, scalbn_medium};
 use crate::double::DenormDouble;
-use crate::traits::{CastInto as _, Float, Int as _, Like};
+use crate::traits::{CastInto as _, Float, Int as _};
 
-pub(crate) trait SinhCosh<L = Like<Self>>: Exp {
+pub(crate) trait SinhCosh: Exp {
     fn expo2_hi_th() -> Self;
 }
 
@@ -82,7 +82,7 @@ fn sinh_cosh_inner<F: Exp>(x: F) -> (F, F) {
     // t1b = exp(-r_hi - r_lo) - 1 + r_hi
     let (t1a, t1b) = sinh_cosh_inner_common_1(r_hi, r_lo);
 
-    if k > F::MANT_BITS.into() {
+    if k > i32::from(F::MANT_BITS) {
         let t2 = scalbn_medium((r_hi + t1a) + F::one(), k - 1);
         (t2.copysign(x), t2)
     } else {

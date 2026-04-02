@@ -1,8 +1,8 @@
 use super::reduce_pi_2::round_fi;
 use crate::double::{NormDouble, SemiDouble};
-use crate::traits::{CastFrom, CastInto, Float, Int as _, Like, SInt};
+use crate::traits::{CastFrom, CastInto, Float, Int as _, SInt};
 
-pub(crate) trait Reduce90Deg<L = Like<Self>>: Float {
+pub(crate) trait Reduce90Deg: Float {
     fn deg_to_rad() -> Self;
     fn deg_to_rad_ex() -> SemiDouble<Self>;
 

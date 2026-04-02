@@ -1,14 +1,13 @@
-use super::{F64Like, LikeF64};
 use crate::double::NormDouble;
 
 // GENERATE: asin_acos::consts f64
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
 const FRAC_PI_2_LO: u64 = 0x3C91A62633145C07; // 6.123233995736766e-17
 
-impl<F: F64Like> crate::generic::AsinAcos<LikeF64> for F {
+impl crate::generic::AsinAcos for f64 {
     #[inline]
     fn frac_pi_2_ex() -> NormDouble<Self> {
-        NormDouble::with_parts(Self::from_raw(FRAC_PI_2_HI), Self::from_raw(FRAC_PI_2_LO))
+        NormDouble::with_parts(f64::from_bits(FRAC_PI_2_HI), f64::from_bits(FRAC_PI_2_LO))
     }
 
     #[inline]
@@ -28,19 +27,19 @@ impl<F: F64Like> crate::generic::AsinAcos<LikeF64> for F {
         const K22: u64 = 0xBF9917F6F770485D; // -2.450548062558543e-2
         const K24: u64 = 0x3FA1C880C9A9ACF3; // 3.4732842080154834e-2
 
-        let k0 = Self::from_raw(K0);
-        let k2 = Self::from_raw(K2);
-        let k4 = Self::from_raw(K4);
-        let k6 = Self::from_raw(K6);
-        let k8 = Self::from_raw(K8);
-        let k10 = Self::from_raw(K10);
-        let k12 = Self::from_raw(K12);
-        let k14 = Self::from_raw(K14);
-        let k16 = Self::from_raw(K16);
-        let k18 = Self::from_raw(K18);
-        let k20 = Self::from_raw(K20);
-        let k22 = Self::from_raw(K22);
-        let k24 = Self::from_raw(K24);
+        let k0 = f64::from_bits(K0);
+        let k2 = f64::from_bits(K2);
+        let k4 = f64::from_bits(K4);
+        let k6 = f64::from_bits(K6);
+        let k8 = f64::from_bits(K8);
+        let k10 = f64::from_bits(K10);
+        let k12 = f64::from_bits(K12);
+        let k14 = f64::from_bits(K14);
+        let k16 = f64::from_bits(K16);
+        let k18 = f64::from_bits(K18);
+        let k20 = f64::from_bits(K20);
+        let k22 = f64::from_bits(K22);
+        let k24 = f64::from_bits(K24);
 
         k0 + horner!(
             x2,

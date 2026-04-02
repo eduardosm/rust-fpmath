@@ -1,30 +1,29 @@
-use super::{F64Like, LikeF64};
 use crate::double::NormDouble;
 
-impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
+impl crate::generic::Gamma for f64 {
     #[inline]
     fn lo_th() -> Self {
-        Self::cast_from(-10000i16)
+        -10000.0
     }
 
     #[inline]
     fn hi_th() -> Self {
-        Self::cast_from(10000i16)
+        10000.0
     }
 
     #[inline]
     fn th_1() -> Self {
-        Self::from_raw(0x3FF199999999999A) // 1.1
+        1.1
     }
 
     #[inline]
     fn th_2() -> Self {
-        Self::from_raw(0x4002666666666666) // 2.3
+        2.3
     }
 
     #[inline]
     fn th_3() -> Self {
-        Self::from_raw(0x401C000000000000) // 7
+        7.0
     }
 
     const POLY_OFF: u8 = 5;
@@ -36,8 +35,8 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
         const HALF_LN_2_PI_LO: u64 = 0x3C94D252F2400510; // 7.223936088184323e-17
 
         NormDouble::with_parts(
-            Self::from_raw(HALF_LN_2_PI_HI),
-            Self::from_raw(HALF_LN_2_PI_LO),
+            f64::from_bits(HALF_LN_2_PI_HI),
+            f64::from_bits(HALF_LN_2_PI_LO),
         )
     }
 
@@ -71,32 +70,32 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
         const K25: u64 = 0x4059F58E0C89743E; // 1.0383679498122453e2
         const K26: u64 = 0x4038F16511CF45FF; // 2.4942948449233878e1
 
-        let k1 = Self::from_raw(K1);
-        let k2 = Self::from_raw(K2);
-        let k3 = Self::from_raw(K3);
-        let k4 = Self::from_raw(K4);
-        let k5 = Self::from_raw(K5);
-        let k6 = Self::from_raw(K6);
-        let k7 = Self::from_raw(K7);
-        let k8 = Self::from_raw(K8);
-        let k9 = Self::from_raw(K9);
-        let k10 = Self::from_raw(K10);
-        let k11 = Self::from_raw(K11);
-        let k12 = Self::from_raw(K12);
-        let k13 = Self::from_raw(K13);
-        let k14 = Self::from_raw(K14);
-        let k15 = Self::from_raw(K15);
-        let k16 = Self::from_raw(K16);
-        let k17 = Self::from_raw(K17);
-        let k18 = Self::from_raw(K18);
-        let k19 = Self::from_raw(K19);
-        let k20 = Self::from_raw(K20);
-        let k21 = Self::from_raw(K21);
-        let k22 = Self::from_raw(K22);
-        let k23 = Self::from_raw(K23);
-        let k24 = Self::from_raw(K24);
-        let k25 = Self::from_raw(K25);
-        let k26 = Self::from_raw(K26);
+        let k1 = f64::from_bits(K1);
+        let k2 = f64::from_bits(K2);
+        let k3 = f64::from_bits(K3);
+        let k4 = f64::from_bits(K4);
+        let k5 = f64::from_bits(K5);
+        let k6 = f64::from_bits(K6);
+        let k7 = f64::from_bits(K7);
+        let k8 = f64::from_bits(K8);
+        let k9 = f64::from_bits(K9);
+        let k10 = f64::from_bits(K10);
+        let k11 = f64::from_bits(K11);
+        let k12 = f64::from_bits(K12);
+        let k13 = f64::from_bits(K13);
+        let k14 = f64::from_bits(K14);
+        let k15 = f64::from_bits(K15);
+        let k16 = f64::from_bits(K16);
+        let k17 = f64::from_bits(K17);
+        let k18 = f64::from_bits(K18);
+        let k19 = f64::from_bits(K19);
+        let k20 = f64::from_bits(K20);
+        let k21 = f64::from_bits(K21);
+        let k22 = f64::from_bits(K22);
+        let k23 = f64::from_bits(K23);
+        let k24 = f64::from_bits(K24);
+        let k25 = f64::from_bits(K25);
+        let k26 = f64::from_bits(K26);
 
         let r = horner!(
             x,
@@ -139,32 +138,32 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
         const K25: u64 = 0x3EA35407E7E24522; // 5.760266075396234e-7
         const K26: u64 = 0x3E7938471B002083; // 9.395120659239e-8
 
-        let k1 = Self::from_raw(K1);
-        let k2 = Self::from_raw(K2);
-        let k3 = Self::from_raw(K3);
-        let k4 = Self::from_raw(K4);
-        let k5 = Self::from_raw(K5);
-        let k6 = Self::from_raw(K6);
-        let k7 = Self::from_raw(K7);
-        let k8 = Self::from_raw(K8);
-        let k9 = Self::from_raw(K9);
-        let k10 = Self::from_raw(K10);
-        let k11 = Self::from_raw(K11);
-        let k12 = Self::from_raw(K12);
-        let k13 = Self::from_raw(K13);
-        let k14 = Self::from_raw(K14);
-        let k15 = Self::from_raw(K15);
-        let k16 = Self::from_raw(K16);
-        let k17 = Self::from_raw(K17);
-        let k18 = Self::from_raw(K18);
-        let k19 = Self::from_raw(K19);
-        let k20 = Self::from_raw(K20);
-        let k21 = Self::from_raw(K21);
-        let k22 = Self::from_raw(K22);
-        let k23 = Self::from_raw(K23);
-        let k24 = Self::from_raw(K24);
-        let k25 = Self::from_raw(K25);
-        let k26 = Self::from_raw(K26);
+        let k1 = f64::from_bits(K1);
+        let k2 = f64::from_bits(K2);
+        let k3 = f64::from_bits(K3);
+        let k4 = f64::from_bits(K4);
+        let k5 = f64::from_bits(K5);
+        let k6 = f64::from_bits(K6);
+        let k7 = f64::from_bits(K7);
+        let k8 = f64::from_bits(K8);
+        let k9 = f64::from_bits(K9);
+        let k10 = f64::from_bits(K10);
+        let k11 = f64::from_bits(K11);
+        let k12 = f64::from_bits(K12);
+        let k13 = f64::from_bits(K13);
+        let k14 = f64::from_bits(K14);
+        let k15 = f64::from_bits(K15);
+        let k16 = f64::from_bits(K16);
+        let k17 = f64::from_bits(K17);
+        let k18 = f64::from_bits(K18);
+        let k19 = f64::from_bits(K19);
+        let k20 = f64::from_bits(K20);
+        let k21 = f64::from_bits(K21);
+        let k22 = f64::from_bits(K22);
+        let k23 = f64::from_bits(K23);
+        let k24 = f64::from_bits(K24);
+        let k25 = f64::from_bits(K25);
+        let k26 = f64::from_bits(K26);
 
         let r = horner!(
             x,
@@ -204,29 +203,29 @@ impl<F: F64Like> crate::generic::Gamma<LikeF64> for F {
         const K21: u64 = 0xBFC74458534C3DE1; // -1.8177322451855019e-1
         const K22: u64 = 0x3FABE35113B97418; // 5.446866384293275e-2
 
-        let k0 = Self::from_raw(K0);
-        let k1 = Self::from_raw(K1);
-        let k2 = Self::from_raw(K2);
-        let k3 = Self::from_raw(K3);
-        let k4 = Self::from_raw(K4);
-        let k5 = Self::from_raw(K5);
-        let k6 = Self::from_raw(K6);
-        let k7 = Self::from_raw(K7);
-        let k8 = Self::from_raw(K8);
-        let k9 = Self::from_raw(K9);
-        let k10 = Self::from_raw(K10);
-        let k11 = Self::from_raw(K11);
-        let k12 = Self::from_raw(K12);
-        let k13 = Self::from_raw(K13);
-        let k14 = Self::from_raw(K14);
-        let k15 = Self::from_raw(K15);
-        let k16 = Self::from_raw(K16);
-        let k17 = Self::from_raw(K17);
-        let k18 = Self::from_raw(K18);
-        let k19 = Self::from_raw(K19);
-        let k20 = Self::from_raw(K20);
-        let k21 = Self::from_raw(K21);
-        let k22 = Self::from_raw(K22);
+        let k0 = f64::from_bits(K0);
+        let k1 = f64::from_bits(K1);
+        let k2 = f64::from_bits(K2);
+        let k3 = f64::from_bits(K3);
+        let k4 = f64::from_bits(K4);
+        let k5 = f64::from_bits(K5);
+        let k6 = f64::from_bits(K6);
+        let k7 = f64::from_bits(K7);
+        let k8 = f64::from_bits(K8);
+        let k9 = f64::from_bits(K9);
+        let k10 = f64::from_bits(K10);
+        let k11 = f64::from_bits(K11);
+        let k12 = f64::from_bits(K12);
+        let k13 = f64::from_bits(K13);
+        let k14 = f64::from_bits(K14);
+        let k15 = f64::from_bits(K15);
+        let k16 = f64::from_bits(K16);
+        let k17 = f64::from_bits(K17);
+        let k18 = f64::from_bits(K18);
+        let k19 = f64::from_bits(K19);
+        let k20 = f64::from_bits(K20);
+        let k21 = f64::from_bits(K21);
+        let k22 = f64::from_bits(K22);
 
         k0 + horner!(
             x,

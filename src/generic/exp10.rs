@@ -1,8 +1,8 @@
 use super::exp::exp_inner_common;
 use super::{Exp, round_as_i_f};
-use crate::traits::{Int as _, Like};
+use crate::traits::Int as _;
 
-pub(crate) trait Exp10<L = Like<Self>>: Exp {
+pub(crate) trait Exp10: Exp {
     fn log2_10() -> Self;
     fn log10_2_hi() -> Self;
     fn log10_2_lo() -> Self;

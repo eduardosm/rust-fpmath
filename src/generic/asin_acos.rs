@@ -1,8 +1,8 @@
 use super::sqrt::two_hi_lo_sqrt_inner;
 use crate::double::{DenormDouble, NormDouble};
-use crate::traits::{FloatConsts, Int as _, Like};
+use crate::traits::{FloatConsts, Int as _};
 
-pub(crate) trait AsinAcos<L = Like<Self>>: FloatConsts {
+pub(crate) trait AsinAcos: FloatConsts {
     fn frac_pi_2_ex() -> NormDouble<Self>;
 
     /// Calculates `(asin(x) - x) / x^3`

@@ -1,7 +1,7 @@
 use crate::double::{DenormDouble, SemiDouble};
-use crate::traits::{CastInto as _, FloatConsts, Int as _, Like};
+use crate::traits::{CastInto as _, FloatConsts, Int as _};
 
-pub(crate) trait Atan<L = Like<Self>>: FloatConsts {
+pub(crate) trait Atan: FloatConsts {
     fn frac_pi_2_hi() -> Self;
     fn frac_pi_2_lo() -> Self;
     fn frac_3pi_4() -> Self;

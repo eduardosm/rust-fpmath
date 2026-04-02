@@ -1,4 +1,3 @@
-use super::{F64Like, LikeF64};
 use crate::double::NormDouble;
 
 // GENERATE: log::consts f64
@@ -10,30 +9,30 @@ const FRAC_2_3_LO: u64 = 0x3C85555555555555; // 3.700743415417188e-17
 const FRAC_4_10_HI: u64 = 0x3FD9999999999999; // 3.9999999999999997e-1
 const FRAC_4_10_LO: u64 = 0x3C83333333333333; // 3.3306690738754695e-17
 
-impl<F: F64Like> crate::generic::Log<LikeF64> for F {
+impl crate::generic::Log for f64 {
     #[inline]
     fn sqrt_2() -> Self {
-        Self::from_raw(SQRT_2)
+        f64::from_bits(SQRT_2)
     }
 
     #[inline]
     fn ln_2_hi() -> Self {
-        Self::from_raw(LN_2_HI)
+        f64::from_bits(LN_2_HI)
     }
 
     #[inline]
     fn ln_2_lo() -> Self {
-        Self::from_raw(LN_2_LO)
+        f64::from_bits(LN_2_LO)
     }
 
     #[inline]
     fn frac_2_3_ex() -> NormDouble<Self> {
-        NormDouble::with_parts(Self::from_raw(FRAC_2_3_HI), Self::from_raw(FRAC_2_3_LO))
+        NormDouble::with_parts(f64::from_bits(FRAC_2_3_HI), f64::from_bits(FRAC_2_3_LO))
     }
 
     #[inline]
     fn frac_4_10_ex() -> NormDouble<Self> {
-        NormDouble::with_parts(Self::from_raw(FRAC_4_10_HI), Self::from_raw(FRAC_4_10_LO))
+        NormDouble::with_parts(f64::from_bits(FRAC_4_10_HI), f64::from_bits(FRAC_4_10_LO))
     }
 
     #[inline]
@@ -47,13 +46,13 @@ impl<F: F64Like> crate::generic::Log<LikeF64> for F {
         const K12: u64 = 0x3FC39A17C3D56A7B; // 1.5314004003706203e-1
         const K14: u64 = 0x3FC2F07F89345EF0; // 1.4796442222063133e-1
 
-        let k2 = Self::from_raw(K2);
-        let k4 = Self::from_raw(K4);
-        let k6 = Self::from_raw(K6);
-        let k8 = Self::from_raw(K8);
-        let k10 = Self::from_raw(K10);
-        let k12 = Self::from_raw(K12);
-        let k14 = Self::from_raw(K14);
+        let k2 = f64::from_bits(K2);
+        let k4 = f64::from_bits(K4);
+        let k6 = f64::from_bits(K6);
+        let k8 = f64::from_bits(K8);
+        let k10 = f64::from_bits(K10);
+        let k12 = f64::from_bits(K12);
+        let k14 = f64::from_bits(K14);
 
         let x2 = x * x;
         horner!(x2, x2, [k2, k4, k6, k8, k10, k12, k14])
@@ -69,12 +68,12 @@ impl<F: F64Like> crate::generic::Log<LikeF64> for F {
         const K14: u64 = 0x3FC0FB8E8D66F0D4; // 1.3267690567398083e-1
         const K16: u64 = 0x3FC0C54412F0DDDB; // 1.3102007794235146e-1
 
-        let k6 = Self::from_raw(K6);
-        let k8 = Self::from_raw(K8);
-        let k10 = Self::from_raw(K10);
-        let k12 = Self::from_raw(K12);
-        let k14 = Self::from_raw(K14);
-        let k16 = Self::from_raw(K16);
+        let k6 = f64::from_bits(K6);
+        let k8 = f64::from_bits(K8);
+        let k10 = f64::from_bits(K10);
+        let k12 = f64::from_bits(K12);
+        let k14 = f64::from_bits(K14);
+        let k16 = f64::from_bits(K16);
 
         horner!(x2, x2, [k6, k8, k10, k12, k14, k16])
     }

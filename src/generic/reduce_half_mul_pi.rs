@@ -1,7 +1,7 @@
 use crate::double::{NormDouble, SemiDouble};
-use crate::traits::{CastFrom as _, CastInto as _, FloatConsts, Int as _, Like};
+use crate::traits::{CastFrom as _, CastInto as _, FloatConsts, Int as _};
 
-pub(crate) trait ReduceHalfMulPi<L = Like<Self>>: FloatConsts {
+pub(crate) trait ReduceHalfMulPi: FloatConsts {
     fn pi_ex() -> SemiDouble<Self>;
 }
 

@@ -1,21 +1,19 @@
-use super::{F64Like, LikeF64};
-
 // GENERATE: exp2::consts f64
 const LN_2: u64 = 0x3FE62E42FEFA39EF; // 6.931471805599453e-1
 
-impl<F: F64Like> crate::generic::Exp2<LikeF64> for F {
+impl crate::generic::Exp2 for f64 {
     #[inline]
     fn ln_2() -> Self {
-        Self::from_raw(LN_2)
+        f64::from_bits(LN_2)
     }
 
     #[inline]
     fn exp2_lo_th() -> Self {
-        Self::cast_from(-1076i16)
+        -1076.0
     }
 
     #[inline]
     fn exp2_hi_th() -> Self {
-        Self::cast_from(1025i16)
+        1025.0
     }
 }

@@ -1,7 +1,7 @@
 use crate::double::{DenormDouble, NormDouble, SemiDouble};
-use crate::traits::{CastInto as _, Float, Int as _, Like};
+use crate::traits::{CastInto as _, Float, Int as _};
 
-pub(crate) trait Log<L = Like<Self>>: Float {
+pub(crate) trait Log: Float {
     fn sqrt_2() -> Self;
     fn ln_2_hi() -> Self;
     fn ln_2_lo() -> Self;
