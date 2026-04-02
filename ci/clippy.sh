@@ -11,7 +11,7 @@ begin_group "Run clippy workspace"
 cargo clippy --frozen --workspace --all-targets  -- -D warnings
 end_group
 
-features_array=("" "soft-float")
+features_array=("")
 
 for features in "${features_array[@]}"; do
   begin_group "Run clippy fpmath, features=\"$features\""

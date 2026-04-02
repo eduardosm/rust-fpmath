@@ -263,23 +263,9 @@ mod tests {
         test_lgamma::<f32>();
     }
 
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f32() {
-        test_tgamma::<crate::SoftF32>();
-        test_lgamma::<crate::SoftF32>();
-    }
-
     #[test]
     fn test_f64() {
         test_tgamma::<f64>();
         test_lgamma::<f64>();
-    }
-
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f64() {
-        test_tgamma::<crate::SoftF64>();
-        test_lgamma::<crate::SoftF64>();
     }
 }

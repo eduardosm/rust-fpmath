@@ -1,6 +1,6 @@
 [package]
 name = "fpmath"
-version = "0.1.1"
+version = "0.2.0-pre"
 authors = ["Eduardo Sánchez Muñoz <eduardosm-dev@e64.io>"]
 edition = "2024"
 rust-version = "1.85"
@@ -10,17 +10,12 @@ license = "MIT OR Apache-2.0"
 keywords = ["float", "floating-point", "math"]
 categories = ["mathematics", "no-std", "science"]
 exclude = ["/.github", ".gitignore", "/ci"]
-publish = true
-
-[package.metadata.docs.rs]
-features = ["soft-float"]
+publish = false
 
 [features]
 default = []
-soft-float = ["dep:rustc_apfloat"]
 
 [dependencies]
-rustc_apfloat = { optional = true, version = "0.2.3" }
 
 [dev-dependencies]
 rand = { version = "0.10.0", default-features = false }
