@@ -117,23 +117,9 @@ mod tests {
         test_round_as_i_f::<f32>();
     }
 
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f32() {
-        test_round::<crate::SoftF32>();
-        test_round_as_i_f::<crate::SoftF32>();
-    }
-
     #[test]
     fn test_f64() {
         test_round::<f64>();
         test_round_as_i_f::<f64>();
-    }
-
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f64() {
-        test_round::<crate::SoftF64>();
-        test_round_as_i_f::<crate::SoftF64>();
     }
 }

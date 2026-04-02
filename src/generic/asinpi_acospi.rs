@@ -99,23 +99,9 @@ mod tests {
         test_acospi::<f32>();
     }
 
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f32() {
-        test_asinpi::<crate::SoftF32>();
-        test_acospi::<crate::SoftF32>();
-    }
-
     #[test]
     fn test_f64() {
         test_asinpi::<f64>();
         test_acospi::<f64>();
-    }
-
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f64() {
-        test_asinpi::<crate::SoftF64>();
-        test_acospi::<crate::SoftF64>();
     }
 }

@@ -168,23 +168,9 @@ mod tests {
         test_acos::<f32>();
     }
 
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f32() {
-        test_asin::<crate::SoftF32>();
-        test_acos::<crate::SoftF32>();
-    }
-
     #[test]
     fn test_f64() {
         test_asin::<f64>();
         test_acos::<f64>();
-    }
-
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f64() {
-        test_asin::<crate::SoftF64>();
-        test_acos::<crate::SoftF64>();
     }
 }

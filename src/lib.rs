@@ -7,8 +7,7 @@
 )]
 #![no_std]
 
-//! A pure-Rust floating point math library with support for native floating
-//! point and soft-floats.
+//! A pure-Rust floating point math library.
 //!
 //! This crate is `no_std`.
 //!
@@ -33,11 +32,6 @@
 //!
 //! All functions are implemted for the native floating point types [`prim@f32`]
 //! and [`prim@f64`].
-//!
-//! The soft-float types [`SoftF32`] and [`SoftF64`] are also provided. They
-//! also support all the above functions and provide consistent bit-to-bit
-//! behavior across platforms. They are available when the `soft-float` feature
-//! is enabled (disabled by default).
 //!
 //! The [`FloatMath`] trait is used to identify types that support the math
 //! functions.
@@ -89,16 +83,7 @@ mod generic;
 mod host_f32;
 mod host_f64;
 mod int;
-#[cfg(feature = "soft-float")]
-mod soft_f32;
-#[cfg(feature = "soft-float")]
-mod soft_f64;
 mod traits;
-
-#[cfg(feature = "soft-float")]
-pub use soft_f32::SoftF32;
-#[cfg(feature = "soft-float")]
-pub use soft_f64::SoftF64;
 
 mod sealed {
     pub trait SealedMath {}

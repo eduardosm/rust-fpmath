@@ -9,16 +9,14 @@ begin_group "Fetch dependencies"
 cargo fetch --locked
 end_group
 
-features=(--features "soft-float")
-
 begin_group "Build"
-cargo build --frozen --workspace "${features[@]}" --all-targets
+cargo build --frozen --workspace --all-targets
 end_group
 
 begin_group "Doc"
-cargo doc --frozen --workspace "${features[@]}"
+cargo doc --frozen --workspace
 end_group
 
 begin_group "Test"
-cargo test --frozen --workspace "${features[@]}"
+cargo test --frozen --workspace
 end_group

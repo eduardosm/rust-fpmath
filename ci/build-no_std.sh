@@ -8,7 +8,7 @@ cargo fetch --locked
 end_group
 
 target="x86_64-unknown-none"
-features_array=("" "soft-float")
+features_array=("")
 
 for features in "${features_array[@]}"; do
   begin_group "Build fpmath, target=\"$target\", features=\"$features\""

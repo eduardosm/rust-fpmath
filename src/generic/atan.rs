@@ -208,23 +208,9 @@ mod tests {
         test_atan2::<f32>();
     }
 
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f32() {
-        test_atan::<crate::SoftF32>();
-        test_atan2::<crate::SoftF32>();
-    }
-
     #[test]
     fn test_f64() {
         test_atan::<f64>();
         test_atan2::<f64>();
-    }
-
-    #[cfg(feature = "soft-float")]
-    #[test]
-    fn test_soft_f64() {
-        test_atan::<crate::SoftF64>();
-        test_atan2::<crate::SoftF64>();
     }
 }
