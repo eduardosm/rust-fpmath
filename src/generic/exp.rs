@@ -1,8 +1,8 @@
 use super::{round_as_i_f, scalbn_medium};
 use crate::double::DenormDouble;
-use crate::traits::{CastInto as _, Float, Int as _, Like};
+use crate::traits::{CastInto as _, Float, Int as _};
 
-pub(crate) trait Exp<L = Like<Self>>: Float {
+pub(crate) trait Exp: Float {
     fn log2_e() -> Self;
     fn ln_2_hi() -> Self;
     fn ln_2_lo() -> Self;

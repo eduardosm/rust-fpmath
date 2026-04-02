@@ -86,9 +86,6 @@ pub(crate) trait Float:
     + core::ops::Mul<Self, Output = Self>
     + core::ops::Div<Self, Output = Self>
 {
-    // Hack to avoid "conflicting implementations of trait"
-    type Like;
-
     type Raw: UInt
         + From<Self::RawExp>
         + From<u16>
@@ -249,10 +246,7 @@ pub(crate) trait Float:
     fn parse(s: &str) -> Self;
 }
 
-// Hack to avoid "conflicting implementations of trait"
-pub(crate) type Like<F> = <F as Float>::Like;
-
-pub(crate) trait FloatConsts<L = Like<Self>>: Float {
+pub(crate) trait FloatConsts: Float {
     fn pi() -> Self;
     fn frac_pi_2() -> Self;
     fn frac_pi_4() -> Self;

@@ -1,8 +1,8 @@
 use crate::double::{DenormDouble, NormDouble, SemiDouble};
 use crate::generic::{ReducePi2, reduce_pi_2};
-use crate::traits::{Float, Int as _, Like};
+use crate::traits::{Float, Int as _};
 
-pub(crate) trait SinCos<L = Like<Self>>: Float {
+pub(crate) trait SinCos: Float {
     fn frac_1_6_ex() -> SemiDouble<Self>;
 
     /// Calculates `(sin(x) - x - x^3 * K3, K3)`

@@ -1,24 +1,22 @@
-use super::{F64Like, LikeF64};
-
 // GENERATE: atan::consts f64
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54442D18; // 1.5707963267948966e0
 const FRAC_PI_2_LO: u64 = 0x3C91A62633145C07; // 6.123233995736766e-17
 const FRAC_3PI_4: u64 = 0x4002D97C7F3321D2; // 2.356194490192345e0
 
-impl<F: F64Like> crate::generic::Atan<LikeF64> for F {
+impl crate::generic::Atan for f64 {
     #[inline]
     fn frac_pi_2_hi() -> Self {
-        Self::from_raw(FRAC_PI_2_HI)
+        f64::from_bits(FRAC_PI_2_HI)
     }
 
     #[inline]
     fn frac_pi_2_lo() -> Self {
-        Self::from_raw(FRAC_PI_2_LO)
+        f64::from_bits(FRAC_PI_2_LO)
     }
 
     #[inline]
     fn frac_3pi_4() -> Self {
-        Self::from_raw(FRAC_3PI_4)
+        f64::from_bits(FRAC_3PI_4)
     }
 
     #[inline]
@@ -45,26 +43,26 @@ impl<F: F64Like> crate::generic::Atan<LikeF64> for F {
         const K39: u64 = 0xBF21A73A6FE96DF7; // -1.346834978502712e-4
         const K41: u64 = 0x3EE823E8FE5305A0; // 1.151097962759606e-5
 
-        let k3 = Self::from_raw(K3);
-        let k5 = Self::from_raw(K5);
-        let k7 = Self::from_raw(K7);
-        let k9 = Self::from_raw(K9);
-        let k11 = Self::from_raw(K11);
-        let k13 = Self::from_raw(K13);
-        let k15 = Self::from_raw(K15);
-        let k17 = Self::from_raw(K17);
-        let k19 = Self::from_raw(K19);
-        let k21 = Self::from_raw(K21);
-        let k23 = Self::from_raw(K23);
-        let k25 = Self::from_raw(K25);
-        let k27 = Self::from_raw(K27);
-        let k29 = Self::from_raw(K29);
-        let k31 = Self::from_raw(K31);
-        let k33 = Self::from_raw(K33);
-        let k35 = Self::from_raw(K35);
-        let k37 = Self::from_raw(K37);
-        let k39 = Self::from_raw(K39);
-        let k41 = Self::from_raw(K41);
+        let k3 = f64::from_bits(K3);
+        let k5 = f64::from_bits(K5);
+        let k7 = f64::from_bits(K7);
+        let k9 = f64::from_bits(K9);
+        let k11 = f64::from_bits(K11);
+        let k13 = f64::from_bits(K13);
+        let k15 = f64::from_bits(K15);
+        let k17 = f64::from_bits(K17);
+        let k19 = f64::from_bits(K19);
+        let k21 = f64::from_bits(K21);
+        let k23 = f64::from_bits(K23);
+        let k25 = f64::from_bits(K25);
+        let k27 = f64::from_bits(K27);
+        let k29 = f64::from_bits(K29);
+        let k31 = f64::from_bits(K31);
+        let k33 = f64::from_bits(K33);
+        let k35 = f64::from_bits(K35);
+        let k37 = f64::from_bits(K37);
+        let k39 = f64::from_bits(K39);
+        let k41 = f64::from_bits(K41);
 
         let t = horner!(
             x2,

@@ -1,5 +1,3 @@
-use super::{F32Like, LikeF32};
-
 // GENERATE: exp10::consts f32
 const LOG2_10: u32 = 0x40549A78; // 3.321928e0
 const LOG10_2_HI: u32 = 0x3E9A2000; // 3.010254e-1
@@ -8,44 +6,44 @@ const LN_10: u32 = 0x40135D8E; // 2.3025851e0
 const LN_10_HI: u32 = 0x40135000; // 2.3017578e0
 const LN_10_LO: u32 = 0x3A58DDDB; // 8.272805e-4
 
-impl<F: F32Like> crate::generic::Exp10<LikeF32> for F {
+impl crate::generic::Exp10 for f32 {
     #[inline]
     fn log2_10() -> Self {
-        Self::from_raw(LOG2_10)
+        f32::from_bits(LOG2_10)
     }
 
     #[inline]
     fn log10_2_hi() -> Self {
-        Self::from_raw(LOG10_2_HI)
+        f32::from_bits(LOG10_2_HI)
     }
 
     #[inline]
     fn log10_2_lo() -> Self {
-        Self::from_raw(LOG10_2_LO)
+        f32::from_bits(LOG10_2_LO)
     }
 
     #[inline]
     fn ln_10() -> Self {
-        Self::from_raw(LN_10)
+        f32::from_bits(LN_10)
     }
 
     #[inline]
     fn ln_10_hi() -> Self {
-        Self::from_raw(LN_10_HI)
+        f32::from_bits(LN_10_HI)
     }
 
     #[inline]
     fn ln_10_lo() -> Self {
-        Self::from_raw(LN_10_LO)
+        f32::from_bits(LN_10_LO)
     }
 
     #[inline]
     fn exp10_lo_th() -> Self {
-        Self::cast_from(-46i16)
+        -46.0
     }
 
     #[inline]
     fn exp10_hi_th() -> Self {
-        Self::cast_from(39i16)
+        39.0
     }
 }

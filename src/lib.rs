@@ -80,8 +80,6 @@ mod double;
 mod f32;
 mod f64;
 mod generic;
-mod host_f32;
-mod host_f64;
 mod int;
 mod traits;
 

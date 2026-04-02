@@ -1,6 +1,5 @@
-use super::{F64Like, LikeF64};
 use crate::generic::scalbn_medium;
-use crate::traits::FloatConsts;
+use crate::traits::{Float as _, FloatConsts as _};
 
 // GENERATE: reduce_pi_2::consts f64
 const FRAC_PI_2_HI: u64 = 0x3FF921FB54400000; // 1.5707963267341256e0
@@ -10,39 +9,40 @@ const FRAC_PI_2_MIEX: u64 = 0x3BA3198A2E037073; // 2.0222662487959506e-21
 const FRAC_PI_2_LO: u64 = 0x3BA3198A2E000000; // 2.0222662487111665e-21
 const FRAC_PI_2_LOEX: u64 = 0x397B839A252049C1; // 8.4784276603689e-32
 
-impl<F: F64Like + FloatConsts> crate::generic::ReducePi2<LikeF64> for F {
+impl crate::generic::ReducePi2 for f64 {
     #[inline]
     fn frac_pi_2_hi() -> Self {
-        Self::from_raw(FRAC_PI_2_HI)
+        f64::from_bits(FRAC_PI_2_HI)
     }
 
     #[inline]
     fn frac_pi_2_hiex() -> Self {
-        Self::from_raw(FRAC_PI_2_HIEX)
+        f64::from_bits(FRAC_PI_2_HIEX)
     }
 
     #[inline]
     fn frac_pi_2_mi() -> Self {
-        Self::from_raw(FRAC_PI_2_MI)
+        f64::from_bits(FRAC_PI_2_MI)
     }
 
     #[inline]
     fn frac_pi_2_miex() -> Self {
-        Self::from_raw(FRAC_PI_2_MIEX)
+        f64::from_bits(FRAC_PI_2_MIEX)
     }
 
     #[inline]
     fn frac_pi_2_lo() -> Self {
-        Self::from_raw(FRAC_PI_2_LO)
+        f64::from_bits(FRAC_PI_2_LO)
     }
 
     #[inline]
     fn frac_pi_2_loex() -> Self {
-        Self::from_raw(FRAC_PI_2_LOEX)
+        f64::from_bits(FRAC_PI_2_LOEX)
     }
 
+    #[inline]
     fn max_reduce_pi_2_medium() -> Self {
-        Self::cast_from((1u64 << 20) - 1) * Self::frac_pi_2()
+        ((1u64 << 20) - 1) as f64 * Self::frac_pi_2()
     }
 
     const REDUCE_PI_2_MEDIUM_TH1: i16 = 16;
@@ -71,9 +71,9 @@ impl<F: F64Like + FloatConsts> crate::generic::ReducePi2<LikeF64> for F {
         }
 
         // split iw into 48-bit z
-        let fw0 = Self::cast_from((iw as u64) & 0xFFFF_FFFF_FFFF);
-        let fw1 = Self::cast_from(((iw >> 48) as u64) & 0xFFFF_FFFF_FFFF) * Self::exp2i_fast(48);
-        let fw2 = Self::cast_from((iw >> 96) as u64) * Self::exp2i_fast(96);
+        let fw0 = ((iw as u64) & 0xFFFF_FFFF_FFFF) as f64;
+        let fw1 = (((iw >> 48) as u64) & 0xFFFF_FFFF_FFFF) as f64 * Self::exp2i_fast(48);
+        let fw2 = ((iw >> 96) as u64) as f64 * Self::exp2i_fast(96);
 
         // add 48-bit chunks into y0, y1
         let mut y0 = ((fw0 + fw1) + fw2).purify();

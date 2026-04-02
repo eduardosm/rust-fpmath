@@ -1,8 +1,8 @@
 use super::{Log, log::log_split};
 use crate::double::{DenormDouble, SemiDouble};
-use crate::traits::{CastInto as _, Int as _, Like};
+use crate::traits::{CastInto as _, Int as _};
 
-pub(crate) trait Log10<L = Like<Self>>: Log {
+pub(crate) trait Log10: Log {
     fn log10_e_ex() -> SemiDouble<Self>;
     fn log10_2_hi() -> Self;
     fn log10_2_lo() -> Self;

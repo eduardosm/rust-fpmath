@@ -1,30 +1,29 @@
-use super::{F32Like, LikeF32};
 use crate::double::NormDouble;
 
-impl<F: F32Like> crate::generic::Gamma<LikeF32> for F {
+impl crate::generic::Gamma for f32 {
     #[inline]
     fn lo_th() -> Self {
-        Self::cast_from(-1000i16)
+        -1000.0
     }
 
     #[inline]
     fn hi_th() -> Self {
-        Self::cast_from(1000i16)
+        1000.0
     }
 
     #[inline]
     fn th_1() -> Self {
-        Self::from_raw(0x3F99999A) // 1.2
+        1.2
     }
 
     #[inline]
     fn th_2() -> Self {
-        Self::from_raw(0x40133333) // 2.3
+        2.3
     }
 
     #[inline]
     fn th_3() -> Self {
-        Self::from_raw(0x40E00000) // 7
+        7.0
     }
 
     const POLY_OFF: u8 = 3;
@@ -36,8 +35,8 @@ impl<F: F32Like> crate::generic::Gamma<LikeF32> for F {
         const HALF_LN_2_PI_LO: u32 = 0x32864BEB; // 1.5634177e-8
 
         NormDouble::with_parts(
-            Self::from_raw(HALF_LN_2_PI_HI),
-            Self::from_raw(HALF_LN_2_PI_LO),
+            f32::from_bits(HALF_LN_2_PI_HI),
+            f32::from_bits(HALF_LN_2_PI_LO),
         )
     }
 
@@ -57,18 +56,18 @@ impl<F: F32Like> crate::generic::Gamma<LikeF32> for F {
         const K11: u32 = 0x3F0F88B0; // 5.6067944e-1
         const K12: u32 = 0x3F49DECC; // 7.8855586e-1
 
-        let k1 = Self::from_raw(K1);
-        let k2 = Self::from_raw(K2);
-        let k3 = Self::from_raw(K3);
-        let k4 = Self::from_raw(K4);
-        let k5 = Self::from_raw(K5);
-        let k6 = Self::from_raw(K6);
-        let k7 = Self::from_raw(K7);
-        let k8 = Self::from_raw(K8);
-        let k9 = Self::from_raw(K9);
-        let k10 = Self::from_raw(K10);
-        let k11 = Self::from_raw(K11);
-        let k12 = Self::from_raw(K12);
+        let k1 = f32::from_bits(K1);
+        let k2 = f32::from_bits(K2);
+        let k3 = f32::from_bits(K3);
+        let k4 = f32::from_bits(K4);
+        let k5 = f32::from_bits(K5);
+        let k6 = f32::from_bits(K6);
+        let k7 = f32::from_bits(K7);
+        let k8 = f32::from_bits(K8);
+        let k9 = f32::from_bits(K9);
+        let k10 = f32::from_bits(K10);
+        let k11 = f32::from_bits(K11);
+        let k12 = f32::from_bits(K12);
 
         let r = horner!(x, x, [k4, k5, k6, k7, k8, k9, k10, k11, k12]);
         (r, k1, k2, k3)
@@ -90,18 +89,18 @@ impl<F: F32Like> crate::generic::Gamma<LikeF32> for F {
         const K11: u32 = 0x3920E4F8; // 1.5344087e-4
         const K12: u32 = 0x390EFD91; // 1.3636636e-4
 
-        let k1 = Self::from_raw(K1);
-        let k2 = Self::from_raw(K2);
-        let k3 = Self::from_raw(K3);
-        let k4 = Self::from_raw(K4);
-        let k5 = Self::from_raw(K5);
-        let k6 = Self::from_raw(K6);
-        let k7 = Self::from_raw(K7);
-        let k8 = Self::from_raw(K8);
-        let k9 = Self::from_raw(K9);
-        let k10 = Self::from_raw(K10);
-        let k11 = Self::from_raw(K11);
-        let k12 = Self::from_raw(K12);
+        let k1 = f32::from_bits(K1);
+        let k2 = f32::from_bits(K2);
+        let k3 = f32::from_bits(K3);
+        let k4 = f32::from_bits(K4);
+        let k5 = f32::from_bits(K5);
+        let k6 = f32::from_bits(K6);
+        let k7 = f32::from_bits(K7);
+        let k8 = f32::from_bits(K8);
+        let k9 = f32::from_bits(K9);
+        let k10 = f32::from_bits(K10);
+        let k11 = f32::from_bits(K11);
+        let k12 = f32::from_bits(K12);
 
         let r = horner!(x, x, [k4, k5, k6, k7, k8, k9, k10, k11, k12]);
         (r, k1, k2, k3)
@@ -120,15 +119,15 @@ impl<F: F32Like> crate::generic::Gamma<LikeF32> for F {
         const K7: u32 = 0x3A43D4AB; // 7.4703497e-4
         const K8: u32 = 0xB96EDAFB; // -2.2779025e-4
 
-        let k0 = Self::from_raw(K0);
-        let k1 = Self::from_raw(K1);
-        let k2 = Self::from_raw(K2);
-        let k3 = Self::from_raw(K3);
-        let k4 = Self::from_raw(K4);
-        let k5 = Self::from_raw(K5);
-        let k6 = Self::from_raw(K6);
-        let k7 = Self::from_raw(K7);
-        let k8 = Self::from_raw(K8);
+        let k0 = f32::from_bits(K0);
+        let k1 = f32::from_bits(K1);
+        let k2 = f32::from_bits(K2);
+        let k3 = f32::from_bits(K3);
+        let k4 = f32::from_bits(K4);
+        let k5 = f32::from_bits(K5);
+        let k6 = f32::from_bits(K6);
+        let k7 = f32::from_bits(K7);
+        let k8 = f32::from_bits(K8);
 
         k0 + horner!(x, x, [k1, k2, k3, k4, k5, k6, k7, k8])
     }

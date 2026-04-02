@@ -4,11 +4,9 @@ use super::scalbn;
 use super::sin_cos::{hi_lo_cos_inner, hi_lo_sin_inner};
 use super::{Exp, Log, ReduceHalfMulPi, SinCos, is_int, reduce_half_mul_pi};
 use crate::double::{DenormDouble, NormDouble, SemiDouble};
-use crate::traits::{Float, FloatConsts, Int as _, Like};
+use crate::traits::{Float, FloatConsts, Int as _};
 
-pub(crate) trait Gamma<L = Like<Self>>:
-    FloatConsts + SinCos + ReduceHalfMulPi + Exp + Log
-{
+pub(crate) trait Gamma: FloatConsts + SinCos + ReduceHalfMulPi + Exp + Log {
     fn lo_th() -> Self;
     fn hi_th() -> Self;
 

@@ -1,7 +1,6 @@
-use super::{F64Like, LikeF64};
-
-impl<F: F64Like> crate::generic::SinhCosh<LikeF64> for F {
+impl crate::generic::SinhCosh for f64 {
+    #[inline]
     fn expo2_hi_th() -> Self {
-        Self::cast_from(711u32)
+        711.0
     }
 }

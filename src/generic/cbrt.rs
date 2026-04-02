@@ -1,7 +1,7 @@
 use crate::double::SemiDouble;
-use crate::traits::{Float, Int as _, Like};
+use crate::traits::{Float, Int as _};
 
-pub(crate) trait Cbrt<L = Like<Self>>: Float {
+pub(crate) trait Cbrt: Float {
     fn cbrt_2_ex() -> SemiDouble<Self>;
     fn cbrt_4_ex() -> SemiDouble<Self>;
 
