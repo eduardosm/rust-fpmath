@@ -114,6 +114,16 @@ impl crate::traits::Float for f64 {
         self.is_nan()
     }
 
+    #[inline]
+    fn abs(self) -> Self {
+        self.abs()
+    }
+
+    #[inline]
+    fn copysign(self, y: Self) -> Self {
+        self.copysign(y)
+    }
+
     #[cfg(test)]
     fn parse(s: &str) -> Self {
         s.parse().unwrap()
@@ -152,11 +162,11 @@ impl crate::sealed::SealedMath for f64 {}
 
 impl crate::FloatMath for f64 {
     fn abs(x: Self) -> Self {
-        crate::traits::Float::abs(x)
+        x.abs()
     }
 
     fn copysign(x: Self, y: Self) -> Self {
-        crate::traits::Float::copysign(x, y)
+        x.copysign(y)
     }
 
     fn round(x: Self) -> Self {
