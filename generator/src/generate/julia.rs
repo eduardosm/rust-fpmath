@@ -73,7 +73,7 @@ pub(super) fn run_and_render_remez(
                 let coeff_value = parse_f32(coeff_line);
                 writeln!(
                     out,
-                    "const {coeff_prefix}{}: u32 = 0x{:08X}; // {coeff_value:e}",
+                    "const {coeff_prefix}{}: f32 = f32::from_bits(0x{:08X}); // {coeff_value:e}",
                     i + poly_i_print_off,
                     coeff_value.to_bits(),
                 )
@@ -83,7 +83,7 @@ pub(super) fn run_and_render_remez(
                 let coeff_value = parse_f64(coeff_line);
                 writeln!(
                     out,
-                    "const {coeff_prefix}{}: u64 = 0x{:016X}; // {coeff_value:e}",
+                    "const {coeff_prefix}{}: f64 = f64::from_bits(0x{:016X}); // {coeff_value:e}",
                     i + poly_i_print_off,
                     coeff_value.to_bits(),
                 )

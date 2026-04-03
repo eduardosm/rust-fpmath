@@ -116,7 +116,7 @@ fn render_const(fkind: FloatKind, name: &str, val: rug::Float, out: &mut String)
             let val = val.to_f32();
             writeln!(
                 out,
-                "const {name}: u32 = 0x{:08X}; // {val:e}",
+                "const {name}: f32 = f32::from_bits(0x{:08X}); // {val:e}",
                 val.to_bits(),
             )
             .unwrap();
@@ -125,7 +125,7 @@ fn render_const(fkind: FloatKind, name: &str, val: rug::Float, out: &mut String)
             let val = val.to_f64();
             writeln!(
                 out,
-                "const {name}: u64 = 0x{:016X}; // {val:e}",
+                "const {name}: f64 = f64::from_bits(0x{:016X}); // {val:e}",
                 val.to_bits(),
             )
             .unwrap();

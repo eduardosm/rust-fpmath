@@ -131,30 +131,30 @@ impl crate::traits::Float for f32 {
 }
 
 // GENERATE: consts f32
-const PI: u32 = 0x40490FDB; // 3.1415927e0
-const FRAC_PI_2: u32 = 0x3FC90FDB; // 1.5707964e0
-const FRAC_PI_4: u32 = 0x3F490FDB; // 7.853982e-1
-const FRAC_2_PI: u32 = 0x3F22F983; // 6.3661975e-1
+const PI: f32 = f32::from_bits(0x40490FDB); // 3.1415927e0
+const FRAC_PI_2: f32 = f32::from_bits(0x3FC90FDB); // 1.5707964e0
+const FRAC_PI_4: f32 = f32::from_bits(0x3F490FDB); // 7.853982e-1
+const FRAC_2_PI: f32 = f32::from_bits(0x3F22F983); // 6.3661975e-1
 
 impl crate::traits::FloatConsts for f32 {
     #[inline]
     fn pi() -> Self {
-        f32::from_bits(PI)
+        PI
     }
 
     #[inline]
     fn frac_pi_2() -> Self {
-        f32::from_bits(FRAC_PI_2)
+        FRAC_PI_2
     }
 
     #[inline]
     fn frac_pi_4() -> Self {
-        f32::from_bits(FRAC_PI_4)
+        FRAC_PI_4
     }
 
     #[inline]
     fn frac_2_pi() -> Self {
-        f32::from_bits(FRAC_2_PI)
+        FRAC_2_PI
     }
 }
 

@@ -2,42 +2,42 @@ use crate::generic::scalbn_medium;
 use crate::traits::{Float as _, FloatConsts as _};
 
 // GENERATE: reduce_pi_2::consts f64
-const FRAC_PI_2_HI: u64 = 0x3FF921FB54400000; // 1.5707963267341256e0
-const FRAC_PI_2_HIEX: u64 = 0x3DD0B4611A626331; // 6.077100506506192e-11
-const FRAC_PI_2_MI: u64 = 0x3DD0B4611A600000; // 6.077100506303966e-11
-const FRAC_PI_2_MIEX: u64 = 0x3BA3198A2E037073; // 2.0222662487959506e-21
-const FRAC_PI_2_LO: u64 = 0x3BA3198A2E000000; // 2.0222662487111665e-21
-const FRAC_PI_2_LOEX: u64 = 0x397B839A252049C1; // 8.4784276603689e-32
+const FRAC_PI_2_HI: f64 = f64::from_bits(0x3FF921FB54400000); // 1.5707963267341256e0
+const FRAC_PI_2_HIEX: f64 = f64::from_bits(0x3DD0B4611A626331); // 6.077100506506192e-11
+const FRAC_PI_2_MI: f64 = f64::from_bits(0x3DD0B4611A600000); // 6.077100506303966e-11
+const FRAC_PI_2_MIEX: f64 = f64::from_bits(0x3BA3198A2E037073); // 2.0222662487959506e-21
+const FRAC_PI_2_LO: f64 = f64::from_bits(0x3BA3198A2E000000); // 2.0222662487111665e-21
+const FRAC_PI_2_LOEX: f64 = f64::from_bits(0x397B839A252049C1); // 8.4784276603689e-32
 
 impl crate::generic::ReducePi2 for f64 {
     #[inline]
     fn frac_pi_2_hi() -> Self {
-        f64::from_bits(FRAC_PI_2_HI)
+        FRAC_PI_2_HI
     }
 
     #[inline]
     fn frac_pi_2_hiex() -> Self {
-        f64::from_bits(FRAC_PI_2_HIEX)
+        FRAC_PI_2_HIEX
     }
 
     #[inline]
     fn frac_pi_2_mi() -> Self {
-        f64::from_bits(FRAC_PI_2_MI)
+        FRAC_PI_2_MI
     }
 
     #[inline]
     fn frac_pi_2_miex() -> Self {
-        f64::from_bits(FRAC_PI_2_MIEX)
+        FRAC_PI_2_MIEX
     }
 
     #[inline]
     fn frac_pi_2_lo() -> Self {
-        f64::from_bits(FRAC_PI_2_LO)
+        FRAC_PI_2_LO
     }
 
     #[inline]
     fn frac_pi_2_loex() -> Self {
-        f64::from_bits(FRAC_PI_2_LOEX)
+        FRAC_PI_2_LOEX
     }
 
     #[inline]
