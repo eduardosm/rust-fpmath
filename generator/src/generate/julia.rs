@@ -57,7 +57,8 @@ pub(super) fn run_and_render_remez(
     coeff_prefix: &str,
     out: &mut String,
 ) {
-    let code = gen_remez_code(func, wfunc, range, poly_deg);
+    let prec = 1024;
+    let code = gen_remez_code(prec, func, wfunc, range, poly_deg);
     let result = run_julia(&code).unwrap();
 
     let mut lines = result.split(|&c| c == b'\n');
@@ -68,37 +69,22 @@ pub(super) fn run_and_render_remez(
 
     for i in 0..=poly_deg {
         let coeff_line = lines.next().unwrap();
-        match fkind {
-            FloatKind::F32 => {
-                let coeff_value = parse_f32(coeff_line);
-                writeln!(
-                    out,
-                    "const {coeff_prefix}{}: f32 = f32::from_bits(0x{:08X}); // {coeff_value:e}",
-                    i + poly_i_print_off,
-                    coeff_value.to_bits(),
-                )
-                .unwrap();
-            }
-            FloatKind::F64 => {
-                let coeff_value = parse_f64(coeff_line);
-                writeln!(
-                    out,
-                    "const {coeff_prefix}{}: f64 = f64::from_bits(0x{:016X}); // {coeff_value:e}",
-                    i + poly_i_print_off,
-                    coeff_value.to_bits(),
-                )
-                .unwrap();
-            }
-        }
+        let coeff_value = parse_rug_float(coeff_line, prec);
+        super::render_const(
+            fkind,
+            &format!("{coeff_prefix}{}", i + poly_i_print_off),
+            coeff_value,
+            out,
+        );
     }
 }
 
-fn gen_remez_code(func: &str, wfunc: &str, range: (f64, f64), poly_deg: i32) -> String {
+fn gen_remez_code(prec: u32, func: &str, wfunc: &str, range: (f64, f64), poly_deg: i32) -> String {
     let mut code = String::new();
 
     code.push_str("import Remez;\n");
     code.push_str("import SpecialFunctions;\n");
-    code.push_str("Remez.setprecision(BigFloat, 1024);\n");
+    writeln!(code, "Remez.setprecision(BigFloat, {prec});").unwrap();
     code.push_str("f = (x) -> ");
     code.push_str(func);
     code.push_str(";\n");
@@ -119,12 +105,12 @@ fn gen_remez_code(func: &str, wfunc: &str, range: (f64, f64), poly_deg: i32) -> 
     code
 }
 
-fn parse_f32(s: &[u8]) -> f32 {
+fn parse_f64(s: &[u8]) -> f64 {
     let s = std::str::from_utf8(s).unwrap();
     s.parse().unwrap()
 }
 
-fn parse_f64(s: &[u8]) -> f64 {
+fn parse_rug_float(s: &[u8], prec: u32) -> rug::Float {
     let s = std::str::from_utf8(s).unwrap();
-    s.parse().unwrap()
+    rug::Float::with_val(prec, rug::Float::parse(s).unwrap())
 }

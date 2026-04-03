@@ -1,4 +1,3 @@
-use std::fmt::Write as _;
 use std::io::{Read as _, Write as _};
 
 use super::FloatKind;
@@ -68,12 +67,16 @@ pub(super) fn run_and_render_remez(
     coeff_prefix: &str,
     out: &mut String,
 ) {
-    let code = gen_remez_code(func, range, poly_i);
+    let prec = 2048;
+    let code = gen_remez_code(prec, func, range, poly_i);
     let result = run_sollya(&code).unwrap();
 
     let mut lines = result.split(|&c| c == b'\n');
     let first_line = lines.next().unwrap();
-    assert_eq!(first_line, b"The precision has been set to 2048 bits.");
+    assert_eq!(
+        first_line,
+        format!("The precision has been set to {prec} bits.").as_bytes()
+    );
 
     let err_line = lines.next().unwrap();
     let err = parse_f64(err_line);
@@ -81,34 +84,19 @@ pub(super) fn run_and_render_remez(
 
     for &i in poly_i.iter() {
         let coeff_line = lines.next().unwrap();
-        match fkind {
-            FloatKind::F32 => {
-                let coeff_value = parse_f32(coeff_line);
-                writeln!(
-                    out,
-                    "const {coeff_prefix}{}: f32 = f32::from_bits(0x{:08X}); // {coeff_value:e}",
-                    i + poly_i_print_off,
-                    coeff_value.to_bits(),
-                )
-                .unwrap();
-            }
-            FloatKind::F64 => {
-                let coeff_value = parse_f64(coeff_line);
-                writeln!(
-                    out,
-                    "const {coeff_prefix}{}: f64 = f64::from_bits(0x{:016X}); // {coeff_value:e}",
-                    i + poly_i_print_off,
-                    coeff_value.to_bits(),
-                )
-                .unwrap();
-            }
-        }
+        let coeff_value = parse_rug_float(coeff_line, prec);
+        super::render_const(
+            fkind,
+            &format!("{coeff_prefix}{}", i + poly_i_print_off),
+            coeff_value,
+            out,
+        );
     }
 }
 
-fn gen_remez_code(func: &str, range: (f64, f64), poly_i: &[i32]) -> Vec<u8> {
+fn gen_remez_code(prec: u32, func: &str, range: (f64, f64), poly_i: &[i32]) -> Vec<u8> {
     let mut code = Vec::new();
-    code.extend(b"prec = 2048;\n");
+    writeln!(code, "prec = {};", prec).unwrap();
     code.extend(b"f = ");
     code.extend(func.as_bytes());
     code.extend(b";\n");
@@ -139,12 +127,12 @@ fn gen_remez_code(func: &str, range: (f64, f64), poly_i: &[i32]) -> Vec<u8> {
     code
 }
 
-fn parse_f32(s: &[u8]) -> f32 {
+fn parse_f64(s: &[u8]) -> f64 {
     let s = std::str::from_utf8(s).unwrap();
     s.parse().unwrap()
 }
 
-fn parse_f64(s: &[u8]) -> f64 {
+fn parse_rug_float(s: &[u8], prec: u32) -> rug::Float {
     let s = std::str::from_utf8(s).unwrap();
-    s.parse().unwrap()
+    rug::Float::with_val(prec, rug::Float::parse(s).unwrap())
 }
