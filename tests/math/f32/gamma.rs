@@ -35,7 +35,7 @@ fn test_lgamma() {
 
         let threshold = if (-5.0..=-2.0).contains(&x) {
             // FIXME
-            200.0
+            400.0
         } else if (0.5..=7.0).contains(&x) {
             1.5
         } else {

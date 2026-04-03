@@ -880,7 +880,7 @@ pub fn tgamma<F: FloatMath>(x: F) -> F {
 /// when the sign of the gamma function of `x` is not defined.
 ///
 /// The error is less than 2 ULP in most cases. However, for some negative
-/// values of `x`, the error can be in the order of 200 ULP.
+/// values of `x`, the error can be much higher.
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or negative infinity
