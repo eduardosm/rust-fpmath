@@ -14,6 +14,6 @@ default-features = false
 features = ["float", "integer", "std"]
 
 [dependencies.gmp-mpfr-sys]
-version = "1.6.4"
+version = "1.7.0"
 default-features = false
 features = ["force-cross"] # needed for i586 support
