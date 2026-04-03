@@ -176,15 +176,9 @@ pub(crate) trait Float:
     #[cfg(test)]
     fn is_nan(self) -> bool;
 
-    #[inline]
-    fn abs(self) -> Self {
-        Self::from_raw(self.to_raw() & !Self::SIGN_MASK)
-    }
+    fn abs(self) -> Self;
 
-    #[inline]
-    fn copysign(self, y: Self) -> Self {
-        Self::from_raw((self.to_raw() & !Self::SIGN_MASK) | (y.to_raw() & Self::SIGN_MASK))
-    }
+    fn copysign(self, y: Self) -> Self;
 
     #[inline]
     fn set_sign(self, s: bool) -> Self {
