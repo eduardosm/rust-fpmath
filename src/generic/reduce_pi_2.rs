@@ -38,7 +38,7 @@ pub(crate) trait ReducePi2: FloatConsts {
 /// * `M` is an integer
 pub(crate) fn reduce_pi_2<F: ReducePi2>(x: F) -> (u8, F, F) {
     let xabs = x.abs();
-    if xabs <= F::frac_pi_4() {
+    if xabs <= F::FRAC_PI_4 {
         // reduction not needed
         (0, x, F::ZERO)
     } else if xabs < F::max_reduce_pi_2_medium() {
@@ -60,7 +60,7 @@ pub(crate) fn reduce_pi_2<F: ReducePi2>(x: F) -> (u8, F, F) {
 // π/4 < x < MAX_REDUCE_PI_2_MEDIUM
 fn reduce_pi_2_medium<F: ReducePi2>(x: F) -> (u8, F, F) {
     // Based on __rem_pio2 (the part after 'medium:') from musl libc
-    let (f_n, n) = round_fi(x * F::frac_2_pi());
+    let (f_n, n) = round_fi(x * F::FRAC_2_PI);
     // The directed rounding thing from musl has been removed, assume
     // round-to-nearest
     let xexp = x.exponent();

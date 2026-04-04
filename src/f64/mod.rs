@@ -130,32 +130,12 @@ impl crate::traits::Float for f64 {
     }
 }
 
-// GENERATE: consts f64
-const PI: f64 = f64::from_bits(0x400921FB54442D18); // 3.141592653589793e0
-const FRAC_PI_2: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
-const FRAC_PI_4: f64 = f64::from_bits(0x3FE921FB54442D18); // 7.853981633974483e-1
-const FRAC_2_PI: f64 = f64::from_bits(0x3FE45F306DC9C883); // 6.366197723675814e-1
-
 impl crate::traits::FloatConsts for f64 {
-    #[inline]
-    fn pi() -> Self {
-        PI
-    }
-
-    #[inline]
-    fn frac_pi_2() -> Self {
-        FRAC_PI_2
-    }
-
-    #[inline]
-    fn frac_pi_4() -> Self {
-        FRAC_PI_4
-    }
-
-    #[inline]
-    fn frac_2_pi() -> Self {
-        FRAC_2_PI
-    }
+    // GENERATE: consts f64 PI FRAC_PI_2 FRAC_PI_4 FRAC_2_PI
+    const PI: f64 = f64::from_bits(0x400921FB54442D18); // 3.141592653589793e0
+    const FRAC_PI_2: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
+    const FRAC_PI_4: f64 = f64::from_bits(0x3FE921FB54442D18); // 7.853981633974483e-1
+    const FRAC_2_PI: f64 = f64::from_bits(0x3FE45F306DC9C883); // 6.366197723675814e-1
 }
 
 impl crate::sealed::SealedMath for f64 {}

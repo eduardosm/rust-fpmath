@@ -13,7 +13,7 @@ pub(crate) fn asin<F: AsinAcos>(x: F) -> F {
     let e = x.raw_exp();
     if e == F::EXP_OFFSET && x.raw_mant() == F::Raw::ZERO {
         // asin(±1) = ±π/2
-        F::frac_pi_2().copysign(x)
+        F::FRAC_PI_2.copysign(x)
     } else if e >= F::EXP_OFFSET {
         // NaN or |x| > 1 (including infinity)
         F::NAN
@@ -108,7 +108,7 @@ pub(crate) fn acos<F: AsinAcos>(x: F) -> F {
     if e == F::EXP_OFFSET && x.raw_mant() == F::Raw::ZERO {
         if x.sign() {
             // acos(-1) = π
-            F::pi()
+            F::PI
         } else {
             // acos(1) = 0
             F::ZERO
@@ -119,7 +119,7 @@ pub(crate) fn acos<F: AsinAcos>(x: F) -> F {
     } else if e == F::RawExp::ZERO {
         // subnormal or zero
         // acos(x) ~= π/2
-        F::frac_pi_2()
+        F::FRAC_PI_2
     } else {
         acos_inner(x).to_single()
     }
@@ -142,8 +142,8 @@ mod tests {
         assert_is_nan!(asin(F::neg_infinity()));
         assert_total_eq!(asin(F::ZERO), F::ZERO);
         assert_total_eq!(asin(-F::ZERO), -F::ZERO);
-        assert_total_eq!(asin(F::one()), F::frac_pi_2());
-        assert_total_eq!(asin(-F::one()), -F::frac_pi_2());
+        assert_total_eq!(asin(F::one()), F::FRAC_PI_2);
+        assert_total_eq!(asin(-F::one()), -F::FRAC_PI_2);
     }
 
     fn test_acos<F: AsinAcos + FloatMath>() {
@@ -156,10 +156,10 @@ mod tests {
         assert_is_nan!(acos(f("-1.5")));
         assert_is_nan!(acos(F::INFINITY));
         assert_is_nan!(acos(F::neg_infinity()));
-        assert_total_eq!(acos(F::ZERO), F::frac_pi_2());
-        assert_total_eq!(acos(-F::ZERO), F::frac_pi_2());
+        assert_total_eq!(acos(F::ZERO), F::FRAC_PI_2);
+        assert_total_eq!(acos(-F::ZERO), F::FRAC_PI_2);
         assert_total_eq!(acos(F::one()), F::ZERO);
-        assert_total_eq!(acos(-F::one()), F::pi());
+        assert_total_eq!(acos(-F::one()), F::PI);
     }
 
     #[test]

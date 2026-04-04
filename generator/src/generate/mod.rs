@@ -3,6 +3,7 @@ use std::fmt::Write as _;
 use crate::RunError;
 
 mod arg_utils;
+mod consts;
 mod data;
 mod julia;
 mod sollya;
@@ -16,7 +17,7 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
     let args = args.collect::<Vec<_>>();
 
     let r = match cmd {
-        "consts" => data::gen_consts(&args),
+        "consts" => consts::gen_consts(&args),
         "cbrt::consts" => data::cbrt::gen_consts(&args),
         "cbrt::inv_cbrt_poly" => data::cbrt::gen_inv_cbrt_poly(&args),
         "exp::consts" => data::exp::gen_consts(&args),
