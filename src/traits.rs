@@ -241,8 +241,8 @@ pub(crate) trait Float:
 }
 
 pub(crate) trait FloatConsts: Float {
-    fn pi() -> Self;
-    fn frac_pi_2() -> Self;
-    fn frac_pi_4() -> Self;
-    fn frac_2_pi() -> Self;
+    const PI: Self;
+    const FRAC_PI_2: Self;
+    const FRAC_PI_4: Self;
+    const FRAC_2_PI: Self;
 }

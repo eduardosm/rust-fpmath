@@ -15,7 +15,7 @@ pub(crate) fn atan<F: Atan>(x: F) -> F {
     if e == F::MAX_RAW_EXP {
         if x.raw_mant() == F::Raw::ZERO {
             // atan(±inf) = ±π/2
-            F::frac_pi_2().copysign(x)
+            F::FRAC_PI_2.copysign(x)
         } else {
             // propagate NaN
             x
@@ -49,27 +49,27 @@ pub(crate) fn atan2<F: Atan>(y: F, x: F) -> F {
     } else if nxexp == F::MAX_RAW_EXP && nyexp == F::MAX_RAW_EXP {
         // x = ±inf, y = ±inf
         match (nx.sign(), ny.sign()) {
-            (false, false) => F::frac_pi_4(),
-            (false, true) => -F::frac_pi_4(),
+            (false, false) => F::FRAC_PI_4,
+            (false, true) => -F::FRAC_PI_4,
             (true, false) => F::frac_3pi_4(),
             (true, true) => -F::frac_3pi_4(),
         }
     } else if nxexp == F::MAX_RAW_EXP {
         // x = ±inf
         if nx.sign() {
-            F::pi().copysign(ny)
+            F::PI.copysign(ny)
         } else {
             F::ZERO.copysign(ny)
         }
     } else if nyexp == F::MAX_RAW_EXP {
         // y = ±inf
-        F::frac_pi_2().copysign(ny)
+        F::FRAC_PI_2.copysign(ny)
     } else if nyexp == F::RawExp::ZERO {
         // y = ±0
-        if nx.sign() { F::pi().copysign(ny) } else { ny }
+        if nx.sign() { F::PI.copysign(ny) } else { ny }
     } else if nxexp == F::RawExp::ZERO {
         // x = ±0
-        F::frac_pi_2().copysign(ny)
+        F::FRAC_PI_2.copysign(ny)
     } else if !nx.sign()
         && nxexp > nyexp
         && (nxexp - nyexp) >= ((F::MAX_RAW_EXP >> 1) - F::MANT_BITS.into())
@@ -151,8 +151,8 @@ mod tests {
         use crate::atan;
 
         assert_is_nan!(atan(F::NAN));
-        assert_total_eq!(atan(F::INFINITY), F::frac_pi_2());
-        assert_total_eq!(atan(F::neg_infinity()), -F::frac_pi_2());
+        assert_total_eq!(atan(F::INFINITY), F::FRAC_PI_2);
+        assert_total_eq!(atan(F::neg_infinity()), -F::FRAC_PI_2);
         assert_total_eq!(atan(F::ZERO), F::ZERO);
         assert_total_eq!(atan(-F::ZERO), -F::ZERO);
     }
@@ -173,28 +173,28 @@ mod tests {
         assert_total_eq!(atan2(-F::ZERO, F::one()), -F::ZERO);
         assert_total_eq!(atan2(F::ZERO, F::INFINITY), F::ZERO);
         assert_total_eq!(atan2(-F::ZERO, F::INFINITY), -F::ZERO);
-        assert_total_eq!(atan2(F::ZERO, -F::ZERO), F::pi());
-        assert_total_eq!(atan2(-F::ZERO, -F::ZERO), -F::pi());
-        assert_total_eq!(atan2(F::ZERO, -F::one()), F::pi());
-        assert_total_eq!(atan2(-F::ZERO, -F::one()), -F::pi());
-        assert_total_eq!(atan2(F::INFINITY, F::ZERO), F::frac_pi_2());
-        assert_total_eq!(atan2(F::INFINITY, -F::ZERO), F::frac_pi_2());
-        assert_total_eq!(atan2(F::INFINITY, F::one()), F::frac_pi_2());
-        assert_total_eq!(atan2(F::INFINITY, -F::one()), F::frac_pi_2());
-        assert_total_eq!(atan2(F::neg_infinity(), F::ZERO), -F::frac_pi_2());
-        assert_total_eq!(atan2(F::neg_infinity(), -F::ZERO), -F::frac_pi_2());
-        assert_total_eq!(atan2(F::neg_infinity(), F::one()), -F::frac_pi_2());
-        assert_total_eq!(atan2(F::neg_infinity(), -F::one()), -F::frac_pi_2());
+        assert_total_eq!(atan2(F::ZERO, -F::ZERO), F::PI);
+        assert_total_eq!(atan2(-F::ZERO, -F::ZERO), -F::PI);
+        assert_total_eq!(atan2(F::ZERO, -F::one()), F::PI);
+        assert_total_eq!(atan2(-F::ZERO, -F::one()), -F::PI);
+        assert_total_eq!(atan2(F::INFINITY, F::ZERO), F::FRAC_PI_2);
+        assert_total_eq!(atan2(F::INFINITY, -F::ZERO), F::FRAC_PI_2);
+        assert_total_eq!(atan2(F::INFINITY, F::one()), F::FRAC_PI_2);
+        assert_total_eq!(atan2(F::INFINITY, -F::one()), F::FRAC_PI_2);
+        assert_total_eq!(atan2(F::neg_infinity(), F::ZERO), -F::FRAC_PI_2);
+        assert_total_eq!(atan2(F::neg_infinity(), -F::ZERO), -F::FRAC_PI_2);
+        assert_total_eq!(atan2(F::neg_infinity(), F::one()), -F::FRAC_PI_2);
+        assert_total_eq!(atan2(F::neg_infinity(), -F::one()), -F::FRAC_PI_2);
         assert_total_eq!(atan2(F::ZERO, F::INFINITY), F::ZERO);
         assert_total_eq!(atan2(-F::ZERO, F::INFINITY), -F::ZERO);
         assert_total_eq!(atan2(F::one(), F::INFINITY), F::ZERO);
         assert_total_eq!(atan2(-F::one(), F::INFINITY), -F::ZERO);
-        assert_total_eq!(atan2(F::ZERO, F::neg_infinity()), F::pi());
-        assert_total_eq!(atan2(-F::ZERO, F::neg_infinity()), -F::pi());
-        assert_total_eq!(atan2(F::one(), F::neg_infinity()), F::pi());
-        assert_total_eq!(atan2(-F::one(), F::neg_infinity()), -F::pi());
-        assert_total_eq!(atan2(F::INFINITY, F::INFINITY), F::frac_pi_4());
-        assert_total_eq!(atan2(F::neg_infinity(), F::INFINITY), -F::frac_pi_4());
+        assert_total_eq!(atan2(F::ZERO, F::neg_infinity()), F::PI);
+        assert_total_eq!(atan2(-F::ZERO, F::neg_infinity()), -F::PI);
+        assert_total_eq!(atan2(F::one(), F::neg_infinity()), F::PI);
+        assert_total_eq!(atan2(-F::one(), F::neg_infinity()), -F::PI);
+        assert_total_eq!(atan2(F::INFINITY, F::INFINITY), F::FRAC_PI_4);
+        assert_total_eq!(atan2(F::neg_infinity(), F::INFINITY), -F::FRAC_PI_4);
         assert_total_eq!(atan2(F::INFINITY, F::neg_infinity()), F::frac_3pi_4());
         assert_total_eq!(
             atan2(F::neg_infinity(), F::neg_infinity()),

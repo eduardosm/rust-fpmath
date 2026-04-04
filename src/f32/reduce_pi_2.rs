@@ -42,7 +42,7 @@ impl crate::generic::ReducePi2 for f32 {
 
     #[inline]
     fn max_reduce_pi_2_medium() -> Self {
-        ((1u32 << 9) - 1) as f32 * Self::frac_pi_2()
+        ((1u32 << 9) - 1) as f32 * f32::FRAC_PI_2
     }
 
     const REDUCE_PI_2_MEDIUM_TH1: i16 = 8;

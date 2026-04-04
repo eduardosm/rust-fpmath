@@ -42,7 +42,7 @@ impl crate::generic::ReducePi2 for f64 {
 
     #[inline]
     fn max_reduce_pi_2_medium() -> Self {
-        ((1u64 << 20) - 1) as f64 * Self::frac_pi_2()
+        ((1u64 << 20) - 1) as f64 * f64::FRAC_PI_2
     }
 
     const REDUCE_PI_2_MEDIUM_TH1: i16 = 16;
