@@ -6,7 +6,7 @@ pub(super) mod exp;
 pub(super) mod exp10;
 pub(super) mod exp2;
 pub(super) mod gamma;
-pub(super) mod log;
+pub(super) mod ln;
 pub(super) mod log10;
 pub(super) mod log2;
 pub(super) mod rad_to_deg;

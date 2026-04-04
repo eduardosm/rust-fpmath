@@ -4,34 +4,34 @@ use super::{RUG_PREC, calc_error_ulp, mkfloat};
 use crate::create_prng;
 
 #[test]
-fn test_log() {
+fn test_ln() {
     let mut max_error: f64 = 0.0;
     test_log_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).ln();
-        let actual = fpmath::log(x);
+        let actual = fpmath::ln(x);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "log({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.9, "ln({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max log error = {max_error}");
     assert!(max_error > 0.5);
 }
 
 #[test]
-fn test_log_1p() {
+fn test_ln_1p() {
     let mut max_error: f64 = 0.0;
     test_log1p_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).ln_1p();
-        let actual = fpmath::log_1p(x);
+        let actual = fpmath::ln_1p(x);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "log_1p({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.9, "ln_1p({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max log_1p error = {max_error}");
+    eprintln!("max ln_1p error = {max_error}");
     assert!(max_error > 0.5);
 }
 

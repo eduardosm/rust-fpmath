@@ -6,6 +6,8 @@
 
 - Soft-float support has been removed. Use the
   [`swfp` crate](https://crates.io/crates/swfp) instead.
+- Some math functions have been renamed (`log` to `ln`, `log_1p` to `ln_1p`,
+  `tgamma` to `gamma`, `lgamma` to `ln_gamma`)
 
 ## 0.1.1 (2024-10-14)
 

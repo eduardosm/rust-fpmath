@@ -31,7 +31,7 @@ pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
-pub(in super::super) fn gen_log_special_poly(args: &[&str]) -> Result<String, String> {
+pub(in super::super) fn gen_ln_special_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
 
     let mut out = String::new();
@@ -46,7 +46,7 @@ pub(in super::super) fn gen_log_special_poly(args: &[&str]) -> Result<String, St
     Ok(out)
 }
 
-pub(in super::super) fn gen_log_special_poly_ex(args: &[&str]) -> Result<String, String> {
+pub(in super::super) fn gen_ln_special_poly_ex(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
 
     let mut out = String::new();

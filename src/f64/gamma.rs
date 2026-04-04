@@ -38,8 +38,8 @@ impl crate::generic::Gamma for f64 {
     }
 
     #[inline]
-    fn lgamma_poly_1(x: Self) -> (Self, Self, Self, Self) {
-        // GENERATE: gamma::lgamma_poly f64 26 1 0.5 1.1001
+    fn ln_gamma_poly_1(x: Self) -> (Self, Self, Self, Self) {
+        // GENERATE: gamma::ln_gamma_poly f64 26 1 0.5 1.1001
         const K1: f64 = f64::from_bits(0xBFE2788CFC6FB619); // -5.772156649015329e-1
         const K2: f64 = f64::from_bits(0x3FEA51A6625307D3); // 8.224670334241132e-1
         const K3: f64 = f64::from_bits(0xBFD9A4D55BEAB2D5); // -4.006856343865313e-1
@@ -79,8 +79,8 @@ impl crate::generic::Gamma for f64 {
     }
 
     #[inline]
-    fn lgamma_poly_2(x: Self) -> (Self, Self, Self, Self) {
-        // GENERATE: gamma::lgamma_poly f64 26 2 1.0999 2.3001
+    fn ln_gamma_poly_2(x: Self) -> (Self, Self, Self, Self) {
+        // GENERATE: gamma::ln_gamma_poly f64 26 2 1.0999 2.3001
         const K1: f64 = f64::from_bits(0x3FDB0EE6072093CE); // 4.2278433509846713e-1
         const K2: f64 = f64::from_bits(0x3FD4A34CC4A60FA6); // 3.224670334241132e-1
         const K3: f64 = f64::from_bits(0xBFB13E001A557607); // -6.73523010531981e-2

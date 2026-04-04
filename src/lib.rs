@@ -16,7 +16,7 @@
 //! * Sign operations ([`abs`], [`copysign`]).
 //! * Rounding ([`round`], [`trunc`], [`ceil`], [`floor`]).
 //! * Exponential ([`exp`], [`exp_m1`], [`exp2`], [`exp10`]).
-//! * Logarithmic ([`log`], [`log_1p`], [`log2`], [`log10`]).
+//! * Logarithmic ([`ln`], [`ln_1p`], [`log2`], [`log10`]).
 //! * Power ([`pow`], [`powi`]).
 //! * Trigonometric
 //!   - Radians ([`sin`], [`cos`], [`sin_cos`], [`tan`]).
@@ -28,7 +28,7 @@
 //!   - Half-revolutions ([`asinpi`], [`acospi`], [`atanpi`], [`atan2pi`]).
 //! * Hyperbolic ([`sinh`], [`cosh`], [`sinh_cosh`], [`tanh`]).
 //! * Inverse hyperbolic ([`asinh`], [`acosh`], [`atanh`]).
-//! * Gamma ([`tgamma`], [`lgamma`]).
+//! * Gamma ([`gamma`], [`ln_gamma`]).
 //!
 //! All functions are implemted for the native floating point types [`prim@f32`]
 //! and [`prim@f64`].
@@ -134,11 +134,11 @@ pub trait FloatMath: sealed::SealedMath + Sized {
     /// See the [`exp10`] function.
     fn exp10(x: Self) -> Self;
 
-    /// See the [`log`] function.
-    fn log(x: Self) -> Self;
+    /// See the [`ln`] function.
+    fn ln(x: Self) -> Self;
 
-    /// See the [`log_1p`] function.
-    fn log_1p(x: Self) -> Self;
+    /// See the [`ln_1p`] function.
+    fn ln_1p(x: Self) -> Self;
 
     /// See the [`log2`] function.
     fn log2(x: Self) -> Self;
@@ -245,11 +245,11 @@ pub trait FloatMath: sealed::SealedMath + Sized {
     /// See the [`atanh`] function.
     fn atanh(x: Self) -> Self;
 
-    /// See the [`tgamma`] function.
-    fn tgamma(x: Self) -> Self;
+    /// See the [`gamma`] function.
+    fn gamma(x: Self) -> Self;
 
-    /// See the [`lgamma`] function.
-    fn lgamma(x: Self) -> (Self, i8);
+    /// See the [`ln_gamma`] function.
+    fn ln_gamma(x: Self) -> (Self, i8);
 }
 
 /// Calculates the absolute value of `x`
@@ -382,8 +382,8 @@ pub fn exp10<F: FloatMath>(x: F) -> F {
 /// * Returns negative infinity if `x` is positive or negative zero
 /// * Returns positive infinity if `x` is positive infinity
 /// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
-pub fn log<F: FloatMath>(x: F) -> F {
-    F::log(x)
+pub fn ln<F: FloatMath>(x: F) -> F {
+    F::ln(x)
 }
 
 /// Calculates the natural logarithm of `x + 1` with an error of less than 1 ULP
@@ -394,8 +394,8 @@ pub fn log<F: FloatMath>(x: F) -> F {
 /// * Returns positive infinity if `x` is positive infinity
 /// * Returns NaN if `x` is NaN or less than minus one (including negative
 ///   infinity)
-pub fn log_1p<F: FloatMath>(x: F) -> F {
-    F::log_1p(x)
+pub fn ln_1p<F: FloatMath>(x: F) -> F {
+    F::ln_1p(x)
 }
 
 /// Calculates the base-2 logarithm of `x` with an error of less than 1 ULP
@@ -869,8 +869,8 @@ pub fn atanh<F: FloatMath>(x: F) -> F {
 /// * Returns positive infinity if `x` is positive infinity
 /// * Returns positive infinity if `x` is positive zero
 /// * Returns negative infinity if `x` is negative zero
-pub fn tgamma<F: FloatMath>(x: F) -> F {
-    F::tgamma(x)
+pub fn gamma<F: FloatMath>(x: F) -> F {
+    F::gamma(x)
 }
 
 /// Calculates the logarithm of the absolute value of the gamma function of `x`
@@ -889,6 +889,6 @@ pub fn tgamma<F: FloatMath>(x: F) -> F {
 ///
 /// The sign is considered undefined when `x` is NaN, a negative integer or
 /// negative infinity.
-pub fn lgamma<F: FloatMath>(x: F) -> (F, i8) {
-    F::lgamma(x)
+pub fn ln_gamma<F: FloatMath>(x: F) -> (F, i8) {
+    F::ln_gamma(x)
 }

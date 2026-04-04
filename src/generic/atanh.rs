@@ -1,9 +1,9 @@
-use super::Log;
-use super::log::log_hi_lo_inner;
+use super::Ln;
+use super::ln::ln_hi_lo_inner;
 use crate::double::SemiDouble;
 use crate::traits::Int as _;
 
-pub(crate) fn atanh<F: Log>(x: F) -> F {
+pub(crate) fn atanh<F: Ln>(x: F) -> F {
     let e = x.raw_exp();
     let absx = x.abs();
     if (e == F::MAX_RAW_EXP && x.raw_mant() != F::Raw::ZERO)
@@ -26,7 +26,7 @@ pub(crate) fn atanh<F: Log>(x: F) -> F {
     }
 }
 
-fn atanh_inner<F: Log>(x: F) -> F {
+fn atanh_inner<F: Ln>(x: F) -> F {
     // t1 = 2 * x / (1 - x)
     let t1 = SemiDouble::new(F::two() * x) / SemiDouble::new_qsub11(F::one(), x);
 
@@ -34,8 +34,8 @@ fn atanh_inner<F: Log>(x: F) -> F {
     let t2 = t1 + F::one();
     let t2 = t2.to_norm();
 
-    // atanh(x) = 0.5 * log((1 + x) / (1 - x))
-    F::half() * log_hi_lo_inner(t2.hi(), t2.lo())
+    // atanh(x) = 0.5 * ln((1 + x) / (1 - x))
+    F::half() * ln_hi_lo_inner(t2.hi(), t2.lo())
 }
 
 #[cfg(test)]

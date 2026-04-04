@@ -1,6 +1,6 @@
 use crate::double::NormDouble;
 
-// GENERATE: log::consts f64
+// GENERATE: ln::consts f64
 const SQRT_2: f64 = f64::from_bits(0x3FF6A09E667F3BCD); // 1.4142135623730951e0
 const LN_2_HI: f64 = f64::from_bits(0x3FE62E42F8000000); // 6.931471675634384e-1
 const LN_2_LO: f64 = f64::from_bits(0x3E4BE8E7BCD5E4F2); // 1.2996506893889889e-8
@@ -9,7 +9,7 @@ const FRAC_2_3_LO: f64 = f64::from_bits(0x3C85555555555555); // 3.70074341541718
 const FRAC_4_10_HI: f64 = f64::from_bits(0x3FD9999999999999); // 3.9999999999999997e-1
 const FRAC_4_10_LO: f64 = f64::from_bits(0x3C83333333333333); // 3.3306690738754695e-17
 
-impl crate::generic::Log for f64 {
+impl crate::generic::Ln for f64 {
     #[inline]
     fn sqrt_2() -> Self {
         SQRT_2
@@ -36,8 +36,8 @@ impl crate::generic::Log for f64 {
     }
 
     #[inline]
-    fn log_special_poly(x: Self) -> Self {
-        // GENERATE: log::log_special_poly f64 7
+    fn ln_special_poly(x: Self) -> Self {
+        // GENERATE: ln::ln_special_poly f64 7
         const K2: f64 = f64::from_bits(0x3FE5555555555592); // 6.666666666666734e-1
         const K4: f64 = f64::from_bits(0x3FD999999997FCEC); // 3.999999999941355e-1
         const K6: f64 = f64::from_bits(0x3FD24924941FD4A8); // 2.8571428742663807e-1
@@ -51,8 +51,8 @@ impl crate::generic::Log for f64 {
     }
 
     #[inline]
-    fn log_special_poly_ex(x2: Self) -> Self {
-        // GENERATE: log::log_special_poly_ex f64 6
+    fn ln_special_poly_ex(x2: Self) -> Self {
+        // GENERATE: ln::ln_special_poly_ex f64 6
         const K6: f64 = f64::from_bits(0x3FD24924924812EE); // 2.8571428571039703e-1
         const K8: f64 = f64::from_bits(0x3FCC71C71F9F60BA); // 2.222222237021521e-1
         const K10: f64 = f64::from_bits(0x3FC745CF9D840A43); // 1.8181796256256363e-1

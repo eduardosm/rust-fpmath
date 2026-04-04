@@ -4,11 +4,11 @@ use super::{RUG_PREC, calc_error_ulp, mkfloat};
 use crate::create_prng;
 
 #[test]
-fn test_tgamma() {
+fn test_gamma() {
     let mut max_error: f64 = 0.0;
     test_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).gamma();
-        let actual = fpmath::tgamma(x);
+        let actual = fpmath::gamma(x);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -16,15 +16,15 @@ fn test_tgamma() {
         let threshold = if x < 0.5 { 1.9 } else { 0.9 };
         assert!(
             err < threshold,
-            "tgamma({x:e}) = {actual:e} (error = {err} ULP)",
+            "gamma({x:e}) = {actual:e} (error = {err} ULP)",
         );
     });
-    eprintln!("max tgamma error = {max_error}");
+    eprintln!("max gamma error = {max_error}");
     assert!(max_error > 0.5);
 }
 
 #[test]
-fn test_lgamma() {
+fn test_ln_gamma() {
     let mut max_error: f64 = 0.0;
     test_with(|x| {
         let (expected, ord) = rug::Float::with_val(RUG_PREC, x).ln_abs_gamma();
@@ -33,7 +33,7 @@ fn test_lgamma() {
         } else {
             ord as i8
         };
-        let (actual, actual_sign) = fpmath::lgamma(x);
+        let (actual, actual_sign) = fpmath::ln_gamma(x);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -49,10 +49,10 @@ fn test_lgamma() {
         assert_eq!(expected_sign, actual_sign);
         assert!(
             err < threshold,
-            "lgamma({x:e}) = {actual:e} (error = {err} ULP)",
+            "ln_gamma({x:e}) = {actual:e} (error = {err} ULP)",
         );
     });
-    eprintln!("max lgamma error = {max_error}");
+    eprintln!("max ln_gamma error = {max_error}");
     assert!(max_error > 0.5);
 }
 

@@ -1,10 +1,10 @@
-use super::Log;
-use super::log::{log_hi_lo_inner, log_inner};
+use super::Ln;
+use super::ln::{ln_hi_lo_inner, ln_inner};
 use super::sqrt::hi_lo_sqrt_hi_lo_inner;
 use crate::double::DenormDouble;
 use crate::traits::Int as _;
 
-pub(crate) fn asinh<F: Log>(x: F) -> F {
+pub(crate) fn asinh<F: Ln>(x: F) -> F {
     let e = x.raw_exp();
     if e == F::MAX_RAW_EXP || e <= (F::EXP_OFFSET - F::RawExp::from(F::MANT_BITS)) {
         // asinh(±inf) = ±inf
@@ -16,14 +16,14 @@ pub(crate) fn asinh<F: Log>(x: F) -> F {
         // also handles asinh(-0) = -0
         x
     } else if e > (F::RawExp::from(F::MANT_BITS) + F::EXP_OFFSET) {
-        let y = log_inner(x.abs(), F::Exp::ONE);
+        let y = ln_inner(x.abs(), F::Exp::ONE);
         y.copysign(x)
     } else {
         asinh_inner(x)
     }
 }
 
-fn asinh_inner<F: Log>(x: F) -> F {
+fn asinh_inner<F: Ln>(x: F) -> F {
     let absx = x.abs();
     let x2 = x * x;
 
@@ -36,8 +36,8 @@ fn asinh_inner<F: Log>(x: F) -> F {
     // t3 = |x| + sqrt(x^2 + 1)
     let t3 = t2.qadd1(absx);
 
-    // t4 = |asinh(x)| = log(|x| + sqrt(x^2 + 1))
-    let t4 = log_hi_lo_inner(t3.hi(), t3.lo());
+    // t4 = |asinh(x)| = ln(|x| + sqrt(x^2 + 1))
+    let t4 = ln_hi_lo_inner(t3.hi(), t3.lo());
 
     // asinh(x) = sgn(x) * |asinh(x)|
     t4.copysign(x)
