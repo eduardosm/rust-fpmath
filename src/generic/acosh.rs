@@ -1,10 +1,10 @@
-use super::Log;
-use super::log::{log_hi_lo_inner, log_inner};
+use super::Ln;
+use super::ln::{ln_hi_lo_inner, ln_inner};
 use super::sqrt::hi_lo_sqrt_hi_lo_inner;
 use crate::double::DenormDouble;
 use crate::traits::Int as _;
 
-pub(crate) fn acosh<F: Log>(x: F) -> F {
+pub(crate) fn acosh<F: Ln>(x: F) -> F {
     let e = x.raw_exp();
     if x < F::one() {
         // x < 1, acosh(x) is NaN
@@ -17,13 +17,13 @@ pub(crate) fn acosh<F: Log>(x: F) -> F {
         // acosh(x) = x
         x
     } else if e > (F::RawExp::from(F::MANT_BITS) + F::EXP_OFFSET) {
-        log_inner(x, F::Exp::ONE)
+        ln_inner(x, F::Exp::ONE)
     } else {
         acosh_inner(x)
     }
 }
 
-fn acosh_inner<F: Log>(x: F) -> F {
+fn acosh_inner<F: Ln>(x: F) -> F {
     // t1 = x^2 - 1
     let t1 = if x < F::two() {
         // y = x - 1
@@ -46,8 +46,8 @@ fn acosh_inner<F: Log>(x: F) -> F {
     // t3 = x + sqrt(x^2 - 1)
     let t3 = t2.qradd1(x);
 
-    // acosh(x) = log(x + sqrt(x^2 - 1))
-    log_hi_lo_inner(t3.hi(), t3.lo())
+    // acosh(x) = ln(x + sqrt(x^2 - 1))
+    ln_hi_lo_inner(t3.hi(), t3.lo())
 }
 
 #[cfg(test)]

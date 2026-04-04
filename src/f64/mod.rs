@@ -201,12 +201,12 @@ impl crate::FloatMath for f64 {
         crate::generic::exp10(x)
     }
 
-    fn log(x: Self) -> Self {
-        crate::generic::log(x)
+    fn ln(x: Self) -> Self {
+        crate::generic::ln(x)
     }
 
-    fn log_1p(x: Self) -> Self {
-        crate::generic::log_1p(x)
+    fn ln_1p(x: Self) -> Self {
+        crate::generic::ln_1p(x)
     }
 
     fn log2(x: Self) -> Self {
@@ -349,12 +349,12 @@ impl crate::FloatMath for f64 {
         crate::generic::atanh(x)
     }
 
-    fn tgamma(x: Self) -> Self {
-        crate::generic::tgamma(x)
+    fn gamma(x: Self) -> Self {
+        crate::generic::gamma(x)
     }
 
-    fn lgamma(x: Self) -> (Self, i8) {
-        crate::generic::lgamma(x)
+    fn ln_gamma(x: Self) -> (Self, i8) {
+        crate::generic::ln_gamma(x)
     }
 }
 

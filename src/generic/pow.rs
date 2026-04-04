@@ -1,9 +1,9 @@
 use super::exp::{exp_inner_common, exp_split};
-use super::log::hi_lo_log_inner;
-use super::{Exp, Log, int_is_odd, is_int, is_odd_int};
+use super::ln::hi_lo_ln_inner;
+use super::{Exp, Ln, int_is_odd, is_int, is_odd_int};
 use crate::traits::Int as _;
 
-pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
+pub(crate) fn pow<F: Ln + Exp>(x: F, y: F) -> F {
     let (nx, xedelta) = x.normalize_arg();
     let (ny, _) = y.normalize_arg();
     let xexp = nx.raw_exp();
@@ -101,13 +101,13 @@ pub(crate) fn pow<F: Log + Exp>(x: F, y: F) -> F {
         // pow(x, y) = NaN when x < 0 and y is finite and not integer
         F::NAN
     } else {
-        // logx = log(|x|)
-        let logx = hi_lo_log_inner(nx.abs(), xedelta).to_semi();
+        // logx = ln(|x|)
+        let logx = hi_lo_ln_inner(nx.abs(), xedelta).to_semi();
 
-        // ylx = y * log(|x|)
+        // ylx = y * ln(|x|)
         let ylx = (logx * y).to_norm();
 
-        // |z| = |x|^y = exp(y * log(|x|))
+        // |z| = |x|^y = exp(y * ln(|x|))
         let absz = if ylx.hi() >= F::exp_hi_th() {
             F::INFINITY
         } else if ylx.hi() <= F::exp_lo_th() {

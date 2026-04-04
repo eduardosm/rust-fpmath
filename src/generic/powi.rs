@@ -1,10 +1,10 @@
 use super::exp::exp_split;
-use super::log::hi_lo_log_inner;
-use super::{Exp, Log, scalbn};
+use super::ln::hi_lo_ln_inner;
+use super::{Exp, Ln, scalbn};
 use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{CastInto as _, Int as _};
 
-pub(crate) fn powi<F: Log + Exp>(x: F, y: i32) -> F {
+pub(crate) fn powi<F: Ln + Exp>(x: F, y: i32) -> F {
     let (nx, xedelta) = x.normalize_arg();
     let xexp = nx.raw_exp();
 
@@ -70,14 +70,14 @@ pub(crate) fn powi<F: Log + Exp>(x: F, y: i32) -> F {
             }
         }
     } else {
-        // logx = log(|x|)
-        let logx = hi_lo_log_inner(nx.abs(), xedelta).to_semi();
+        // logx = ln(|x|)
+        let logx = hi_lo_ln_inner(nx.abs(), xedelta).to_semi();
 
         // Split y = sum(y_i)
         // |x|^y = prod(|x|^y_i)
-        //       = prod(e^(log(|x|)*y_i))
+        //       = prod(e^(ln(|x|)*y_i))
         //       = prod(e^(r_i)) * 2^(sum(k_i))
-        // log(|x|) * y_i = r_i + k_i*ln(2)
+        // ln(|x|) * y_i = r_i + k_i*ln(2)
 
         // k_total = sum(k_i)
         // z = prod(e^(r_i))
@@ -93,7 +93,7 @@ pub(crate) fn powi<F: Log + Exp>(x: F, y: i32) -> F {
             let yf = (yf * F::exp2i_fast(yshift.cast_into())).set_sign(y < 0);
             yshift += F::MANT_BITS + 1;
 
-            // ylx = yf * log(|x|)
+            // ylx = yf * ln(|x|)
             let ylx = (logx * yf).to_norm();
 
             if ylx.hi() >= F::exp_hi_th() {
@@ -111,7 +111,7 @@ pub(crate) fn powi<F: Log + Exp>(x: F, y: i32) -> F {
             } else {
                 let (k, r_hi, r_lo) = exp_split(ylx.hi());
 
-                // t = |x|^yf / 2^k = exp(yf * log(|x|)) / 2^k
+                // t = |x|^yf / 2^k = exp(yf * ln(|x|)) / 2^k
                 let r = DenormDouble::new(r_hi, r_lo + ylx.lo());
                 let t = hi_lo_exp_inner(r).to_semi();
 

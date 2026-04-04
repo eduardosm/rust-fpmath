@@ -1,8 +1,8 @@
-use super::{Log, log::log_split};
+use super::{Ln, ln::ln_split};
 use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{CastInto as _, Int as _};
 
-pub(crate) trait Log2: Log {
+pub(crate) trait Log2: Ln {
     fn log2_e_ex() -> SemiDouble<Self>;
 }
 
@@ -33,23 +33,23 @@ pub(crate) fn log2<F: Log2>(x: F) -> F {
 /// `x` must be normal and positive.
 fn log2_inner<F: Log2>(x: F, edelta: F::Exp) -> F {
     // Algorithm based on one used by the msun math library:
-    //  * log(1 + r) = p * s + 2 * s
+    //  * ln(1 + r) = p * s + 2 * s
     //  * s = r / (2 + r)
-    //  * p = (log(1 + s) - log(1 - s) - 2 * s) / s
+    //  * p = (ln(1 + s) - ln(1 - s) - 2 * s) / s
 
     // Split x * 2^edelta = 2^k * (1 + r)
     //  - k is an integer
     //  - sqrt(2) / 2 <= 1 + r < sqrt(2)
-    let (k, r) = log_split(x, edelta);
+    let (k, r) = ln_split(x, edelta);
 
     // s = r / (2 + r)
-    // So, log(1 + r) = log(1 + s) - log(1 - s)
+    // So, ln(1 + r) = ln(1 + s) - ln(1 - s)
     let s = r / (F::two() + r);
 
-    // p = (log(1 + s) - log(1 - s) - 2 * s) / s
-    let p = F::log_special_poly(s);
+    // p = (ln(1 + s) - ln(1 - s) - 2 * s) / s
+    let p = F::ln_special_poly(s);
 
-    // t1 = log(1 + r) = p * s + 2 * s
+    // t1 = ln(1 + r) = p * s + 2 * s
     //    = r - s * (r - p)
     //    = r - (0.5 * r^2 - s * (0.5 * r^2 + p))
     let hr2 = F::half() * r * r;
@@ -57,7 +57,7 @@ fn log2_inner<F: Log2>(x: F, edelta: F::Exp) -> F {
         .qadd1(s * (hr2 + p))
         .to_semi();
 
-    // t2 = log2(1 + r) = log(1 + r) * log2(e) = t1 * log2(e)
+    // t2 = log2(1 + r) = ln(1 + r) * log2(e) = t1 * log2(e)
     let t2 = t1 * F::log2_e_ex();
 
     // log2(x) = k + log2(1 + r) = k + t2

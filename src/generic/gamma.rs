@@ -1,12 +1,12 @@
 use super::exp::{exp_split, hi_lo_exp_inner_common};
-use super::log::hi_lo_log_hi_lo_inner;
+use super::ln::hi_lo_ln_hi_lo_inner;
 use super::scalbn;
 use super::sin_cos::{hi_lo_cos_inner, hi_lo_sin_inner};
-use super::{Exp, Log, ReduceHalfMulPi, SinCos, is_int, reduce_half_mul_pi};
+use super::{Exp, Ln, ReduceHalfMulPi, SinCos, is_int, reduce_half_mul_pi};
 use crate::double::{DenormDouble, NormDouble, SemiDouble};
 use crate::traits::{Float, FloatConsts, Int as _};
 
-pub(crate) trait Gamma: FloatConsts + SinCos + ReduceHalfMulPi + Exp + Log {
+pub(crate) trait Gamma: FloatConsts + SinCos + ReduceHalfMulPi + Exp + Ln {
     fn lo_th() -> Self;
     fn hi_th() -> Self;
 
@@ -18,61 +18,61 @@ pub(crate) trait Gamma: FloatConsts + SinCos + ReduceHalfMulPi + Exp + Log {
 
     fn half_ln_2_pi() -> NormDouble<Self>;
 
-    fn lgamma_poly_1(x: Self) -> (Self, Self, Self, Self);
-    fn lgamma_poly_2(x: Self) -> (Self, Self, Self, Self);
+    fn ln_gamma_poly_1(x: Self) -> (Self, Self, Self, Self);
+    fn ln_gamma_poly_2(x: Self) -> (Self, Self, Self, Self);
 
     fn special_poly(x: Self) -> Self;
 }
 
-pub(crate) fn tgamma<F: Gamma>(x: F) -> F {
+pub(crate) fn gamma<F: Gamma>(x: F) -> F {
     let e = x.raw_exp();
     if e == F::RawExp::ZERO && x.raw_mant() == F::Raw::ZERO {
-        // tgamma(±0) = ±inf
+        // gamma(±0) = ±inf
         F::INFINITY.copysign(x)
     } else if x >= F::hi_th() {
         // also handles x = inf
         F::INFINITY
     } else if e == F::MAX_RAW_EXP {
-        // tgamma(NaN or -inf) = NaN
+        // gamma(NaN or -inf) = NaN
         F::NAN
     } else if x.sign() && is_int(x) {
-        // tgamma(neg integer) = NaN
+        // gamma(neg integer) = NaN
         F::NAN
     } else if x < F::lo_th() {
         // -inf and negative integers are handled above
         F::ZERO
     } else {
-        tgamma_inner(x)
+        gamma_inner(x)
     }
 }
 
-pub(crate) fn lgamma<F: Gamma>(x: F) -> (F, i8) {
+pub(crate) fn ln_gamma<F: Gamma>(x: F) -> (F, i8) {
     let e = x.raw_exp();
     let sign = x.sign();
     if e == F::RawExp::ZERO && x.raw_mant() == F::Raw::ZERO {
-        // lgamma(0) = inf
+        // ln_gamma(0) = inf
         (F::INFINITY, if sign { -1 } else { 1 })
     } else if e == F::MAX_RAW_EXP {
         if !sign && x.raw_mant() == F::Raw::ZERO {
-            // lgamma(inf) = inf
+            // ln_gamma(inf) = inf
             (F::INFINITY, 1)
         } else {
-            // lgamma(NaN or -inf) = NaN
+            // ln_gamma(NaN or -inf) = NaN
             (F::NAN, 0)
         }
     } else if x.sign() && is_int(x) {
-        // lgamma(neg integer) = inf
+        // ln_gamma(neg integer) = inf
         (F::INFINITY, 0)
     } else if x == F::one() || x == F::two() {
-        // lgamma(1 or 2) = 0
+        // ln_gamma(1 or 2) = 0
         // ensure positive zero
         (F::ZERO, 1)
     } else {
-        lgamma_inner(x)
+        ln_gamma_inner(x)
     }
 }
 
-fn tgamma_inner<F: Gamma>(x: F) -> F {
+fn gamma_inner<F: Gamma>(x: F) -> F {
     let (y, s) = gamma_inner_common(x);
 
     let (k, r_hi, r_lo) = exp_split(y.hi());
@@ -82,7 +82,7 @@ fn tgamma_inner<F: Gamma>(x: F) -> F {
     scalbn((s.to_semi() * exp_y.to_semi()).to_single(), k)
 }
 
-fn lgamma_inner<F: Gamma>(x: F) -> (F, i8) {
+fn ln_gamma_inner<F: Gamma>(x: F) -> (F, i8) {
     let (y, s) = gamma_inner_common(x);
 
     if y.hi() == F::INFINITY {
@@ -91,9 +91,9 @@ fn lgamma_inner<F: Gamma>(x: F) -> (F, i8) {
         let s = s.to_norm();
         let (sign, abs_s) = if s.hi().sign() { (-1, -s) } else { (1, s) };
 
-        let log_s = hi_lo_log_hi_lo_inner(abs_s, F::Exp::ZERO);
+        let ln_s = hi_lo_ln_hi_lo_inner(abs_s, F::Exp::ZERO);
 
-        (log_s.qadd2(y).to_single(), sign)
+        (ln_s.qadd2(y).to_single(), sign)
     }
 }
 
@@ -133,10 +133,10 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
         let k3;
         if nx < F::th_1() {
             y = nx - F::one();
-            (r, k1, k2, k3) = F::lgamma_poly_1(y);
+            (r, k1, k2, k3) = F::ln_gamma_poly_1(y);
         } else {
             y = nx - F::two();
-            (r, k1, k2, k3) = F::lgamma_poly_2(y);
+            (r, k1, k2, k3) = F::ln_gamma_poly_2(y);
         };
         // r = ln(Γ(nx))
         let r = finish_poly(y, r, k1, k2, k3);
@@ -168,8 +168,8 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
 
         // r = (t - 0.5) * ln(t) - t + 0.5 * ln(2π)
         //   = t * (ln(t) - 1) - 0.5 * ln(t) + 0.5 * ln(2π)
-        let log_t = hi_lo_log_hi_lo_inner(t.to_norm(), F::Exp::ZERO);
-        let r = t.to_semi() * (log_t - F::one()).to_semi() - log_t.pmul1(F::half())
+        let ln_t = hi_lo_ln_hi_lo_inner(t.to_norm(), F::Exp::ZERO);
+        let r = t.to_semi() * (ln_t - F::one()).to_semi() - ln_t.pmul1(F::half())
             + F::half_ln_2_pi().to_denorm();
 
         let s = if low {
@@ -214,31 +214,31 @@ mod tests {
     use crate::FloatMath;
     use crate::traits::Float;
 
-    fn test_tgamma<F: Float + FloatMath>() {
-        use crate::tgamma;
+    fn test_gamma<F: Float + FloatMath>() {
+        use crate::gamma;
 
-        assert_is_nan!(tgamma(F::NAN));
-        assert_is_nan!(tgamma(F::neg_infinity()));
-        assert_is_nan!(tgamma(-F::one()));
-        assert_is_nan!(tgamma(-F::two()));
-        assert_is_nan!(tgamma(-F::largest()));
-        assert_total_eq!(tgamma(F::INFINITY), F::INFINITY);
-        assert_total_eq!(tgamma(F::ZERO), F::INFINITY);
-        assert_total_eq!(tgamma(-F::ZERO), F::neg_infinity());
-        assert_total_eq!(tgamma(F::one()), F::one());
-        assert_total_eq!(tgamma(F::two()), F::one());
+        assert_is_nan!(gamma(F::NAN));
+        assert_is_nan!(gamma(F::neg_infinity()));
+        assert_is_nan!(gamma(-F::one()));
+        assert_is_nan!(gamma(-F::two()));
+        assert_is_nan!(gamma(-F::largest()));
+        assert_total_eq!(gamma(F::INFINITY), F::INFINITY);
+        assert_total_eq!(gamma(F::ZERO), F::INFINITY);
+        assert_total_eq!(gamma(-F::ZERO), F::neg_infinity());
+        assert_total_eq!(gamma(F::one()), F::one());
+        assert_total_eq!(gamma(F::two()), F::one());
     }
 
-    fn test_lgamma<F: Float + FloatMath>() {
-        use crate::lgamma;
+    fn test_ln_gamma<F: Float + FloatMath>() {
+        use crate::ln_gamma;
 
         let test_nan = |x: F| {
-            let (r, sign) = lgamma(x);
+            let (r, sign) = ln_gamma(x);
             assert_is_nan!(r);
             assert_eq!(sign, 0);
         };
         let test_value = |x: F, r: F, sign: i8| {
-            let (res, res_sign) = lgamma(x);
+            let (res, res_sign) = ln_gamma(x);
             assert_total_eq!(res, r);
             assert_eq!(res_sign, sign);
         };
@@ -257,13 +257,13 @@ mod tests {
 
     #[test]
     fn test_f32() {
-        test_tgamma::<f32>();
-        test_lgamma::<f32>();
+        test_gamma::<f32>();
+        test_ln_gamma::<f32>();
     }
 
     #[test]
     fn test_f64() {
-        test_tgamma::<f64>();
-        test_lgamma::<f64>();
+        test_gamma::<f64>();
+        test_ln_gamma::<f64>();
     }
 }

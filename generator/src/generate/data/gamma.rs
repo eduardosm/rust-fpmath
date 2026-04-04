@@ -15,7 +15,7 @@ pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
-pub(in super::super) fn gen_lgamma_poly(args: &[&str]) -> Result<String, String> {
+pub(in super::super) fn gen_ln_gamma_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, poly_deg, offset, range_start, range_end): (_, i32, u8, f64, f64) =
         arg_utils::parse_5_args(args)?;
 
