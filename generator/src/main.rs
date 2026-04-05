@@ -110,6 +110,7 @@ fn proc_file(path: &Path) -> Result<(), RunError> {
         }
     }
 
+    let result = pass_through_rustfmt(&result)?;
     std::fs::write(path, result).map_err(|e| {
         eprintln!("Failed to write file {path:?}: {e}");
         RunError
@@ -132,4 +133,55 @@ fn check_comment<'a, R: 'a>(
 
 fn check_generate(txt: &str) -> Option<&str> {
     txt.strip_prefix("GENERATE:")
+}
+
+fn pass_through_rustfmt(src: &str) -> Result<String, RunError> {
+    use std::io::{Read as _, Write as _};
+
+    let mut child = std::process::Command::new("rustfmt")
+        .args(["--edition", "2024"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| {
+            eprintln!("Failed to spawn rustfmt: {e}");
+            RunError
+        })?;
+
+    let mut child_stdin = child.stdin.take().unwrap();
+    let mut child_stdout = child.stdout.take().unwrap();
+
+    let stdout_reader = std::thread::spawn(move || {
+        let mut data = String::new();
+        child_stdout.read_to_string(&mut data)?;
+        Ok::<_, std::io::Error>(data)
+    });
+    child_stdin.write_all(src.as_bytes()).map_err(|e| {
+        eprintln!("Failed to write to rustfmt stdin: {e}");
+        RunError
+    })?;
+    child_stdin.flush().map_err(|e| {
+        eprintln!("Failed to write to rustfmt stdin: {e}");
+        RunError
+    })?;
+    drop(child_stdin);
+
+    let formatted = stdout_reader
+        .join()
+        .expect("read thread panicked")
+        .map_err(|e| {
+            eprintln!("Failed to read from rustfmt stdout: {e}");
+            RunError
+        })?;
+
+    let status = child.wait().map_err(|e| {
+        eprintln!("Failed to wait for rustfmt: {e}");
+        RunError
+    })?;
+    if !status.success() {
+        eprintln!("rustfmt failed: {status}");
+        return Err(RunError);
+    }
+
+    Ok(formatted)
 }
