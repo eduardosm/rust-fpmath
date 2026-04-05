@@ -124,7 +124,7 @@ jobs:
           sudo tar -xvf julia-1.10.9-linux-x86_64.tar.gz -C /opt
           echo "/opt/julia-1.10.9/bin" >> "$GITHUB_PATH"
       - name: Install Rust
-        run: ./ci/install-rust.sh stable --profile minimal
+        run: ./ci/install-rust.sh stable --profile minimal -c rustfmt
       - run: ./ci/check-generator.sh
 
   package-crate:
