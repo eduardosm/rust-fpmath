@@ -46,7 +46,7 @@ fn test_pow_with(mut f: impl FnMut(f64, f64)) {
 
         for yi in min_y..=max_y {
             for _ in 0..50 {
-                let mx = rng.random::<u64>();
+                let mx = super::gen_mantissa(&mut rng);
                 let sx = false;
                 let x = mk_normal(mx, ex, sx);
 
@@ -59,9 +59,9 @@ fn test_pow_with(mut f: impl FnMut(f64, f64)) {
     for ex in -51..=-1 {
         for ey in 1..=1023 {
             for _ in 0..100 {
-                let mx = rng.random::<u64>();
+                let mx = super::gen_mantissa(&mut rng);
                 let sx = rng.random::<bool>();
-                let my = rng.random::<u64>();
+                let my = super::gen_mantissa(&mut rng);
                 let sy = rng.random::<bool>();
                 f(1.0 + mk_normal(mx, ex, sx), mk_normal(my, ey, sy));
             }
@@ -104,7 +104,7 @@ fn test_powi_with(mut f: impl FnMut(f64, i32)) {
 
         for y in min_y..=max_y {
             for _ in 0..100 {
-                let mx = rng.random::<u64>();
+                let mx = super::gen_mantissa(&mut rng);
                 let sx = false;
                 let x = mk_normal(mx, ex, sx);
 
@@ -116,7 +116,7 @@ fn test_powi_with(mut f: impl FnMut(f64, i32)) {
     for ex in -51..=-1 {
         for i in (1..=31).rev() {
             for _ in 0..1000 {
-                let mx = rng.random::<u64>();
+                let mx = super::gen_mantissa(&mut rng);
                 let sx = rng.random::<bool>();
                 let x = 1.0 + mk_normal(mx, ex, sx);
                 let y = ((rng.random::<u32>() | 0x8000_0000) >> i) as i32;

@@ -32,9 +32,9 @@ fn test_with(mut f: impl FnMut(f64, f64)) {
         }
         for ey in -1022..=1023 {
             for _ in 0..5 {
-                let mx = rng.random::<u64>();
+                let mx = super::gen_mantissa(&mut rng);
                 let sx = rng.random::<bool>();
-                let my = rng.random::<u64>();
+                let my = super::gen_mantissa(&mut rng);
                 let sy = rng.random::<bool>();
                 f(mk_normal(mx, ex, sx), mk_normal(my, ey, sy));
             }
@@ -43,21 +43,21 @@ fn test_with(mut f: impl FnMut(f64, f64)) {
 
     for e in -1022..=1023 {
         for _ in 0..1000 {
-            let mx = rng.random::<u64>();
+            let mx = super::gen_mantissa(&mut rng);
             let sx = rng.random::<bool>();
-            let my = rng.random::<u64>();
+            let my = super::gen_mantissa(&mut rng);
             let sy = rng.random::<bool>();
             f(mk_normal(mx, e, sx), mk_normal(my, e, sy));
 
-            let mx = rng.random::<u64>();
+            let mx = super::gen_mantissa(&mut rng);
             let sx = rng.random::<bool>();
-            let my = rng.random::<u64>();
+            let my = super::gen_mantissa(&mut rng);
             let sy = rng.random::<bool>();
             f(mk_normal(mx, 0, sx), mk_normal(my, e, sy));
 
-            let mx = rng.random::<u64>();
+            let mx = super::gen_mantissa(&mut rng);
             let sx = rng.random::<bool>();
-            let my = rng.random::<u64>();
+            let my = super::gen_mantissa(&mut rng);
             let sy = rng.random::<bool>();
             f(mk_normal(mx, e, sx), mk_normal(my, 0, sy));
         }
