@@ -9,11 +9,11 @@ publish = false
 [dependencies]
 
 [dependencies.rug]
-version = "1.29.0"
+version = "1.30.0"
 default-features = false
 features = ["float", "integer", "std"]
 
 [dependencies.gmp-mpfr-sys]
-version = "1.7.0"
+version = "1.7.1"
 default-features = false
 features = ["force-cross"] # needed for i586 support
