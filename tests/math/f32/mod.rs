@@ -24,6 +24,12 @@ fn mk_normal(m: u32, e: i16, s: bool) -> f32 {
     f32::from_bits(m | e | s)
 }
 
+fn mk_subnormal(m: u32, s: bool) -> f32 {
+    assert!(m < (1 << 23));
+    let s = u32::from(s) << 31;
+    f32::from_bits(m | s)
+}
+
 fn calc_error_ulp(actual: f32, expected: f64) -> f32 {
     let actual = purify(actual);
 
