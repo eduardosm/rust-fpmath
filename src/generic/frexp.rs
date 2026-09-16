@@ -42,7 +42,7 @@ mod tests {
 
         test_nan();
         test(F::INFINITY, F::INFINITY, 0);
-        test(F::neg_infinity(), F::neg_infinity(), 0);
+        test(F::NEG_INFINITY, F::NEG_INFINITY, 0);
         test(F::ZERO, F::ZERO, 0);
         test(-F::ZERO, -F::ZERO, 0);
         test(f("0.09375"), f("0.75"), -3);
@@ -51,8 +51,8 @@ mod tests {
         test(f("-0.25"), f("-0.5"), -1);
         test(f("0.5"), f("0.5"), 0);
         test(f("-0.5"), f("-0.5"), 0);
-        test(F::one(), f("0.5"), 1);
-        test(-F::one(), f("-0.5"), 1);
+        test(F::ONE, f("0.5"), 1);
+        test(-F::ONE, f("-0.5"), 1);
         test(f("20"), f("0.625"), 5);
         test(f("-20"), f("-0.625"), 5);
 

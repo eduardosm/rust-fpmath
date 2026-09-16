@@ -66,9 +66,9 @@ mod tests {
         assert_total_eq!(scalbn(F::INFINITY, i32::MAX), F::INFINITY);
         assert_total_eq!(scalbn(F::INFINITY, i32::MIN), F::INFINITY);
 
-        assert_total_eq!(scalbn(F::neg_infinity(), 0), F::neg_infinity());
-        assert_total_eq!(scalbn(F::neg_infinity(), i32::MAX), F::neg_infinity());
-        assert_total_eq!(scalbn(F::neg_infinity(), i32::MIN), F::neg_infinity());
+        assert_total_eq!(scalbn(F::NEG_INFINITY, 0), F::NEG_INFINITY);
+        assert_total_eq!(scalbn(F::NEG_INFINITY, i32::MAX), F::NEG_INFINITY);
+        assert_total_eq!(scalbn(F::NEG_INFINITY, i32::MIN), F::NEG_INFINITY);
 
         assert_total_eq!(scalbn(F::ZERO, 0), F::ZERO);
         assert_total_eq!(scalbn(-F::ZERO, 0), -F::ZERO);
@@ -77,10 +77,10 @@ mod tests {
         assert_total_eq!(scalbn(F::ZERO, i32::MIN), F::ZERO);
         assert_total_eq!(scalbn(-F::ZERO, i32::MIN), -F::ZERO);
 
-        assert_total_eq!(scalbn(F::one(), i32::MIN), F::ZERO);
-        assert_total_eq!(scalbn(-F::one(), i32::MIN), -F::ZERO);
-        assert_total_eq!(scalbn(F::one(), i32::MAX), F::INFINITY);
-        assert_total_eq!(scalbn(-F::one(), i32::MAX), F::neg_infinity());
+        assert_total_eq!(scalbn(F::ONE, i32::MIN), F::ZERO);
+        assert_total_eq!(scalbn(-F::ONE, i32::MIN), -F::ZERO);
+        assert_total_eq!(scalbn(F::ONE, i32::MAX), F::INFINITY);
+        assert_total_eq!(scalbn(-F::ONE, i32::MAX), F::NEG_INFINITY);
         assert_total_eq!(scalbn(f("10"), 2), f("40"));
         assert_total_eq!(scalbn(f("-10"), 2), f("-40"));
         assert_total_eq!(scalbn(f("2.5"), 3), f("20"));
@@ -97,27 +97,27 @@ mod tests {
         let max_norm_to_min_sub: i32 = (min_subnormal_exp - F::MAX_EXP).into();
         let min_norm_to_max_norm: i32 = (F::MAX_EXP - F::MIN_NORMAL_EXP).into();
 
-        assert_total_eq!(scalbn(min_normal, 1), min_normal * F::two());
-        assert_total_eq!(scalbn(-min_normal, 1), -min_normal * F::two());
+        assert_total_eq!(scalbn(min_normal, 1), min_normal * F::TWO);
+        assert_total_eq!(scalbn(-min_normal, 1), -min_normal * F::TWO);
         assert_total_eq!(scalbn(max_normal, max_norm_to_min_sub), min_subnormal);
         assert_total_eq!(scalbn(-max_normal, max_norm_to_min_sub), -min_subnormal);
         assert_total_eq!(scalbn(max_normal, max_norm_to_min_sub - 1), F::ZERO);
         assert_total_eq!(scalbn(-max_normal, max_norm_to_min_sub - 1), -F::ZERO);
         assert_total_eq!(scalbn(max_normal, 1), F::INFINITY);
-        assert_total_eq!(scalbn(-max_normal, 1), F::neg_infinity());
+        assert_total_eq!(scalbn(-max_normal, 1), F::NEG_INFINITY);
         assert_total_eq!(scalbn(min_normal, min_norm_to_max_norm), max_normal);
         assert_total_eq!(scalbn(-min_normal, min_norm_to_max_norm), -max_normal);
         assert_total_eq!(scalbn(min_normal, min_norm_to_max_norm + 1), F::INFINITY);
         assert_total_eq!(
             scalbn(-min_normal, min_norm_to_max_norm + 1),
-            F::neg_infinity()
+            F::NEG_INFINITY
         );
 
         let min_sub_to_max_exp: i32 = (F::MAX_EXP - min_subnormal_exp).into();
 
         let mant_bits_m1 = F::MANT_BITS - 1;
-        assert_total_eq!(scalbn(min_subnormal, 1), min_subnormal * F::two());
-        assert_total_eq!(scalbn(-min_subnormal, 1), -min_subnormal * F::two());
+        assert_total_eq!(scalbn(min_subnormal, 1), min_subnormal * F::TWO);
+        assert_total_eq!(scalbn(-min_subnormal, 1), -min_subnormal * F::TWO);
         assert_total_eq!(scalbn(min_subnormal, mant_bits_m1.into()), max_subnormal);
         assert_total_eq!(scalbn(-min_subnormal, mant_bits_m1.into()), -max_subnormal);
         assert_total_eq!(scalbn(min_subnormal, -1), F::ZERO);
@@ -125,7 +125,7 @@ mod tests {
         assert_total_eq!(scalbn(min_subnormal, min_sub_to_max_exp + 1), F::INFINITY);
         assert_total_eq!(
             scalbn(-min_subnormal, min_sub_to_max_exp + 1),
-            F::neg_infinity()
+            F::NEG_INFINITY
         );
         assert_total_eq!(scalbn(min_subnormal, min_sub_to_max_exp), max_normal);
         assert_total_eq!(scalbn(-min_subnormal, min_sub_to_max_exp), -max_normal);

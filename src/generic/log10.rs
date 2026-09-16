@@ -3,9 +3,9 @@ use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{CastInto as _, Int as _};
 
 pub(crate) trait Log10: Ln {
-    fn log10_e_ex() -> SemiDouble<Self>;
-    fn log10_2_hi() -> Self;
-    fn log10_2_lo() -> Self;
+    const LOG10_E_EX: SemiDouble<Self>;
+    const LOG10_2_HI: Self;
+    const LOG10_2_LO: Self;
 }
 
 pub(crate) fn log10<F: Log10>(x: F) -> F {
@@ -13,7 +13,7 @@ pub(crate) fn log10<F: Log10>(x: F) -> F {
     let yexp = y.raw_exp();
     if yexp == F::RawExp::ZERO {
         // log10(±0) = -inf
-        F::neg_infinity()
+        F::NEG_INFINITY
     } else if y.sign() {
         // x < 0, log10(x) = NaN
         F::NAN
@@ -46,7 +46,7 @@ fn log10_inner<F: Log10>(x: F, edelta: F::Exp) -> F {
 
     // s = r / (2 + r)
     // So, ln(1 + r) = ln(1 + s) - ln(1 - s)
-    let s = r / (F::two() + r);
+    let s = r / (F::TWO + r);
 
     // p = (ln(1 + s) - ln(1 - s) - 2 * s) / s
     let p = F::ln_special_poly(s);
@@ -55,17 +55,17 @@ fn log10_inner<F: Log10>(x: F, edelta: F::Exp) -> F {
     //    = r - s * (r - p)
     //    = r - (0.5 * r^2 - s * (0.5 * r^2 + p))
     // Split t1 into t1_hi + t1_lo for better accuracy
-    let hr2 = (F::half() * r * r).purify();
+    let hr2 = (F::HALF * r * r).purify();
     let t1 = DenormDouble::new_qsub11(r, hr2)
         .qadd1(s * (hr2 + p))
         .to_semi();
 
     // t2 = log10(1 + r) = ln(1 + r) * log10(e) = t1 * log10(e)
-    let t2 = t1 * F::log10_e_ex();
+    let t2 = t1 * F::LOG10_E_EX;
 
     // t3 = k * log10(2)
     let kf: F = k.cast_into();
-    let t3 = DenormDouble::new(F::log10_2_hi(), F::log10_2_lo()).pmul1(kf);
+    let t3 = DenormDouble::new(F::LOG10_2_HI, F::LOG10_2_LO).pmul1(kf);
 
     // log10(x) = k * log10(2) + log10(1 + r) = t2 + t3
     let t4 = t3.qadd2(t2);
@@ -81,10 +81,10 @@ mod tests {
         use crate::log10;
 
         assert_is_nan!(log10(F::NAN));
-        assert_is_nan!(log10(-F::one()));
-        assert_is_nan!(log10(F::neg_infinity()));
-        assert_total_eq!(log10(F::ZERO), F::neg_infinity());
-        assert_total_eq!(log10(-F::ZERO), F::neg_infinity());
+        assert_is_nan!(log10(-F::ONE));
+        assert_is_nan!(log10(F::NEG_INFINITY));
+        assert_total_eq!(log10(F::ZERO), F::NEG_INFINITY);
+        assert_total_eq!(log10(-F::ZERO), F::NEG_INFINITY);
         assert_total_eq!(log10(F::INFINITY), F::INFINITY);
     }
 

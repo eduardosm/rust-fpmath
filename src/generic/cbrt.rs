@@ -2,8 +2,8 @@ use crate::double::SemiDouble;
 use crate::traits::{Float, Int as _};
 
 pub(crate) trait Cbrt: Float {
-    fn cbrt_2_ex() -> SemiDouble<Self>;
-    fn cbrt_4_ex() -> SemiDouble<Self>;
+    const CBRT_2_EX: SemiDouble<Self>;
+    const CBRT_4_EX: SemiDouble<Self>;
 
     fn exp_mod_3(e: Self::Exp) -> i8;
 
@@ -24,7 +24,7 @@ pub(crate) fn cbrt<F: Cbrt>(x: F) -> F {
 }
 
 fn cbrt_inner<F: Cbrt>(x: F, edelta: F::Exp) -> F {
-    let inv_three = F::one() / (F::one() + F::two());
+    let inv_three = F::ONE / (F::ONE + F::TWO);
 
     // Split x * 2^edelta = (-1)^sign * 2^k * r * cb0^3 such as
     // * k is an integer
@@ -58,7 +58,7 @@ fn cbrt_inner<F: Cbrt>(x: F, edelta: F::Exp) -> F {
     let tc = (tb4r.hi() - tb) + tb4r.lo();
 
     // td = (-2 / 3) * tb * (r * tb^4 - tb) = (-2 / 3) * tb * tc
-    let td = ((-F::two() * inv_three) * tb * tc).purify();
+    let td = ((-F::TWO * inv_three) * tb * tc).purify();
 
     // te = tb^2 + (-2 / 3) * tb * (r * tb^4 - tb) = tb^2 + td
     let te = SemiDouble::new_qadd21(tb2.to_denorm(), td);
@@ -82,9 +82,9 @@ fn cbrt_split<F: Cbrt>(x: F, edelta: F::Exp) -> (bool, F::Exp, F, SemiDouble<F>)
     let kmod3 = F::exp_mod_3(k);
 
     let cb0 = match kmod3 {
-        0 => SemiDouble::one(),
-        1 => F::cbrt_2_ex(),
-        2 => F::cbrt_4_ex(),
+        0 => SemiDouble::ONE,
+        1 => F::CBRT_2_EX,
+        2 => F::CBRT_4_EX,
         _ => unreachable!(),
     };
 
@@ -107,7 +107,7 @@ mod tests {
         use crate::{cbrt, scalbn};
 
         assert_is_nan!(cbrt(F::NAN));
-        assert_total_eq!(cbrt(F::neg_infinity()), F::neg_infinity());
+        assert_total_eq!(cbrt(F::NEG_INFINITY), F::NEG_INFINITY);
         assert_total_eq!(cbrt(F::INFINITY), F::INFINITY);
         assert_total_eq!(cbrt(F::ZERO), F::ZERO);
         assert_total_eq!(cbrt(-F::ZERO), -F::ZERO);

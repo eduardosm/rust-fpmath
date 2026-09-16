@@ -1,41 +1,20 @@
 use crate::double::NormDouble;
 
 impl crate::generic::Gamma for f32 {
-    #[inline]
-    fn lo_th() -> Self {
-        -1000.0
-    }
+    const LO_TH: Self = -1000.0;
+    const HI_TH: Self = 1000.0;
 
-    #[inline]
-    fn hi_th() -> Self {
-        1000.0
-    }
-
-    #[inline]
-    fn th_1() -> Self {
-        1.2
-    }
-
-    #[inline]
-    fn th_2() -> Self {
-        2.3
-    }
-
-    #[inline]
-    fn th_3() -> Self {
-        7.0
-    }
+    const TH_1: Self = 1.2;
+    const TH_2: Self = 2.3;
+    const TH_3: Self = 7.0;
 
     const POLY_OFF: u8 = 3;
 
-    #[inline]
-    fn half_ln_2_pi() -> NormDouble<Self> {
-        // GENERATE: gamma::consts f32
-        const HALF_LN_2_PI_HI: f32 = f32::from_bits(0x3F6B3F8E); // 9.189385e-1
-        const HALF_LN_2_PI_LO: f32 = f32::from_bits(0x32864BEB); // 1.5634177e-8
-
-        NormDouble::with_parts(HALF_LN_2_PI_HI, HALF_LN_2_PI_LO)
-    }
+    // GENERATE: gamma::consts f32
+    const HALF_LN_2_PI: NormDouble<f32> = NormDouble::with_parts(
+        f32::from_bits(0x3F6B3F8E), // 9.189385e-1
+        f32::from_bits(0x32864BEB), // 1.5634177e-8
+    );
 
     #[inline]
     fn ln_gamma_poly_1(x: Self) -> (Self, Self, Self, Self) {

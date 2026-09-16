@@ -13,11 +13,11 @@ pub(crate) fn asind<F: AsinAcos + RadToDeg>(x: F) -> F {
     } else if e <= F::RawExp::from(F::MANT_BITS) {
         // subnormal or zero, asind(x) ~= x * (180/π)
         // also handles asind(-0) = -0
-        x * F::rad_to_deg()
+        x * F::RAD_TO_DEG
     } else {
         let y = asin_inner(x).to_semi();
 
-        (y * F::rad_to_deg_ex()).to_single()
+        (y * F::RAD_TO_DEG_EX).to_single()
     }
 }
 
@@ -41,7 +41,7 @@ pub(crate) fn acosd<F: AsinAcos + RadToDeg>(x: F) -> F {
     } else {
         let y = acos_inner(x).to_semi();
 
-        (y * F::rad_to_deg_ex()).to_single()
+        (y * F::RAD_TO_DEG_EX).to_single()
     }
 }
 
@@ -59,11 +59,11 @@ mod tests {
         assert_is_nan!(asind(f("1.5")));
         assert_is_nan!(asind(f("-1.5")));
         assert_is_nan!(asind(F::INFINITY));
-        assert_is_nan!(asind(F::neg_infinity()));
+        assert_is_nan!(asind(F::NEG_INFINITY));
         assert_total_eq!(asind(F::ZERO), F::ZERO);
         assert_total_eq!(asind(-F::ZERO), -F::ZERO);
-        assert_total_eq!(asind(F::one()), f("90"));
-        assert_total_eq!(asind(-F::one()), f("-90"));
+        assert_total_eq!(asind(F::ONE), f("90"));
+        assert_total_eq!(asind(-F::ONE), f("-90"));
     }
 
     fn test_acosd<F: Float + FloatMath>() {
@@ -75,11 +75,11 @@ mod tests {
         assert_is_nan!(acosd(f("1.5")));
         assert_is_nan!(acosd(f("-1.5")));
         assert_is_nan!(acosd(F::INFINITY));
-        assert_is_nan!(acosd(F::neg_infinity()));
+        assert_is_nan!(acosd(F::NEG_INFINITY));
         assert_total_eq!(acosd(F::ZERO), f("90"));
         assert_total_eq!(acosd(-F::ZERO), f("90"));
-        assert_total_eq!(acosd(F::one()), F::ZERO);
-        assert_total_eq!(acosd(-F::one()), f("180"));
+        assert_total_eq!(acosd(F::ONE), F::ZERO);
+        assert_total_eq!(acosd(-F::ONE), f("180"));
     }
 
     #[test]

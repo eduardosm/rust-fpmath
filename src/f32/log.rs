@@ -1,39 +1,18 @@
 use crate::double::NormDouble;
 
-// GENERATE: ln::consts f32
-const SQRT_2: f32 = f32::from_bits(0x3FB504F3); // 1.4142135e0
-const LN_2_HI: f32 = f32::from_bits(0x3F317000); // 6.9311523e-1
-const LN_2_LO: f32 = f32::from_bits(0x3805FDF4); // 3.1946183e-5
-const FRAC_2_3_HI: f32 = f32::from_bits(0x3F2AAAAA); // 6.666666e-1
-const FRAC_2_3_LO: f32 = f32::from_bits(0x332AAAAB); // 3.973643e-8
-const FRAC_4_10_HI: f32 = f32::from_bits(0x3ECCCCCC); // 3.9999998e-1
-const FRAC_4_10_LO: f32 = f32::from_bits(0x32CCCCCD); // 2.3841858e-8
-
 impl crate::generic::Ln for f32 {
-    #[inline]
-    fn sqrt_2() -> Self {
-        SQRT_2
-    }
-
-    #[inline]
-    fn ln_2_hi() -> Self {
-        LN_2_HI
-    }
-
-    #[inline]
-    fn ln_2_lo() -> Self {
-        LN_2_LO
-    }
-
-    #[inline]
-    fn frac_2_3_ex() -> NormDouble<Self> {
-        NormDouble::with_parts(FRAC_2_3_HI, FRAC_2_3_LO)
-    }
-
-    #[inline]
-    fn frac_4_10_ex() -> NormDouble<Self> {
-        NormDouble::with_parts(FRAC_4_10_HI, FRAC_4_10_LO)
-    }
+    // GENERATE: ln::consts f32
+    const SQRT_2: f32 = f32::from_bits(0x3FB504F3); // 1.4142135e0
+    const LN_2_HI: f32 = f32::from_bits(0x3F317000); // 6.9311523e-1
+    const LN_2_LO: f32 = f32::from_bits(0x3805FDF4); // 3.1946183e-5
+    const FRAC_2_3_EX: NormDouble<f32> = NormDouble::with_parts(
+        f32::from_bits(0x3F2AAAAA), // 6.666666e-1
+        f32::from_bits(0x332AAAAB), // 3.973643e-8
+    );
+    const FRAC_4_10_EX: NormDouble<f32> = NormDouble::with_parts(
+        f32::from_bits(0x3ECCCCCC), // 3.9999998e-1
+        f32::from_bits(0x32CCCCCD), // 2.3841858e-8
+    );
 
     #[inline]
     fn ln_special_poly(x: Self) -> Self {

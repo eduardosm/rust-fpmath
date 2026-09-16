@@ -5,12 +5,12 @@ use crate::traits::Int as _;
 
 pub(crate) fn tanh<F: SinhCosh>(x: F) -> F {
     let e = x.raw_exp();
-    if x >= F::expo2_hi_th() {
+    if x >= F::EXPO2_HI_TH {
         // also handles x = inf
-        F::one()
-    } else if x <= -F::expo2_hi_th() {
+        F::ONE
+    } else if x <= -F::EXPO2_HI_TH {
         // also handles x = -inf
-        -F::one()
+        -F::ONE
     } else if e == F::MAX_RAW_EXP || e <= F::RawExp::ONE {
         // propagate NaN
         // or
@@ -32,7 +32,7 @@ fn tanh_inner<F: Exp>(x: F) -> F {
     let (k, r_hi, r_lo) = exp_split(absx);
 
     if k > F::MANT_BITS.into() {
-        F::one().copysign(x)
+        F::ONE.copysign(x)
     } else {
         let (r_hi, r_lo) = F::norm_hi_lo_full(r_hi, r_lo);
 
@@ -74,14 +74,14 @@ mod tests {
         let hi_th = F::parse(hi_th);
 
         test_nan(F::NAN);
-        test_value(F::INFINITY, F::one());
-        test_value(F::neg_infinity(), -F::one());
-        test_value(hi_th, F::one());
-        test_value(-hi_th, -F::one());
-        test_value(hi_th + F::half(), F::one());
-        test_value(-(hi_th + F::half()), -F::one());
-        test_value(hi_th + F::one(), F::one());
-        test_value(-(hi_th + F::one()), -F::one());
+        test_value(F::INFINITY, F::ONE);
+        test_value(F::NEG_INFINITY, -F::ONE);
+        test_value(hi_th, F::ONE);
+        test_value(-hi_th, -F::ONE);
+        test_value(hi_th + F::HALF, F::ONE);
+        test_value(-(hi_th + F::HALF), -F::ONE);
+        test_value(hi_th + F::ONE, F::ONE);
+        test_value(-(hi_th + F::ONE), -F::ONE);
         test_value(F::ZERO, F::ZERO);
         test_value(-F::ZERO, -F::ZERO);
     }

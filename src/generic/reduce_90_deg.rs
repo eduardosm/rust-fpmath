@@ -3,8 +3,8 @@ use crate::double::{NormDouble, SemiDouble};
 use crate::traits::{CastFrom, CastInto, Float, Int as _, SInt};
 
 pub(crate) trait Reduce90Deg: Float {
-    fn deg_to_rad() -> Self;
-    fn deg_to_rad_ex() -> SemiDouble<Self>;
+    const DEG_TO_RAD: Self;
+    const DEG_TO_RAD_EX: SemiDouble<Self>;
 
     type SRaw: SInt + CastInto<Self> + CastFrom<Self::Raw>;
 }
@@ -25,15 +25,15 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, NormDouble<F>) {
         let descale = F::exp2i_fast(-F::Exp::cast_from(F::MANT_BITS));
 
         let sx = SemiDouble::new(x * scale);
-        let y = (sx * F::deg_to_rad_ex()).pmul1(descale).to_norm();
+        let y = (sx * F::DEG_TO_RAD_EX).pmul1(descale).to_norm();
 
         (0, y)
     } else if xexp <= F::Exp::cast_from(F::MANT_BITS - 4).min(F::Exp::from(31i8)) {
-        let (f_n, n) = round_fi(x * (F::one() / F::cast_from(90u32)));
+        let (f_n, n) = round_fi(x * (F::ONE / F::cast_from(90u32)));
 
         let ydeg = x - f_n * F::cast_from(90u32);
         let ydeg = SemiDouble::new(ydeg);
-        let y = (ydeg * F::deg_to_rad_ex()).to_norm();
+        let y = (ydeg * F::DEG_TO_RAD_EX).to_norm();
 
         (n as u8 & 3, y)
     } else if xexp < F::Exp::cast_from(F::BITS - 1) {
@@ -63,7 +63,7 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, NormDouble<F>) {
         let frem: F = irem.cast_into();
 
         let ydeg = SemiDouble::new(xfrac + frem);
-        let y = (ydeg * F::deg_to_rad_ex()).to_norm();
+        let y = (ydeg * F::DEG_TO_RAD_EX).to_norm();
 
         let n: u8 = n.cast_into();
         if x.sign() {
@@ -96,7 +96,7 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, NormDouble<F>) {
         }
 
         let ydeg = SemiDouble::with_parts(F::cast_from(rem90), F::ZERO);
-        let y = (ydeg * F::deg_to_rad_ex()).to_norm();
+        let y = (ydeg * F::DEG_TO_RAD_EX).to_norm();
 
         if x.sign() {
             (n.wrapping_neg() & 3, -y)

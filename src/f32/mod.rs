@@ -39,36 +39,16 @@ impl crate::traits::Float for f32 {
     const MAX_EXP: Self::Exp = (Self::MAX_RAW_EXP >> 1) as Self::Exp;
 
     const INFINITY: Self = Self::INFINITY;
-
-    #[inline]
-    fn neg_infinity() -> Self {
-        Self::NEG_INFINITY
-    }
-
+    const NEG_INFINITY: Self = Self::NEG_INFINITY;
     const NAN: Self = Self::NAN;
 
     const ZERO: Self = 0.0;
-
-    #[inline]
-    fn half() -> Self {
-        0.5
-    }
-
-    #[inline]
-    fn one() -> Self {
-        1.0
-    }
-
-    #[inline]
-    fn two() -> Self {
-        2.0
-    }
+    const HALF: Self = 0.5;
+    const ONE: Self = 1.0;
+    const TWO: Self = 2.0;
 
     #[cfg(test)]
-    #[inline]
-    fn largest() -> Self {
-        Self::MAX
-    }
+    const LARGEST: Self = Self::MAX;
 
     #[inline]
     fn purify(self) -> Self {

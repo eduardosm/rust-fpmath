@@ -9,7 +9,7 @@ pub(crate) fn round<F: Float>(x: F) -> F {
     } else if e < F::EXP_OFFSET {
         // 0.5 <= abs(x) < 1
         // return ±1 keeping the sign
-        F::one().copysign(x)
+        F::ONE.copysign(x)
     } else {
         // x is NaN or abs(x) >= 1 (including infinity)
         // split integer and fractional parts
@@ -37,7 +37,7 @@ pub(crate) fn round_as_i_f<F: Float>(x: F) -> (i32, F) {
         (0, F::ZERO)
     } else if e < F::EXP_OFFSET {
         // 0.5 <= abs(x) < 1
-        (1 - (i32::from(x.sign()) << 1), F::one().copysign(x))
+        (1 - (i32::from(x.sign()) << 1), F::ONE.copysign(x))
     } else {
         // 1 <= abs(x) < 2^min(31, MANT_BITS)
         let shift = F::RawExp::from(F::MANT_BITS) - (e - F::EXP_OFFSET);
@@ -68,14 +68,14 @@ mod tests {
     fn test_round<F: Float + FloatMath>() {
         use crate::round;
 
-        let one = F::one();
+        let one = F::ONE;
         let pt_1 = F::parse("0.1");
         let pt_5 = F::parse("0.5");
         let pt_9 = F::parse("0.9");
 
         assert_is_nan!(round(F::NAN));
         assert_total_eq!(round(F::INFINITY), F::INFINITY);
-        assert_total_eq!(round(F::neg_infinity()), F::neg_infinity());
+        assert_total_eq!(round(F::NEG_INFINITY), F::NEG_INFINITY);
 
         for i in 0..20u32 {
             let x = F::cast_from(i);
@@ -95,7 +95,7 @@ mod tests {
         let test = |x: F| {
             let (ipart_i, ipart_f) = super::round_as_i_f(x);
             let fpart = x - ipart_f;
-            assert!(fpart.abs() <= F::half());
+            assert!(fpart.abs() <= F::HALF);
             assert_eq!(ipart_f, F::cast_from(ipart_i));
             assert_eq!(fpart + ipart_f, x);
         };

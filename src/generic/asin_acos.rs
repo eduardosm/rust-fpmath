@@ -3,7 +3,7 @@ use crate::double::{DenormDouble, NormDouble};
 use crate::traits::{FloatConsts, Int as _};
 
 pub(crate) trait AsinAcos: FloatConsts {
-    fn frac_pi_2_ex() -> NormDouble<Self>;
+    const FRAC_PI_2_EX: NormDouble<Self>;
 
     /// Calculates `(asin(x) - x) / x^3`
     fn asin_poly(x2: Self) -> Self;
@@ -42,7 +42,7 @@ pub(super) fn asin_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
         // |asin(x)| = π/2 - 2 * asin(sqrt((1 - |x|) / 2))
 
         // y = sqrt((1 - |x|) / 2)
-        let y2 = (F::one() - x.abs()) * F::half();
+        let y2 = (F::ONE - x.abs()) * F::HALF;
         let twoy = two_hi_lo_sqrt_inner(y2);
         let twoy3 = y2 * twoy.hi();
 
@@ -50,9 +50,9 @@ pub(super) fn asin_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
         let t2 = twoy3 * F::asin_poly(y2);
 
         // t3 = |asin(x)| = π/2 - 2 * asin(y)
-        let t3 = F::frac_pi_2_ex().to_denorm().qsub2(twoy.qadd1(t2));
+        let t3 = F::FRAC_PI_2_EX.to_denorm().qsub2(twoy.qadd1(t2));
 
-        let sgn = F::one().copysign(x);
+        let sgn = F::ONE.copysign(x);
         t3.pmul1(sgn)
     }
 }
@@ -69,7 +69,7 @@ pub(super) fn acos_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
         let t1 = x3 * F::asin_poly(x2);
 
         // acos(x) = π/2 - asin(x) = π/2 - t1 - x
-        F::frac_pi_2_ex()
+        F::FRAC_PI_2_EX
             .to_denorm()
             .qsub2(DenormDouble::new_qadd11(t1, x))
     } else {
@@ -77,7 +77,7 @@ pub(super) fn acos_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
         // |asin(x)| = π/2 - 2 * asin(sqrt((1 - |x|) / 2))
 
         // y = sqrt((1 - |x|) / 2)
-        let y2 = (F::one() - x.abs()) * F::half();
+        let y2 = (F::ONE - x.abs()) * F::HALF;
         let twoy = two_hi_lo_sqrt_inner(y2);
         let twoy3 = y2 * twoy.hi();
 
@@ -97,7 +97,7 @@ pub(super) fn acos_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
             //         = π/2 + (π/2 - 2 * asin(y))
             //         = π - 2 * asin(y)
             //         = π - t2
-            let pi = F::frac_pi_2_ex().to_denorm().pmul1(F::two());
+            let pi = F::FRAC_PI_2_EX.to_denorm().pmul1(F::TWO);
             pi.qsub2(t2)
         }
     }
@@ -139,11 +139,11 @@ mod tests {
         assert_is_nan!(asin(f("1.5")));
         assert_is_nan!(asin(f("-1.5")));
         assert_is_nan!(asin(F::INFINITY));
-        assert_is_nan!(asin(F::neg_infinity()));
+        assert_is_nan!(asin(F::NEG_INFINITY));
         assert_total_eq!(asin(F::ZERO), F::ZERO);
         assert_total_eq!(asin(-F::ZERO), -F::ZERO);
-        assert_total_eq!(asin(F::one()), F::FRAC_PI_2);
-        assert_total_eq!(asin(-F::one()), -F::FRAC_PI_2);
+        assert_total_eq!(asin(F::ONE), F::FRAC_PI_2);
+        assert_total_eq!(asin(-F::ONE), -F::FRAC_PI_2);
     }
 
     fn test_acos<F: AsinAcos + FloatMath>() {
@@ -155,11 +155,11 @@ mod tests {
         assert_is_nan!(acos(f("1.5")));
         assert_is_nan!(acos(f("-1.5")));
         assert_is_nan!(acos(F::INFINITY));
-        assert_is_nan!(acos(F::neg_infinity()));
+        assert_is_nan!(acos(F::NEG_INFINITY));
         assert_total_eq!(acos(F::ZERO), F::FRAC_PI_2);
         assert_total_eq!(acos(-F::ZERO), F::FRAC_PI_2);
-        assert_total_eq!(acos(F::one()), F::ZERO);
-        assert_total_eq!(acos(-F::one()), F::PI);
+        assert_total_eq!(acos(F::ONE), F::ZERO);
+        assert_total_eq!(acos(-F::ONE), F::PI);
     }
 
     #[test]

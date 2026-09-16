@@ -9,10 +9,10 @@ pub(crate) fn pow<F: Ln + Exp>(x: F, y: F) -> F {
     let xexp = nx.raw_exp();
     let yexp = ny.raw_exp();
 
-    if yexp == F::RawExp::ZERO || nx == F::one() {
+    if yexp == F::RawExp::ZERO || nx == F::ONE {
         // pow(x, 0) = 1
         // pow(1, y) = 1
-        F::one()
+        F::ONE
     } else if (yexp == F::MAX_RAW_EXP && ny.raw_mant() != F::Raw::ZERO)
         || (xexp == F::MAX_RAW_EXP && nx.raw_mant() != F::Raw::ZERO)
     {
@@ -51,7 +51,7 @@ pub(crate) fn pow<F: Ln + Exp>(x: F, y: F) -> F {
                     -F::ZERO
                 } else {
                     // pow(-inf, y) = -inf when y > 0
-                    F::neg_infinity()
+                    F::NEG_INFINITY
                 }
             } else {
                 // y is not an odd integer
@@ -75,9 +75,9 @@ pub(crate) fn pow<F: Ln + Exp>(x: F, y: F) -> F {
         }
     } else if yexp == F::MAX_RAW_EXP {
         // y = ±inf
-        if nx == -F::one() {
+        if nx == -F::ONE {
             // pow(-1, ±inf) = 1
-            F::one()
+            F::ONE
         } else if ny.sign() {
             // y = -inf
             if xexp < F::EXP_OFFSET {
@@ -108,9 +108,9 @@ pub(crate) fn pow<F: Ln + Exp>(x: F, y: F) -> F {
         let ylx = (logx * y).to_norm();
 
         // |z| = |x|^y = exp(y * ln(|x|))
-        let absz = if ylx.hi() >= F::exp_hi_th() {
+        let absz = if ylx.hi() >= F::EXP_HI_TH {
             F::INFINITY
-        } else if ylx.hi() <= F::exp_lo_th() {
+        } else if ylx.hi() <= F::EXP_LO_TH {
             F::ZERO
         } else {
             let (k, r_hi, r_lo) = exp_split(ylx.hi());
@@ -140,15 +140,15 @@ mod tests {
         assert_is_nan!(pow(F::NAN, F::NAN));
         assert_is_nan!(pow(F::ZERO, F::NAN));
         assert_is_nan!(pow(-F::ZERO, F::NAN));
-        assert_is_nan!(pow(F::two(), F::NAN));
+        assert_is_nan!(pow(F::TWO, F::NAN));
         assert_is_nan!(pow(F::INFINITY, F::NAN));
-        assert_is_nan!(pow(F::neg_infinity(), F::NAN));
-        assert_is_nan!(pow(F::NAN, F::one()));
+        assert_is_nan!(pow(F::NEG_INFINITY, F::NAN));
+        assert_is_nan!(pow(F::NAN, F::ONE));
         assert_is_nan!(pow(F::NAN, F::INFINITY));
-        assert_is_nan!(pow(F::NAN, F::neg_infinity()));
+        assert_is_nan!(pow(F::NAN, F::NEG_INFINITY));
         assert_is_nan!(pow(f("-3"), f("0.5")));
         assert_total_eq!(pow(F::ZERO, f("-33")), F::INFINITY);
-        assert_total_eq!(pow(-F::ZERO, f("-33")), F::neg_infinity());
+        assert_total_eq!(pow(-F::ZERO, f("-33")), F::NEG_INFINITY);
         assert_total_eq!(pow(F::ZERO, f("-33.5")), F::INFINITY);
         assert_total_eq!(pow(-F::ZERO, f("-33.5")), F::INFINITY);
         assert_total_eq!(pow(F::ZERO, f("-34")), F::INFINITY);
@@ -161,49 +161,49 @@ mod tests {
         assert_total_eq!(pow(-F::ZERO, f("34.0")), F::ZERO);
         assert_total_eq!(pow(F::ZERO, F::INFINITY), F::ZERO);
         assert_total_eq!(pow(-F::ZERO, F::INFINITY), F::ZERO);
-        assert_total_eq!(pow(F::ZERO, F::neg_infinity()), F::INFINITY);
-        assert_total_eq!(pow(-F::ZERO, F::neg_infinity()), F::INFINITY);
-        assert_total_eq!(pow(F::one(), F::ZERO), F::one());
-        assert_total_eq!(pow(F::one(), -F::ZERO), F::one());
-        assert_total_eq!(pow(F::one(), f("33")), F::one());
-        assert_total_eq!(pow(F::one(), f("-33")), F::one());
-        assert_total_eq!(pow(F::one(), f("33.5")), F::one());
-        assert_total_eq!(pow(F::one(), f("-33.5")), F::one());
-        assert_total_eq!(pow(F::one(), f("34")), F::one());
-        assert_total_eq!(pow(F::one(), f("-34.0")), F::one());
-        assert_total_eq!(pow(F::one(), F::INFINITY), F::one());
-        assert_total_eq!(pow(F::one(), F::neg_infinity()), F::one());
-        assert_total_eq!(pow(F::one(), F::NAN), F::one());
-        assert_total_eq!(pow(-F::one(), F::INFINITY), F::one());
-        assert_total_eq!(pow(-F::one(), F::neg_infinity()), F::one());
+        assert_total_eq!(pow(F::ZERO, F::NEG_INFINITY), F::INFINITY);
+        assert_total_eq!(pow(-F::ZERO, F::NEG_INFINITY), F::INFINITY);
+        assert_total_eq!(pow(F::ONE, F::ZERO), F::ONE);
+        assert_total_eq!(pow(F::ONE, -F::ZERO), F::ONE);
+        assert_total_eq!(pow(F::ONE, f("33")), F::ONE);
+        assert_total_eq!(pow(F::ONE, f("-33")), F::ONE);
+        assert_total_eq!(pow(F::ONE, f("33.5")), F::ONE);
+        assert_total_eq!(pow(F::ONE, f("-33.5")), F::ONE);
+        assert_total_eq!(pow(F::ONE, f("34")), F::ONE);
+        assert_total_eq!(pow(F::ONE, f("-34.0")), F::ONE);
+        assert_total_eq!(pow(F::ONE, F::INFINITY), F::ONE);
+        assert_total_eq!(pow(F::ONE, F::NEG_INFINITY), F::ONE);
+        assert_total_eq!(pow(F::ONE, F::NAN), F::ONE);
+        assert_total_eq!(pow(-F::ONE, F::INFINITY), F::ONE);
+        assert_total_eq!(pow(-F::ONE, F::NEG_INFINITY), F::ONE);
         assert_total_eq!(pow(f("0.5"), F::INFINITY), F::ZERO);
-        assert_total_eq!(pow(f("0.5"), F::neg_infinity()), F::INFINITY);
+        assert_total_eq!(pow(f("0.5"), F::NEG_INFINITY), F::INFINITY);
         assert_total_eq!(pow(f("-0.5"), F::INFINITY), F::ZERO);
-        assert_total_eq!(pow(f("-0.5"), F::neg_infinity()), F::INFINITY);
+        assert_total_eq!(pow(f("-0.5"), F::NEG_INFINITY), F::INFINITY);
         assert_total_eq!(pow(f("1.5"), F::INFINITY), F::INFINITY);
-        assert_total_eq!(pow(f("1.5"), F::neg_infinity()), F::ZERO);
+        assert_total_eq!(pow(f("1.5"), F::NEG_INFINITY), F::ZERO);
         assert_total_eq!(pow(f("-1.5"), F::INFINITY), F::INFINITY);
-        assert_total_eq!(pow(f("-1.5"), F::neg_infinity()), F::ZERO);
-        assert_total_eq!(pow(F::INFINITY, F::ZERO), F::one());
-        assert_total_eq!(pow(F::INFINITY, -F::ZERO), F::one());
+        assert_total_eq!(pow(f("-1.5"), F::NEG_INFINITY), F::ZERO);
+        assert_total_eq!(pow(F::INFINITY, F::ZERO), F::ONE);
+        assert_total_eq!(pow(F::INFINITY, -F::ZERO), F::ONE);
         assert_total_eq!(pow(F::INFINITY, f("33")), F::INFINITY);
         assert_total_eq!(pow(F::INFINITY, f("-33")), F::ZERO);
         assert_total_eq!(pow(F::INFINITY, f("33.5")), F::INFINITY);
         assert_total_eq!(pow(F::INFINITY, f("-33.5")), F::ZERO);
         assert_total_eq!(pow(F::INFINITY, f("34.0")), F::INFINITY);
         assert_total_eq!(pow(F::INFINITY, f("-34.0")), F::ZERO);
-        assert_total_eq!(pow(F::neg_infinity(), F::ZERO), F::one());
-        assert_total_eq!(pow(F::neg_infinity(), -F::ZERO), F::one());
-        assert_total_eq!(pow(F::neg_infinity(), f("33")), F::neg_infinity());
-        assert_total_eq!(pow(F::neg_infinity(), f("-33")), -F::ZERO);
-        assert_total_eq!(pow(F::neg_infinity(), f("33.5")), F::INFINITY);
-        assert_total_eq!(pow(F::neg_infinity(), f("-33.5")), F::ZERO);
-        assert_total_eq!(pow(F::neg_infinity(), f("34.0")), F::INFINITY);
-        assert_total_eq!(pow(F::neg_infinity(), f("-34.0")), F::ZERO);
-        assert_total_eq!(pow(F::two(), F::two()), f("4"));
-        assert_total_eq!(pow(F::two(), -F::two()), f("0.25"));
-        assert_total_eq!(pow(-F::two(), f("3")), f("-8"));
-        assert_total_eq!(pow(-F::two(), f("-3")), f("-0.125"));
+        assert_total_eq!(pow(F::NEG_INFINITY, F::ZERO), F::ONE);
+        assert_total_eq!(pow(F::NEG_INFINITY, -F::ZERO), F::ONE);
+        assert_total_eq!(pow(F::NEG_INFINITY, f("33")), F::NEG_INFINITY);
+        assert_total_eq!(pow(F::NEG_INFINITY, f("-33")), -F::ZERO);
+        assert_total_eq!(pow(F::NEG_INFINITY, f("33.5")), F::INFINITY);
+        assert_total_eq!(pow(F::NEG_INFINITY, f("-33.5")), F::ZERO);
+        assert_total_eq!(pow(F::NEG_INFINITY, f("34.0")), F::INFINITY);
+        assert_total_eq!(pow(F::NEG_INFINITY, f("-34.0")), F::ZERO);
+        assert_total_eq!(pow(F::TWO, F::TWO), f("4"));
+        assert_total_eq!(pow(F::TWO, -F::TWO), f("0.25"));
+        assert_total_eq!(pow(-F::TWO, f("3")), f("-8"));
+        assert_total_eq!(pow(-F::TWO, f("-3")), f("-0.125"));
         assert_total_eq!(pow(f("3.5"), f("3")), f("42.875"));
         assert_total_eq!(pow(f("10"), f("4")), f("10000"));
     }

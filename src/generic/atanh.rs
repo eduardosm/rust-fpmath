@@ -15,10 +15,10 @@ pub(crate) fn atanh<F: Ln>(x: F) -> F {
         // atanh(x) ~= x
         // also handles atanh(-0) = -0
         x
-    } else if absx == F::one() {
+    } else if absx == F::ONE {
         // atanh(±1) = ±inf
         F::INFINITY.copysign(x)
-    } else if x.abs() > F::one() {
+    } else if x.abs() > F::ONE {
         // |x| > 1, return NaN
         F::NAN
     } else {
@@ -28,14 +28,14 @@ pub(crate) fn atanh<F: Ln>(x: F) -> F {
 
 fn atanh_inner<F: Ln>(x: F) -> F {
     // t1 = 2 * x / (1 - x)
-    let t1 = SemiDouble::new(F::two() * x) / SemiDouble::new_qsub11(F::one(), x);
+    let t1 = SemiDouble::new(F::TWO * x) / SemiDouble::new_qsub11(F::ONE, x);
 
     // t2 = (1 + x) / (1 - x) = t1 + 1
-    let t2 = t1 + F::one();
+    let t2 = t1 + F::ONE;
     let t2 = t2.to_norm();
 
     // atanh(x) = 0.5 * ln((1 + x) / (1 - x))
-    F::half() * ln_hi_lo_inner(t2.hi(), t2.lo())
+    F::HALF * ln_hi_lo_inner(t2.hi(), t2.lo())
 }
 
 #[cfg(test)]
@@ -52,11 +52,11 @@ mod tests {
         assert_is_nan!(atanh(f("1.5")));
         assert_is_nan!(atanh(f("-1.5")));
         assert_is_nan!(atanh(F::INFINITY));
-        assert_is_nan!(atanh(F::neg_infinity()));
+        assert_is_nan!(atanh(F::NEG_INFINITY));
         assert_total_eq!(atanh(F::ZERO), F::ZERO);
         assert_total_eq!(atanh(-F::ZERO), -F::ZERO);
-        assert_total_eq!(atanh(F::one()), F::INFINITY);
-        assert_total_eq!(atanh(-F::one()), F::neg_infinity());
+        assert_total_eq!(atanh(F::ONE), F::INFINITY);
+        assert_total_eq!(atanh(-F::ONE), F::NEG_INFINITY);
     }
 
     #[test]

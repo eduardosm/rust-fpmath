@@ -32,7 +32,7 @@ pub(super) fn tan_inner<F: Tan>(x_hi: F, x_lo: F, inv: bool) -> F {
     // let y = 0.5 * x
     // tan(x) = 2 * tan(y) / (1 - tan(y)^2)
 
-    let y = DenormDouble::new(x_hi, x_lo).pmul1(F::half());
+    let y = DenormDouble::new(x_hi, x_lo).pmul1(F::HALF);
     let y2 = y.hi() * y.hi();
     let y3 = y.hi() * y2;
 
@@ -44,10 +44,10 @@ pub(super) fn tan_inner<F: Tan>(x_hi: F, x_lo: F, inv: bool) -> F {
     let tb2 = tb.square();
 
     // tc = 2 * tan(y) = 2 * tb
-    let tc = tb.pmul1(F::two());
+    let tc = tb.pmul1(F::TWO);
 
     // td = 1 - tan(y)^2 = 1 - tb2
-    let td = SemiDouble::new_qsub12(F::one(), tb2);
+    let td = SemiDouble::new_qsub12(F::ONE, tb2);
 
     // tan(x) = 2 * tan(y) / (1 - tan(y)^2) = tc / td
     // Calculate tan(x) or -1/tan(x) (tc / td or td / tc)
@@ -71,7 +71,7 @@ mod tests {
 
         assert_is_nan!(tan(F::NAN));
         assert_is_nan!(tan(F::INFINITY));
-        assert_is_nan!(tan(F::neg_infinity()));
+        assert_is_nan!(tan(F::NEG_INFINITY));
         assert_total_eq!(tan(F::ZERO), F::ZERO);
         assert_total_eq!(tan(-F::ZERO), -F::ZERO);
     }

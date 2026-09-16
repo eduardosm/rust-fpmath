@@ -1,14 +1,11 @@
 use crate::double::SemiDouble;
 
-// GENERATE: sin_cos::consts f64
-const FRAC_1_6_HI: f64 = f64::from_bits(0x3FC5555550000000); // 1.666666641831398e-1
-const FRAC_1_6_LO: f64 = f64::from_bits(0x3E25555555555555); // 2.483526865641276e-9
-
 impl crate::generic::SinCos for f64 {
-    #[inline]
-    fn frac_1_6_ex() -> SemiDouble<Self> {
-        SemiDouble::with_parts(FRAC_1_6_HI, FRAC_1_6_LO)
-    }
+    // GENERATE: sin_cos::consts f64
+    const FRAC_1_6_EX: SemiDouble<f64> = SemiDouble::with_parts(
+        f64::from_bits(0x3FC5555550000000), // 1.666666641831398e-1
+        f64::from_bits(0x3E25555555555555), // 2.483526865641276e-9
+    );
 
     #[inline]
     fn sin_poly(x2: Self, x5: Self) -> (Self, Self) {

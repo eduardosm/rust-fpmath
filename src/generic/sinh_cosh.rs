@@ -4,17 +4,17 @@ use crate::double::DenormDouble;
 use crate::traits::{CastInto as _, Float, Int as _};
 
 pub(crate) trait SinhCosh: Exp {
-    fn expo2_hi_th() -> Self;
+    const EXPO2_HI_TH: Self;
 }
 
 pub(crate) fn sinh<F: SinhCosh>(x: F) -> F {
     let e = x.raw_exp();
-    if x >= F::expo2_hi_th() {
+    if x >= F::EXPO2_HI_TH {
         // also handles x = inf
         F::INFINITY
-    } else if x <= -F::expo2_hi_th() {
+    } else if x <= -F::EXPO2_HI_TH {
         // also handles x = -inf
-        F::neg_infinity()
+        F::NEG_INFINITY
     } else if e == F::MAX_RAW_EXP || e <= F::RawExp::ONE {
         // propagate NaN
         // or
@@ -30,7 +30,7 @@ pub(crate) fn sinh<F: SinhCosh>(x: F) -> F {
 
 pub(crate) fn cosh<F: SinhCosh>(x: F) -> F {
     let e = x.raw_exp();
-    if x.abs() >= F::expo2_hi_th() {
+    if x.abs() >= F::EXPO2_HI_TH {
         // also handles x = ±inf
         F::INFINITY
     } else if e == F::MAX_RAW_EXP {
@@ -39,7 +39,7 @@ pub(crate) fn cosh<F: SinhCosh>(x: F) -> F {
     } else if e <= F::RawExp::ONE {
         // very small, includes subnormal and zero
         // cosh(x) ~= 1
-        F::one()
+        F::ONE
     } else {
         let (_, c) = sinh_cosh_inner(x);
         c
@@ -48,12 +48,12 @@ pub(crate) fn cosh<F: SinhCosh>(x: F) -> F {
 
 pub(crate) fn sinh_cosh<F: SinhCosh>(x: F) -> (F, F) {
     let e = x.raw_exp();
-    if x >= F::expo2_hi_th() {
+    if x >= F::EXPO2_HI_TH {
         // also handles x = inf
         (F::INFINITY, F::INFINITY)
-    } else if x <= -F::expo2_hi_th() {
+    } else if x <= -F::EXPO2_HI_TH {
         // also handles x = -inf
-        (F::neg_infinity(), F::INFINITY)
+        (F::NEG_INFINITY, F::INFINITY)
     } else if e == F::MAX_RAW_EXP {
         // Propagate NaN
         (x, x)
@@ -62,7 +62,7 @@ pub(crate) fn sinh_cosh<F: SinhCosh>(x: F) -> (F, F) {
         // sinh(x) ~= x
         // cosh(x) ~= 1
         // also handles sinh(-0) = -0
-        (x, F::one())
+        (x, F::ONE)
     } else {
         let (s, c) = sinh_cosh_inner(x);
         (s, c)
@@ -83,7 +83,7 @@ fn sinh_cosh_inner<F: Exp>(x: F) -> (F, F) {
     let (t1a, t1b) = sinh_cosh_inner_common_1(r_hi, r_lo);
 
     if k > i32::from(F::MANT_BITS) {
-        let t2 = scalbn_medium((r_hi + t1a) + F::one(), k - 1);
+        let t2 = scalbn_medium((r_hi + t1a) + F::ONE, k - 1);
         (t2.copysign(x), t2)
     } else {
         // abss = |sinh(x)| = (exp(|x|) - exp(-|x|)) / 2
@@ -101,14 +101,14 @@ fn sinh_cosh_inner<F: Exp>(x: F) -> (F, F) {
 /// * `tb = exp(-r_hi - r_lo) - 1 + r_hi`
 pub(super) fn sinh_cosh_inner_common_1<F: Exp>(r_hi: F, r_lo: F) -> (F, F) {
     // pseudo-consts
-    let three = F::one() + F::two();
-    let six = three * F::two();
+    let three = F::ONE + F::TWO;
+    let six = three * F::TWO;
 
     // Similar as done in `exp_m1_inner` in exp.rs, but to calculate
     // both exp(r) and exp(-r)
     let r2 = r_hi * r_hi;
-    let hr = F::half() * r_hi;
-    let hr2 = F::half() * r2;
+    let hr = F::HALF * r_hi;
+    let hr2 = F::HALF * r2;
 
     let t1 = F::exp_m1_special_poly(r2);
 
@@ -201,15 +201,15 @@ mod tests {
 
         test_nan(F::NAN);
         test_value(F::INFINITY, F::INFINITY, F::INFINITY);
-        test_value(F::neg_infinity(), F::neg_infinity(), F::INFINITY);
+        test_value(F::NEG_INFINITY, F::NEG_INFINITY, F::INFINITY);
         test_value(hi_th, F::INFINITY, F::INFINITY);
-        test_value(-hi_th, F::neg_infinity(), F::INFINITY);
-        test_value(hi_th + F::half(), F::INFINITY, F::INFINITY);
-        test_value(-(hi_th + F::half()), F::neg_infinity(), F::INFINITY);
-        test_value(hi_th + F::one(), F::INFINITY, F::INFINITY);
-        test_value(-(hi_th + F::one()), F::neg_infinity(), F::INFINITY);
-        test_value(F::ZERO, F::ZERO, F::one());
-        test_value(-F::ZERO, -F::ZERO, F::one());
+        test_value(-hi_th, F::NEG_INFINITY, F::INFINITY);
+        test_value(hi_th + F::HALF, F::INFINITY, F::INFINITY);
+        test_value(-(hi_th + F::HALF), F::NEG_INFINITY, F::INFINITY);
+        test_value(hi_th + F::ONE, F::INFINITY, F::INFINITY);
+        test_value(-(hi_th + F::ONE), F::NEG_INFINITY, F::INFINITY);
+        test_value(F::ZERO, F::ZERO, F::ONE);
+        test_value(-F::ZERO, -F::ZERO, F::ONE);
     }
 
     #[test]

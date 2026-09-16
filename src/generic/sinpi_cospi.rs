@@ -21,7 +21,7 @@ pub(crate) fn sinpi<F: SinCos + ReduceHalfMulPi>(x: F) -> F {
             let descale = F::exp2i_fast(-logscale);
 
             let sx = SemiDouble::new(x * scale);
-            let y = sx * F::pi_ex();
+            let y = sx * F::PI_EX;
             y.to_single() * descale
         }
     } else {
@@ -44,7 +44,7 @@ pub(crate) fn cospi<F: SinCos + ReduceHalfMulPi>(x: F) -> F {
         F::NAN
     } else if e <= F::RawExp::from(F::MANT_BITS) {
         // subnormal or zero, cospi(x) ~= 1
-        F::one()
+        F::ONE
     } else {
         let (n, y) = reduce_half_mul_pi(x);
 
@@ -68,7 +68,7 @@ pub(crate) fn sinpi_cospi<F: SinCos + ReduceHalfMulPi>(x: F) -> (F, F) {
         if x.raw_mant() == F::Raw::ZERO {
             // sinpi(±0) = ±0
             // cospi(±0) = 1
-            (x, F::one())
+            (x, F::ONE)
         } else {
             // subnormal:
             // sinpi(x) ~= x * π
@@ -80,8 +80,8 @@ pub(crate) fn sinpi_cospi<F: SinCos + ReduceHalfMulPi>(x: F) -> (F, F) {
             let descale = F::exp2i_fast(-logscale);
 
             let sx = SemiDouble::new(x * scale);
-            let y = sx * F::pi_ex();
-            (y.to_single() * descale, F::one())
+            let y = sx * F::PI_EX;
+            (y.to_single() * descale, F::ONE)
         }
     } else {
         let (n, y) = reduce_half_mul_pi(x);
@@ -128,9 +128,9 @@ mod tests {
 
         test_nan(F::NAN);
         test_nan(F::INFINITY);
-        test_nan(F::neg_infinity());
-        test_value(F::ZERO, F::ZERO, F::one());
-        test_value(-F::ZERO, -F::ZERO, F::one());
+        test_nan(F::NEG_INFINITY);
+        test_value(F::ZERO, F::ZERO, F::ONE);
+        test_value(-F::ZERO, -F::ZERO, F::ONE);
     }
 
     #[test]

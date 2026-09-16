@@ -10,17 +10,14 @@ pub(crate) struct DenormDouble<F: Float> {
 }
 
 impl<F: Float> DenormDouble<F> {
+    pub(crate) const ONE: Self = Self {
+        hi: F::ONE,
+        lo: F::ZERO,
+    };
+
     #[inline]
     pub(crate) fn new(hi: F, lo: F) -> Self {
         Self { hi, lo }
-    }
-
-    #[inline]
-    pub(crate) fn one() -> Self {
-        Self {
-            hi: F::one(),
-            lo: F::ZERO,
-        }
     }
 
     #[inline]
@@ -173,7 +170,7 @@ impl<F: Float> DenormDouble<F> {
         let (lhs_hi, lhs_lo) = lhs.split_hi_lo();
         let (rhs_hi, rhs_lo) = rhs.split_hi_lo();
 
-        let rhs_inv = F::one() / rhs;
+        let rhs_inv = F::ONE / rhs;
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
 
         let res_hi = (lhs * rhs_inv).purify();
@@ -181,7 +178,7 @@ impl<F: Float> DenormDouble<F> {
             + lhs_hi * rhs_inv_hi
             + lhs_hi * rhs_inv_lo
             + lhs_lo * rhs_inv
-            + res_hi * (F::one() - rhs_hi * rhs_inv_hi - rhs_hi * rhs_inv_lo - rhs_lo * rhs_inv);
+            + res_hi * (F::ONE - rhs_hi * rhs_inv_hi - rhs_hi * rhs_inv_lo - rhs_lo * rhs_inv);
 
         Self {
             hi: res_hi,
@@ -193,14 +190,14 @@ impl<F: Float> DenormDouble<F> {
     pub(crate) fn new_recip(rhs: F) -> Self {
         let (rhs_hi, rhs_lo) = rhs.split_hi_lo();
 
-        let rhs_inv = F::one() / rhs;
+        let rhs_inv = F::ONE / rhs;
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
 
         let res_hi = rhs_inv.purify();
         let res_lo = -res_hi
             + rhs_inv_hi
             + rhs_inv_lo
-            + res_hi * (F::one() - rhs_hi * rhs_inv_hi - rhs_hi * rhs_inv_lo - rhs_lo * rhs_inv);
+            + res_hi * (F::ONE - rhs_hi * rhs_inv_hi - rhs_hi * rhs_inv_lo - rhs_lo * rhs_inv);
 
         Self {
             hi: res_hi,
@@ -309,7 +306,7 @@ impl<F: Float> core::ops::Div for DenormDouble<F> {
         let lhs = self;
         let (lhs_hihi, lhs_hilo) = self.hi.split_hi_lo();
         let (rhs_hihi, rhs_hilo) = rhs.hi.split_hi_lo();
-        let rhs_inv = F::one() / rhs.hi;
+        let rhs_inv = F::ONE / rhs.hi;
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
 
         let res_hi = (lhs.hi * rhs_inv).purify();
@@ -319,7 +316,7 @@ impl<F: Float> core::ops::Div for DenormDouble<F> {
             + lhs_hilo * rhs_inv_hi
             + lhs_hilo * rhs_inv_lo
             + res_hi
-                * (F::one()
+                * (F::ONE
                     - rhs_hihi * rhs_inv_hi
                     - rhs_hihi * rhs_inv_lo
                     - rhs_hilo * rhs_inv_hi
@@ -349,7 +346,7 @@ impl<F: Float> NormDouble<F> {
     };
 
     #[inline]
-    pub(crate) fn with_parts(hi: F, lo: F) -> Self {
+    pub(crate) const fn with_parts(hi: F, lo: F) -> Self {
         Self { hi, lo }
     }
 
@@ -408,6 +405,11 @@ pub(crate) struct SemiDouble<F: Float> {
 }
 
 impl<F: Float> SemiDouble<F> {
+    pub(crate) const ONE: Self = Self {
+        hi: F::ONE,
+        lo: F::ZERO,
+    };
+
     #[inline]
     pub(crate) fn new(value: F) -> Self {
         let (hi, lo) = value.split_hi_lo();
@@ -415,15 +417,7 @@ impl<F: Float> SemiDouble<F> {
     }
 
     #[inline]
-    pub(crate) fn one() -> Self {
-        Self {
-            hi: F::one(),
-            lo: F::ZERO,
-        }
-    }
-
-    #[inline]
-    pub(crate) fn with_parts(hi: F, lo: F) -> Self {
+    pub(crate) const fn with_parts(hi: F, lo: F) -> Self {
         Self { hi, lo }
     }
 
@@ -522,7 +516,7 @@ impl<F: Float> SemiDouble<F> {
     #[inline]
     pub(crate) fn square(self) -> DenormDouble<F> {
         let res_hi = self.hi * self.hi;
-        let res_lo = F::two() * self.hi * self.lo + self.lo * self.lo;
+        let res_lo = F::TWO * self.hi * self.lo + self.lo * self.lo;
 
         DenormDouble {
             hi: res_hi,
@@ -584,7 +578,7 @@ impl<F: Float> core::ops::Div for SemiDouble<F> {
     #[inline]
     fn div(self, rhs: Self) -> DenormDouble<F> {
         let lhs = self;
-        let rhs_inv = F::one() / (rhs.hi + rhs.lo).purify();
+        let rhs_inv = F::ONE / (rhs.hi + rhs.lo).purify();
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
 
         let res_hi = ((lhs.hi + lhs.lo) * rhs_inv).purify();
@@ -592,7 +586,7 @@ impl<F: Float> core::ops::Div for SemiDouble<F> {
             + lhs.hi * rhs_inv_hi
             + lhs.hi * rhs_inv_lo
             + lhs.lo * rhs_inv
-            + res_hi * (F::one() - rhs.hi * rhs_inv_hi - rhs.hi * rhs_inv_lo - rhs.lo * rhs_inv);
+            + res_hi * (F::ONE - rhs.hi * rhs_inv_hi - rhs.hi * rhs_inv_lo - rhs.lo * rhs_inv);
 
         DenormDouble {
             hi: res_hi,

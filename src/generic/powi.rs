@@ -8,10 +8,10 @@ pub(crate) fn powi<F: Ln + Exp>(x: F, y: i32) -> F {
     let (nx, xedelta) = x.normalize_arg();
     let xexp = nx.raw_exp();
 
-    if y == 0 || nx == F::one() {
+    if y == 0 || nx == F::ONE {
         // pow(x, 0) = 1
         // pow(1, y) = 1
-        F::one()
+        F::ONE
     } else if xexp == F::MAX_RAW_EXP && nx.raw_mant() != F::Raw::ZERO {
         // pow(NaN, y) = NaN when y != 0
         F::NAN
@@ -47,7 +47,7 @@ pub(crate) fn powi<F: Ln + Exp>(x: F, y: i32) -> F {
                     -F::ZERO
                 } else {
                     // pow(-inf, y) = -inf when y > 0
-                    F::neg_infinity()
+                    F::NEG_INFINITY
                 }
             } else {
                 // y is even
@@ -82,7 +82,7 @@ pub(crate) fn powi<F: Ln + Exp>(x: F, y: i32) -> F {
         // k_total = sum(k_i)
         // z = prod(e^(r_i))
         let mut k_total = 0;
-        let mut z = SemiDouble::one();
+        let mut z = SemiDouble::ONE;
 
         let absy = y.unsigned_abs();
         let mut yshift = 0;
@@ -96,13 +96,13 @@ pub(crate) fn powi<F: Ln + Exp>(x: F, y: i32) -> F {
             // ylx = yf * ln(|x|)
             let ylx = (logx * yf).to_norm();
 
-            if ylx.hi() >= F::exp_hi_th() {
+            if ylx.hi() >= F::EXP_HI_TH {
                 if (absy & 1) == 0 || !nx.sign() {
                     return F::INFINITY;
                 } else {
-                    return F::neg_infinity();
+                    return F::NEG_INFINITY;
                 }
-            } else if ylx.hi() <= F::exp_lo_th() {
+            } else if ylx.hi() <= F::EXP_LO_TH {
                 if (absy & 1) == 0 || !nx.sign() {
                     return F::ZERO;
                 } else {
@@ -141,13 +141,13 @@ fn hi_lo_exp_inner<F: Exp>(r: DenormDouble<F>) -> DenormDouble<F> {
     let t1 = r_single + F::exp_special_poly(r2);
 
     // t2 = r * t1 / (2 - t1)
-    let t2 = r_single * t1 / (F::two() - t1);
+    let t2 = r_single * t1 / (F::TWO - t1);
 
     // t3 = r + t2
     let t3 = r.qadd1(t2);
 
     // 1 + t3
-    t3.qradd1(F::one())
+    t3.qradd1(F::ONE)
 }
 
 #[cfg(test)]
@@ -162,33 +162,33 @@ mod tests {
 
         assert_is_nan!(powi(F::NAN, 1));
         assert_total_eq!(powi(F::ZERO, -33), F::INFINITY);
-        assert_total_eq!(powi(-F::ZERO, -33), F::neg_infinity());
+        assert_total_eq!(powi(-F::ZERO, -33), F::NEG_INFINITY);
         assert_total_eq!(powi(F::ZERO, -34), F::INFINITY);
         assert_total_eq!(powi(-F::ZERO, -34), F::INFINITY);
         assert_total_eq!(powi(F::ZERO, 33), F::ZERO);
         assert_total_eq!(powi(-F::ZERO, 33), -F::ZERO);
         assert_total_eq!(powi(F::ZERO, 34), F::ZERO);
         assert_total_eq!(powi(-F::ZERO, 34), F::ZERO);
-        assert_total_eq!(powi(F::one(), 0), F::one());
-        assert_total_eq!(powi(F::one(), 33), F::one());
-        assert_total_eq!(powi(F::one(), -33), F::one());
-        assert_total_eq!(powi(F::one(), 34), F::one());
-        assert_total_eq!(powi(F::one(), -34), F::one());
-        assert_total_eq!(powi(F::INFINITY, 0), F::one());
+        assert_total_eq!(powi(F::ONE, 0), F::ONE);
+        assert_total_eq!(powi(F::ONE, 33), F::ONE);
+        assert_total_eq!(powi(F::ONE, -33), F::ONE);
+        assert_total_eq!(powi(F::ONE, 34), F::ONE);
+        assert_total_eq!(powi(F::ONE, -34), F::ONE);
+        assert_total_eq!(powi(F::INFINITY, 0), F::ONE);
         assert_total_eq!(powi(F::INFINITY, 33), F::INFINITY);
         assert_total_eq!(powi(F::INFINITY, -33), F::ZERO);
         assert_total_eq!(powi(F::INFINITY, 34), F::INFINITY);
         assert_total_eq!(powi(F::INFINITY, -34), F::ZERO);
-        assert_total_eq!(powi(F::neg_infinity(), 0), F::one());
-        assert_total_eq!(powi(F::neg_infinity(), -0), F::one());
-        assert_total_eq!(powi(F::neg_infinity(), 33), F::neg_infinity());
-        assert_total_eq!(powi(F::neg_infinity(), -33), -F::ZERO);
-        assert_total_eq!(powi(F::neg_infinity(), 34), F::INFINITY);
-        assert_total_eq!(powi(F::neg_infinity(), -34), F::ZERO);
-        assert_total_eq!(powi(F::two(), 2), f("4"));
-        assert_total_eq!(powi(F::two(), -2), f("0.25"));
-        assert_total_eq!(powi(-F::two(), 3), f("-8"));
-        assert_total_eq!(powi(-F::two(), -3), f("-0.125"));
+        assert_total_eq!(powi(F::NEG_INFINITY, 0), F::ONE);
+        assert_total_eq!(powi(F::NEG_INFINITY, -0), F::ONE);
+        assert_total_eq!(powi(F::NEG_INFINITY, 33), F::NEG_INFINITY);
+        assert_total_eq!(powi(F::NEG_INFINITY, -33), -F::ZERO);
+        assert_total_eq!(powi(F::NEG_INFINITY, 34), F::INFINITY);
+        assert_total_eq!(powi(F::NEG_INFINITY, -34), F::ZERO);
+        assert_total_eq!(powi(F::TWO, 2), f("4"));
+        assert_total_eq!(powi(F::TWO, -2), f("0.25"));
+        assert_total_eq!(powi(-F::TWO, 3), f("-8"));
+        assert_total_eq!(powi(-F::TWO, -3), f("-0.125"));
         assert_total_eq!(powi(f("3.5"), 3), f("42.875"));
         assert_total_eq!(powi(f("10"), 4), f("10000"));
     }

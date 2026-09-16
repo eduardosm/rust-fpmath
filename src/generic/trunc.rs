@@ -29,7 +29,7 @@ mod tests {
 
         assert_is_nan!(trunc(F::NAN));
         assert_total_eq!(trunc(F::INFINITY), F::INFINITY);
-        assert_total_eq!(trunc(F::neg_infinity()), F::neg_infinity());
+        assert_total_eq!(trunc(F::NEG_INFINITY), F::NEG_INFINITY);
 
         for i in 0..20u32 {
             let x = F::cast_from(i);

@@ -1,43 +1,13 @@
-// GENERATE: exp::consts f32
-const LOG2_E: f32 = f32::from_bits(0x3FB8AA3B); // 1.442695e0
-const LN_2_HI: f32 = f32::from_bits(0x3F317000); // 6.9311523e-1
-const LN_2_LO: f32 = f32::from_bits(0x3805FDF4); // 3.1946183e-5
-
 impl crate::generic::Exp for f32 {
-    #[inline]
-    fn log2_e() -> Self {
-        LOG2_E
-    }
+    // GENERATE: exp::consts f32
+    const LOG2_E: f32 = f32::from_bits(0x3FB8AA3B); // 1.442695e0
+    const LN_2_HI: f32 = f32::from_bits(0x3F317000); // 6.9311523e-1
+    const LN_2_LO: f32 = f32::from_bits(0x3805FDF4); // 3.1946183e-5
 
-    #[inline]
-    fn ln_2_hi() -> Self {
-        LN_2_HI
-    }
-
-    #[inline]
-    fn ln_2_lo() -> Self {
-        LN_2_LO
-    }
-
-    #[inline]
-    fn exp_lo_th() -> Self {
-        -104.0
-    }
-
-    #[inline]
-    fn exp_hi_th() -> Self {
-        89.0
-    }
-
-    #[inline]
-    fn exp_m1_lo_th() -> Self {
-        -88.0
-    }
-
-    #[inline]
-    fn exp_m1_hi_th() -> Self {
-        89.0
-    }
+    const EXP_LO_TH: Self = -104.0;
+    const EXP_HI_TH: Self = 89.0;
+    const EXP_M1_LO_TH: Self = -88.0;
+    const EXP_M1_HI_TH: Self = 89.0;
 
     #[inline]
     fn exp_special_poly(x2: Self) -> Self {

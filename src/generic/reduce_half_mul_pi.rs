@@ -2,7 +2,7 @@ use crate::double::{NormDouble, SemiDouble};
 use crate::traits::{CastFrom as _, CastInto as _, FloatConsts, Int as _};
 
 pub(crate) trait ReduceHalfMulPi: FloatConsts {
-    fn pi_ex() -> SemiDouble<Self>;
+    const PI_EX: SemiDouble<Self>;
 }
 
 /// Reduces the angle argument `x` (in radians/π) and converts it to
@@ -22,17 +22,17 @@ pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, NormDouble<F>
         let descale = F::exp2i_fast(-F::Exp::cast_from(F::MANT_BITS));
 
         let sx = SemiDouble::new(x * scale);
-        let y = (sx * F::pi_ex()).pmul1(descale).to_norm();
+        let y = (sx * F::PI_EX).pmul1(descale).to_norm();
 
         (0, y)
     } else if xexp == -F::Exp::TWO {
         // 0.25 <= abs(x) < 0.5
-        let fpart = x - F::half().copysign(x);
+        let fpart = x - F::HALF.copysign(x);
 
         let n = if x.sign() { 3 } else { 1 };
 
         let fpart = SemiDouble::new(fpart);
-        let y = (fpart * F::pi_ex()).to_norm();
+        let y = (fpart * F::PI_EX).to_norm();
 
         (n, y)
     } else if xexp < F::Exp::cast_from(F::MANT_BITS) {
@@ -46,7 +46,7 @@ pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, NormDouble<F>
         let mut fpart_f = x - F::from_raw(ipart);
         // Round to nearest
         if fpart > (fmask / F::Raw::TWO) {
-            fpart_f = fpart_f - F::half().copysign(x);
+            fpart_f = fpart_f - F::HALF.copysign(x);
             ipart_i += F::Raw::ONE;
         }
 
@@ -56,7 +56,7 @@ pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, NormDouble<F>
         }
 
         let fpart = SemiDouble::new(fpart_f);
-        let y = (fpart * F::pi_ex()).to_norm();
+        let y = (fpart * F::PI_EX).to_norm();
 
         (n & 3, y)
     } else if xexp == F::Exp::cast_from(F::MANT_BITS) {

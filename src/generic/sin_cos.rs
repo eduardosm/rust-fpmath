@@ -3,7 +3,7 @@ use crate::generic::{ReducePi2, reduce_pi_2};
 use crate::traits::{Float, Int as _};
 
 pub(crate) trait SinCos: Float {
-    fn frac_1_6_ex() -> SemiDouble<Self>;
+    const FRAC_1_6_EX: SemiDouble<Self>;
 
     /// Calculates `(sin(x) - x - x^3 * K3, K3)`
     ///
@@ -57,7 +57,7 @@ pub(crate) fn cos<F: SinCos + ReducePi2>(x: F) -> F {
         F::NAN
     } else if e == F::RawExp::ZERO {
         // subnormal or zero, cos(x) ~= 1
-        F::one()
+        F::ONE
     } else {
         let (n, y_hi, y_lo) = reduce_pi_2(x);
 
@@ -82,7 +82,7 @@ pub(crate) fn sin_cos<F: SinCos + ReducePi2>(x: F) -> (F, F) {
         // sin(x) ~= x
         // cos(x) ~= 1
         // also handles sin(-0) = -0
-        (x, F::one())
+        (x, F::ONE)
     } else {
         let (n, y_hi, y_lo) = reduce_pi_2(x);
 
@@ -117,7 +117,7 @@ pub(super) fn sin_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
 
     // sin(x_hi + x_lo) ~= sin(x) + (1 - 0.5 * x^2) * x_lo
     //                  = x + t1 + x^3 * k3 + (1 - 0.5 * x^2) * x_lo
-    x_hi + (x3 * k3 + (t1 + (x_lo - F::half() * x2 * x_lo)))
+    x_hi + (x3 * k3 + (t1 + (x_lo - F::HALF * x2 * x_lo)))
 }
 
 pub(super) fn hi_lo_sin_inner<F: SinCos>(x: NormDouble<F>) -> DenormDouble<F> {
@@ -133,7 +133,7 @@ pub(super) fn hi_lo_sin_inner<F: SinCos>(x: NormDouble<F>) -> DenormDouble<F> {
     let t1 = F::sin_poly_ex(x2_single, x5);
 
     // sin(x) = t1 + x - x^3 / 6
-    let x3k3 = x3.to_semi() * (-F::frac_1_6_ex());
+    let x3k3 = x3.to_semi() * (-F::FRAC_1_6_EX);
     x.to_denorm().qadd2(x3k3 + t1)
 }
 
@@ -154,7 +154,7 @@ pub(super) fn cos_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
     let t1 = F::cos_poly(x2, x4);
 
     // cos(x_hi + x_lo) = t1 + 1 - 0.5 * x^2 - x_hi * x_lo
-    let t2 = DenormDouble::new_qsub11(F::one(), F::half() * x2);
+    let t2 = DenormDouble::new_qsub11(F::ONE, F::HALF * x2);
     t2.lsub(x_hi * x_lo).ladd(t1).to_single()
 }
 
@@ -168,7 +168,7 @@ pub(super) fn hi_lo_cos_inner<F: SinCos>(x: NormDouble<F>) -> DenormDouble<F> {
     let t1 = F::cos_poly(x2_single, x4);
 
     // t2 = 1 - 0.5 * x^2
-    let t2 = DenormDouble::new_qsub12(F::one(), x2.pmul1(F::half()));
+    let t2 = DenormDouble::new_qsub12(F::ONE, x2.pmul1(F::HALF));
 
     // cos(x) = t1 + t2
     t2.qadd1(t1)
@@ -204,9 +204,9 @@ mod tests {
 
         test_nan(F::NAN);
         test_nan(F::INFINITY);
-        test_nan(F::neg_infinity());
-        test_value(F::ZERO, F::ZERO, F::one());
-        test_value(-F::ZERO, -F::ZERO, F::one());
+        test_nan(F::NEG_INFINITY);
+        test_value(F::ZERO, F::ZERO, F::ONE);
+        test_value(-F::ZERO, -F::ZERO, F::ONE);
     }
 
     #[test]

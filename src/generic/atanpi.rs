@@ -8,7 +8,7 @@ pub(crate) fn atanpi<F: Atan + DivPi>(x: F) -> F {
     if e == F::MAX_RAW_EXP {
         if x.raw_mant() == F::Raw::ZERO {
             // atanpi(±inf) = ±0.5
-            F::half().copysign(x)
+            F::HALF.copysign(x)
         } else {
             // propagate NaN
             x
@@ -26,11 +26,11 @@ pub(crate) fn atanpi<F: Atan + DivPi>(x: F) -> F {
 
         let nx = SemiDouble::new(x * scale);
 
-        (nx * F::frac_1_pi_ex()).to_single() * descale
+        (nx * F::FRAC_1_PI_EX).to_single() * descale
     } else {
         let y = atan_inner(x).to_semi();
 
-        (y * F::frac_1_pi_ex()).to_single()
+        (y * F::FRAC_1_PI_EX).to_single()
     }
 }
 
@@ -51,7 +51,7 @@ pub(crate) fn atan2pi<F: Atan + DivPi>(y: F, x: F) -> F {
         // x and/or y is NaN
         F::NAN
     } else if nxexp == F::MAX_RAW_EXP && nyexp == F::MAX_RAW_EXP {
-        let quarter = F::half() * F::half();
+        let quarter = F::HALF * F::HALF;
         let three_quarter = quarter + quarter + quarter;
         // x = ±inf, y = ±inf
         match (nx.sign(), ny.sign()) {
@@ -63,19 +63,19 @@ pub(crate) fn atan2pi<F: Atan + DivPi>(y: F, x: F) -> F {
     } else if nxexp == F::MAX_RAW_EXP {
         // x = ±inf
         if nx.sign() {
-            F::one().copysign(ny)
+            F::ONE.copysign(ny)
         } else {
             F::ZERO.copysign(ny)
         }
     } else if nyexp == F::MAX_RAW_EXP {
         // y = ±inf
-        F::half().copysign(ny)
+        F::HALF.copysign(ny)
     } else if nyexp == F::RawExp::ZERO {
         // y = ±0
-        if nx.sign() { F::one().copysign(ny) } else { ny }
+        if nx.sign() { F::ONE.copysign(ny) } else { ny }
     } else if nxexp == F::RawExp::ZERO {
         // x = ±0
-        F::half().copysign(ny)
+        F::HALF.copysign(ny)
     } else if !nx.sign()
         && nxexp > nyexp
         && (nxexp - nyexp) >= ((F::MAX_RAW_EXP >> 1) - F::MANT_BITS.into())
@@ -88,13 +88,13 @@ pub(crate) fn atan2pi<F: Atan + DivPi>(y: F, x: F) -> F {
         let ny = SemiDouble::new(ny * scale);
         let nx = SemiDouble::new(nx);
 
-        let nyhrev = ny * F::frac_1_pi_ex();
+        let nyhrev = ny * F::FRAC_1_PI_EX;
 
         (nyhrev.to_semi() / nx).to_single() * descale
     } else {
         let y = atan2_inner(ny, nx).to_semi();
 
-        (y * F::frac_1_pi_ex()).to_single()
+        (y * F::FRAC_1_PI_EX).to_single()
     }
 }
 
@@ -107,8 +107,8 @@ mod tests {
         use crate::atanpi;
 
         assert_is_nan!(atanpi(F::NAN));
-        assert_total_eq!(atanpi(F::INFINITY), F::half());
-        assert_total_eq!(atanpi(F::neg_infinity()), -F::half());
+        assert_total_eq!(atanpi(F::INFINITY), F::HALF);
+        assert_total_eq!(atanpi(F::NEG_INFINITY), -F::HALF);
         assert_total_eq!(atanpi(F::ZERO), F::ZERO);
         assert_total_eq!(atanpi(-F::ZERO), -F::ZERO);
     }
@@ -118,43 +118,43 @@ mod tests {
 
         let f = F::parse;
 
-        assert_is_nan!(atan2pi(F::NAN, F::one()));
+        assert_is_nan!(atan2pi(F::NAN, F::ONE));
         assert_is_nan!(atan2pi(F::NAN, F::ZERO));
         assert_is_nan!(atan2pi(F::NAN, F::INFINITY));
         assert_is_nan!(atan2pi(F::NAN, F::NAN));
         assert_is_nan!(atan2pi(F::INFINITY, F::NAN));
         assert_is_nan!(atan2pi(F::ZERO, F::NAN));
-        assert_is_nan!(atan2pi(F::one(), F::NAN));
+        assert_is_nan!(atan2pi(F::ONE, F::NAN));
         assert_total_eq!(atan2pi(F::ZERO, F::ZERO), F::ZERO);
         assert_total_eq!(atan2pi(-F::ZERO, F::ZERO), -F::ZERO);
-        assert_total_eq!(atan2pi(F::ZERO, F::one()), F::ZERO);
-        assert_total_eq!(atan2pi(-F::ZERO, F::one()), -F::ZERO);
+        assert_total_eq!(atan2pi(F::ZERO, F::ONE), F::ZERO);
+        assert_total_eq!(atan2pi(-F::ZERO, F::ONE), -F::ZERO);
         assert_total_eq!(atan2pi(F::ZERO, F::INFINITY), F::ZERO);
         assert_total_eq!(atan2pi(-F::ZERO, F::INFINITY), -F::ZERO);
-        assert_total_eq!(atan2pi(F::ZERO, -F::ZERO), F::one());
-        assert_total_eq!(atan2pi(-F::ZERO, -F::ZERO), -F::one());
-        assert_total_eq!(atan2pi(F::ZERO, -F::one()), F::one());
-        assert_total_eq!(atan2pi(-F::ZERO, -F::one()), -F::one());
-        assert_total_eq!(atan2pi(F::INFINITY, F::ZERO), F::half());
-        assert_total_eq!(atan2pi(F::INFINITY, -F::ZERO), F::half());
-        assert_total_eq!(atan2pi(F::INFINITY, F::one()), F::half());
-        assert_total_eq!(atan2pi(F::INFINITY, -F::one()), F::half());
-        assert_total_eq!(atan2pi(F::neg_infinity(), F::ZERO), -F::half());
-        assert_total_eq!(atan2pi(F::neg_infinity(), -F::ZERO), -F::half());
-        assert_total_eq!(atan2pi(F::neg_infinity(), F::one()), -F::half());
-        assert_total_eq!(atan2pi(F::neg_infinity(), -F::one()), -F::half());
+        assert_total_eq!(atan2pi(F::ZERO, -F::ZERO), F::ONE);
+        assert_total_eq!(atan2pi(-F::ZERO, -F::ZERO), -F::ONE);
+        assert_total_eq!(atan2pi(F::ZERO, -F::ONE), F::ONE);
+        assert_total_eq!(atan2pi(-F::ZERO, -F::ONE), -F::ONE);
+        assert_total_eq!(atan2pi(F::INFINITY, F::ZERO), F::HALF);
+        assert_total_eq!(atan2pi(F::INFINITY, -F::ZERO), F::HALF);
+        assert_total_eq!(atan2pi(F::INFINITY, F::ONE), F::HALF);
+        assert_total_eq!(atan2pi(F::INFINITY, -F::ONE), F::HALF);
+        assert_total_eq!(atan2pi(F::NEG_INFINITY, F::ZERO), -F::HALF);
+        assert_total_eq!(atan2pi(F::NEG_INFINITY, -F::ZERO), -F::HALF);
+        assert_total_eq!(atan2pi(F::NEG_INFINITY, F::ONE), -F::HALF);
+        assert_total_eq!(atan2pi(F::NEG_INFINITY, -F::ONE), -F::HALF);
         assert_total_eq!(atan2pi(F::ZERO, F::INFINITY), F::ZERO);
         assert_total_eq!(atan2pi(-F::ZERO, F::INFINITY), -F::ZERO);
-        assert_total_eq!(atan2pi(F::one(), F::INFINITY), F::ZERO);
-        assert_total_eq!(atan2pi(-F::one(), F::INFINITY), -F::ZERO);
-        assert_total_eq!(atan2pi(F::ZERO, F::neg_infinity()), F::one());
-        assert_total_eq!(atan2pi(-F::ZERO, F::neg_infinity()), -F::one());
-        assert_total_eq!(atan2pi(F::one(), F::neg_infinity()), F::one());
-        assert_total_eq!(atan2pi(-F::one(), F::neg_infinity()), -F::one());
+        assert_total_eq!(atan2pi(F::ONE, F::INFINITY), F::ZERO);
+        assert_total_eq!(atan2pi(-F::ONE, F::INFINITY), -F::ZERO);
+        assert_total_eq!(atan2pi(F::ZERO, F::NEG_INFINITY), F::ONE);
+        assert_total_eq!(atan2pi(-F::ZERO, F::NEG_INFINITY), -F::ONE);
+        assert_total_eq!(atan2pi(F::ONE, F::NEG_INFINITY), F::ONE);
+        assert_total_eq!(atan2pi(-F::ONE, F::NEG_INFINITY), -F::ONE);
         assert_total_eq!(atan2pi(F::INFINITY, F::INFINITY), f("0.25"));
-        assert_total_eq!(atan2pi(F::neg_infinity(), F::INFINITY), f("-0.25"));
-        assert_total_eq!(atan2pi(F::INFINITY, F::neg_infinity()), f("0.75"));
-        assert_total_eq!(atan2pi(F::neg_infinity(), F::neg_infinity()), f("-0.75"));
+        assert_total_eq!(atan2pi(F::NEG_INFINITY, F::INFINITY), f("-0.25"));
+        assert_total_eq!(atan2pi(F::INFINITY, F::NEG_INFINITY), f("0.75"));
+        assert_total_eq!(atan2pi(F::NEG_INFINITY, F::NEG_INFINITY), f("-0.75"));
     }
 
     #[test]
