@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{calc_error_ulp, mk_normal};
+use super::{calc_error_ulp, mk_normal, purify};
 use crate::create_prng;
 
 #[test]
@@ -72,6 +72,7 @@ fn test_atanh() {
     test_atanh_with(|x| {
         let expected = fpmath::atanh(f64::from(x));
         let actual = fpmath::atanh(x);
+        assert_eq!(purify(fpmath::atanh(-x)), purify(-actual));
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -85,11 +86,14 @@ fn test_atanh() {
 fn test_atanh_with(mut f: impl FnMut(f32)) {
     let mut rng = create_prng();
 
+    // Exhaustive test near ±1
+    for m in 0..(1 << 23) {
+        f(mk_normal(m, -1, false));
+    }
+
     for e in -126..=-1 {
         f(mk_normal(0, e, false));
-        f(mk_normal(0, e, true));
         f(mk_normal(super::MAX_MANTISSA, e, false));
-        f(mk_normal(super::MAX_MANTISSA, e, true));
 
         for _ in 0..10000 {
             let m = super::gen_mantissa(&mut rng);
