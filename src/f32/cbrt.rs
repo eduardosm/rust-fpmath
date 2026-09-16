@@ -2,14 +2,10 @@ use crate::double::SemiDouble;
 
 impl crate::generic::Cbrt for f32 {
     // GENERATE: cbrt::consts f32
-    const CBRT_2_EX: SemiDouble<f32> = SemiDouble::with_parts(
-        f32::from_bits(0x3FA14000), // 1.2597656e0
-        f32::from_bits(0x3922F98D), // 1.5542489e-4
-    );
-    const CBRT_4_EX: SemiDouble<f32> = SemiDouble::with_parts(
-        f32::from_bits(0x3FCB2000), // 1.5869141e0
-        f32::from_bits(0x39FF529F), // 4.8698948e-4
-    );
+    const CBRT_2_EX: SemiDouble<f32> =
+        SemiDouble::with_parts(f32::from_bits(0x3FA14000), f32::from_bits(0x3922F98D)); // 1.259921050e0
+    const CBRT_4_EX: SemiDouble<f32> =
+        SemiDouble::with_parts(f32::from_bits(0x3FCB2000), f32::from_bits(0x39FF529F)); // 1.587401052e0
 
     #[inline]
     fn exp_mod_3(e: i16) -> i8 {

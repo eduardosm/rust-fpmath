@@ -9,6 +9,7 @@ pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     let split_prec = match fkind {
         FloatKind::F32 => 15,
         FloatKind::F64 => 33,
+        _ => unimplemented!(),
     };
 
     // π/2

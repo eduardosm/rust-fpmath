@@ -12,9 +12,9 @@ impl crate::generic::Gamma for f64 {
 
     // GENERATE: gamma::consts f64
     const HALF_LN_2_PI: NormDouble<f64> = NormDouble::with_parts(
-        f64::from_bits(0x3FED67F1C864BEB4), // 9.189385332046727e-1
-        f64::from_bits(0x3C94D252F2400510), // 7.223936088184323e-17
-    );
+        f64::from_bits(0x3FED67F1C864BEB4),
+        f64::from_bits(0x3C94D252F2400510),
+    ); // 9.189385332046727417803297364056e-1
 
     #[inline]
     fn ln_gamma_poly_1(x: Self) -> (Self, Self, Self, Self) {

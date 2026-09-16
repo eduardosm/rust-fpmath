@@ -5,14 +5,10 @@ impl crate::generic::Ln for f32 {
     const SQRT_2: f32 = f32::from_bits(0x3FB504F3); // 1.4142135e0
     const LN_2_HI: f32 = f32::from_bits(0x3F317000); // 6.9311523e-1
     const LN_2_LO: f32 = f32::from_bits(0x3805FDF4); // 3.1946183e-5
-    const FRAC_2_3_EX: NormDouble<f32> = NormDouble::with_parts(
-        f32::from_bits(0x3F2AAAAA), // 6.666666e-1
-        f32::from_bits(0x332AAAAB), // 3.973643e-8
-    );
-    const FRAC_4_10_EX: NormDouble<f32> = NormDouble::with_parts(
-        f32::from_bits(0x3ECCCCCC), // 3.9999998e-1
-        f32::from_bits(0x32CCCCCD), // 2.3841858e-8
-    );
+    const FRAC_2_3_EX: NormDouble<f32> =
+        NormDouble::with_parts(f32::from_bits(0x3F2AAAAA), f32::from_bits(0x332AAAAB)); // 6.6666666666667e-1
+    const FRAC_4_10_EX: NormDouble<f32> =
+        NormDouble::with_parts(f32::from_bits(0x3ECCCCCC), f32::from_bits(0x32CCCCCD)); // 4.0000000000000e-1
 
     #[inline]
     fn ln_special_poly(x: Self) -> Self {

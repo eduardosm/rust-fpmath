@@ -68,6 +68,10 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
 enum FloatKind {
     F32,
     F64,
+    NormDoubleF32,
+    NormDoubleF64,
+    SemiDoubleF32,
+    SemiDoubleF64,
 }
 
 impl std::str::FromStr for FloatKind {
@@ -77,6 +81,10 @@ impl std::str::FromStr for FloatKind {
         match s {
             "f32" => Ok(Self::F32),
             "f64" => Ok(Self::F64),
+            "NormDouble<f32>" => Ok(Self::NormDoubleF32),
+            "NormDouble<f64>" => Ok(Self::NormDoubleF64),
+            "SemiDouble<f32>" => Ok(Self::SemiDoubleF32),
+            "SemiDouble<f64>" => Ok(Self::SemiDoubleF64),
             _ => Err("invalid float kind"),
         }
     }
@@ -87,6 +95,10 @@ impl FloatKind {
         match self {
             Self::F32 => 128,
             Self::F64 => 256,
+            Self::NormDoubleF32 => 256,
+            Self::NormDoubleF64 => 384,
+            Self::SemiDoubleF32 => 192,
+            Self::SemiDoubleF64 => 320,
         }
     }
 
@@ -94,6 +106,10 @@ impl FloatKind {
         match self {
             Self::F32 => 24,
             Self::F64 => 53,
+            Self::NormDoubleF32 => 24 * 2,
+            Self::NormDoubleF64 => 53 * 2,
+            Self::SemiDoubleF32 => 12 + 24,
+            Self::SemiDoubleF64 => 26 + 53,
         }
     }
 
@@ -101,6 +117,43 @@ impl FloatKind {
         match self {
             Self::F32 => 12,
             Self::F64 => 26,
+            Self::NormDoubleF32 => unimplemented!(),
+            Self::NormDoubleF64 => unimplemented!(),
+            Self::SemiDoubleF32 => unimplemented!(),
+            Self::SemiDoubleF64 => unimplemented!(),
+        }
+    }
+
+    fn to_norm_double(self) -> Self {
+        match self {
+            Self::F32 => Self::NormDoubleF32,
+            Self::F64 => Self::NormDoubleF64,
+            Self::NormDoubleF32 => unimplemented!(),
+            Self::NormDoubleF64 => unimplemented!(),
+            Self::SemiDoubleF32 => unimplemented!(),
+            Self::SemiDoubleF64 => unimplemented!(),
+        }
+    }
+
+    fn to_semi_double(self) -> Self {
+        match self {
+            Self::F32 => Self::SemiDoubleF32,
+            Self::F64 => Self::SemiDoubleF64,
+            Self::NormDoubleF32 => unimplemented!(),
+            Self::NormDoubleF64 => unimplemented!(),
+            Self::SemiDoubleF32 => unimplemented!(),
+            Self::SemiDoubleF64 => unimplemented!(),
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::F32 => "f32",
+            Self::F64 => "f64",
+            Self::NormDoubleF32 => "NormDouble<f32>",
+            Self::NormDoubleF64 => "NormDouble<f64>",
+            Self::SemiDoubleF32 => "SemiDouble<f32>",
+            Self::SemiDoubleF64 => "SemiDouble<f64>",
         }
     }
 }
@@ -112,80 +165,95 @@ fn split_hi_lo(mut tmp: rug::Float, hi_prec: u32) -> (rug::Float, rug::Float) {
 }
 
 fn render_const(fkind: FloatKind, name: &str, val: rug::Float, out: &mut String) {
+    out.push_str("const ");
+    out.push_str(name);
+    out.push_str(": ");
+    out.push_str(fkind.name());
+    out.push_str(" = ");
+    render_const_value(fkind, &val, out);
+    out.push_str("; // ");
+    render_const_dec_value(fkind, &val, out);
+    out.push('\n');
+}
+
+fn render_const_value(fkind: FloatKind, val: &rug::Float, out: &mut String) {
     match fkind {
         FloatKind::F32 => {
             let val = val.to_f32();
-            writeln!(
-                out,
-                "const {name}: f32 = f32::from_bits(0x{:08X}); // {val:e}",
-                val.to_bits(),
-            )
-            .unwrap();
+            write!(out, "f32::from_bits(0x{:08X})", val.to_bits()).unwrap();
         }
         FloatKind::F64 => {
             let val = val.to_f64();
-            writeln!(
+            write!(out, "f64::from_bits(0x{:016X})", val.to_bits()).unwrap();
+        }
+        FloatKind::NormDoubleF32 => {
+            let hi = val.to_f32_round(rug::float::Round::Zero);
+            let tmp = rug::Float::with_val(val.prec(), val - hi);
+            let lo = tmp.to_f32();
+            write!(
                 out,
-                "const {name}: f64 = f64::from_bits(0x{:016X}); // {val:e}",
-                val.to_bits(),
+                "NormDouble::with_parts(f32::from_bits(0x{:08X}), f32::from_bits(0x{:08X}))",
+                hi.to_bits(),
+                lo.to_bits(),
+            )
+            .unwrap();
+        }
+        FloatKind::NormDoubleF64 => {
+            let hi = val.to_f64_round(rug::float::Round::Zero);
+            let tmp = rug::Float::with_val(val.prec(), val - hi);
+            let lo = tmp.to_f64();
+            write!(
+                out,
+                "NormDouble::with_parts(f64::from_bits(0x{:016X}), f64::from_bits(0x{:016X}))",
+                hi.to_bits(),
+                lo.to_bits(),
+            )
+            .unwrap();
+        }
+        FloatKind::SemiDoubleF32 => {
+            let (hi, lo) = split_hi_lo(val.clone(), 12);
+            let hi = hi.to_f32_round(rug::float::Round::Zero);
+            let lo = lo.to_f32();
+            write!(
+                out,
+                "SemiDouble::with_parts(f32::from_bits(0x{:08X}), f32::from_bits(0x{:08X}))",
+                hi.to_bits(),
+                lo.to_bits(),
+            )
+            .unwrap();
+        }
+        FloatKind::SemiDoubleF64 => {
+            let (hi, lo) = split_hi_lo(val.clone(), 26);
+            let hi = hi.to_f64_round(rug::float::Round::Zero);
+            let lo = lo.to_f64();
+            write!(
+                out,
+                "SemiDouble::with_parts(f64::from_bits(0x{:016X}), f64::from_bits(0x{:016X}))",
+                hi.to_bits(),
+                lo.to_bits(),
             )
             .unwrap();
         }
     }
 }
 
-fn render_double_const(
-    fkind: FloatKind,
-    double_ty: &str,
-    name: &str,
-    val_hi: rug::Float,
-    val_lo: rug::Float,
-    out: &mut String,
-) {
+fn render_const_dec_value(fkind: FloatKind, val: &rug::Float, out: &mut String) {
     match fkind {
         FloatKind::F32 => {
-            let val_hi = val_hi.to_f32();
-            let val_lo = val_lo.to_f32();
-            writeln!(
-                out,
-                "const {name}: {double_ty}<f32> = {double_ty}::with_parts("
-            )
-            .unwrap();
-            writeln!(
-                out,
-                "    f32::from_bits(0x{:08X}), // {val_hi:e}",
-                val_hi.to_bits(),
-            )
-            .unwrap();
-            writeln!(
-                out,
-                "    f32::from_bits(0x{:08X}), // {val_lo:e}",
-                val_lo.to_bits(),
-            )
-            .unwrap();
-            out.push_str(");\n");
+            let val = val.to_f32();
+            write!(out, "{val:e}").unwrap();
         }
         FloatKind::F64 => {
-            let val_hi = val_hi.to_f64();
-            let val_lo = val_lo.to_f64();
-            writeln!(
-                out,
-                "const {name}: {double_ty}<f64> = {double_ty}::with_parts("
-            )
-            .unwrap();
-            writeln!(
-                out,
-                "    f64::from_bits(0x{:016X}), // {val_hi:e}",
-                val_hi.to_bits(),
-            )
-            .unwrap();
-            writeln!(
-                out,
-                "    f64::from_bits(0x{:016X}), // {val_lo:e}",
-                val_lo.to_bits(),
-            )
-            .unwrap();
-            out.push_str(");\n");
+            let val = val.to_f64();
+            write!(out, "{val:e}").unwrap();
+        }
+        FloatKind::NormDoubleF32
+        | FloatKind::NormDoubleF64
+        | FloatKind::SemiDoubleF32
+        | FloatKind::SemiDoubleF64 => {
+            let prec = fkind.float_prec();
+            let dec_prec = ((prec as f64) * std::f64::consts::LOG10_2) as usize;
+            write!(out, "{val:.dec_prec$e}").unwrap();
         }
     }
 }

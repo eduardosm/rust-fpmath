@@ -6,13 +6,13 @@ impl crate::generic::Ln for f64 {
     const LN_2_HI: f64 = f64::from_bits(0x3FE62E42F8000000); // 6.931471675634384e-1
     const LN_2_LO: f64 = f64::from_bits(0x3E4BE8E7BCD5E4F2); // 1.2996506893889889e-8
     const FRAC_2_3_EX: NormDouble<f64> = NormDouble::with_parts(
-        f64::from_bits(0x3FE5555555555555), // 6.666666666666666e-1
-        f64::from_bits(0x3C85555555555555), // 3.700743415417188e-17
-    );
+        f64::from_bits(0x3FE5555555555555),
+        f64::from_bits(0x3C85555555555555),
+    ); // 6.666666666666666666666666666667e-1
     const FRAC_4_10_EX: NormDouble<f64> = NormDouble::with_parts(
-        f64::from_bits(0x3FD9999999999999), // 3.9999999999999997e-1
-        f64::from_bits(0x3C83333333333333), // 3.3306690738754695e-17
-    );
+        f64::from_bits(0x3FD9999999999999),
+        f64::from_bits(0x3C83333333333333),
+    ); // 4.000000000000000000000000000000e-1
 
     #[inline]
     fn ln_special_poly(x: Self) -> Self {
