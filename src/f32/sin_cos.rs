@@ -2,10 +2,8 @@ use crate::double::SemiDouble;
 
 impl crate::generic::SinCos for f32 {
     // GENERATE: sin_cos::consts f32
-    const FRAC_1_6_EX: SemiDouble<f32> = SemiDouble::with_parts(
-        f32::from_bits(0x3E2AA000), // 1.6662598e-1
-        f32::from_bits(0x382AAAAB), // 4.0690105e-5
-    );
+    const FRAC_1_6_EX: SemiDouble<f32> =
+        SemiDouble::with_parts(f32::from_bits(0x3E2AA000), f32::from_bits(0x382AAAAB)); // 1.666666667e-1
 
     #[inline]
     fn sin_poly(x2: Self, x5: Self) -> (Self, Self) {

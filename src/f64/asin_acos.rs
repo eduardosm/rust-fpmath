@@ -3,9 +3,9 @@ use crate::double::NormDouble;
 impl crate::generic::AsinAcos for f64 {
     // GENERATE: asin_acos::consts f64
     const FRAC_PI_2_EX: NormDouble<f64> = NormDouble::with_parts(
-        f64::from_bits(0x3FF921FB54442D18), // 1.5707963267948966e0
-        f64::from_bits(0x3C91A62633145C07), // 6.123233995736766e-17
-    );
+        f64::from_bits(0x3FF921FB54442D18),
+        f64::from_bits(0x3C91A62633145C07),
+    ); // 1.570796326794896619231321691640e0
 
     #[inline]
     fn asin_poly(x2: Self) -> Self {

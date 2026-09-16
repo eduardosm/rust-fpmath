@@ -1,15 +1,14 @@
-use super::super::{FloatKind, arg_utils, render_double_const, sollya, split_hi_lo};
+use super::super::{FloatKind, arg_utils, render_const, sollya};
 
 pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     let fkind: FloatKind = arg_utils::parse_1_arg(args)?;
-    let aux_prec = fkind.rug_aux_prec();
+    let sd_fkind = fkind.to_semi_double();
 
     let mut out = String::new();
 
     // 1/6
-    let tmp = rug::Float::with_val(aux_prec, 6).recip();
-    let (hi, lo) = split_hi_lo(tmp, fkind.split_prec());
-    render_double_const(fkind, "SemiDouble", "FRAC_1_6_EX", hi, lo, &mut out);
+    let tmp = rug::Float::with_val(sd_fkind.rug_aux_prec(), 6).recip();
+    render_const(sd_fkind, "FRAC_1_6_EX", tmp, &mut out);
 
     Ok(out)
 }

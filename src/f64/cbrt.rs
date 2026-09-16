@@ -3,13 +3,13 @@ use crate::double::SemiDouble;
 impl crate::generic::Cbrt for f64 {
     // GENERATE: cbrt::consts f64
     const CBRT_2_EX: SemiDouble<f64> = SemiDouble::with_parts(
-        f64::from_bits(0x3FF428A2F8000000), // 1.2599210441112518e0
-        f64::from_bits(0x3E38D728AE223DDB), // 5.783621333712523e-9
-    );
+        f64::from_bits(0x3FF428A2F8000000),
+        f64::from_bits(0x3E38D728AE223DDB),
+    ); // 1.2599210498948731647672e0
     const CBRT_4_EX: SemiDouble<f64> = SemiDouble::with_parts(
-        f64::from_bits(0x3FF965FEA0000000), // 1.587401032447815e0
-        f64::from_bits(0x3E54F5B8F20AC166), // 1.9520384533345454e-8
-    );
+        f64::from_bits(0x3FF965FEA0000000),
+        f64::from_bits(0x3E54F5B8F20AC166),
+    ); // 1.5874010519681994747517e0
 
     #[inline]
     fn exp_mod_3(e: i16) -> i8 {

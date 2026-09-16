@@ -1,15 +1,14 @@
-use super::super::{FloatKind, arg_utils, render_double_const, sollya, split_hi_lo};
+use super::super::{FloatKind, arg_utils, render_const, sollya};
 
 pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     let fkind: FloatKind = arg_utils::parse_1_arg(args)?;
-    let aux_prec = fkind.rug_aux_prec();
+    let nd_fkind = fkind.to_norm_double();
 
     let mut out = String::new();
 
     // π/2
-    let tmp = rug::Float::with_val(aux_prec, rug::float::Constant::Pi) / 2u8;
-    let (hi, lo) = split_hi_lo(tmp, fkind.float_prec());
-    render_double_const(fkind, "NormDouble", "FRAC_PI_2_EX", hi, lo, &mut out);
+    let tmp = rug::Float::with_val(nd_fkind.rug_aux_prec(), rug::float::Constant::Pi) / 2u8;
+    render_const(nd_fkind, "FRAC_PI_2_EX", tmp, &mut out);
 
     Ok(out)
 }

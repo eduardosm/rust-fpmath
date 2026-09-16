@@ -11,10 +11,8 @@ impl crate::generic::Gamma for f32 {
     const POLY_OFF: u8 = 3;
 
     // GENERATE: gamma::consts f32
-    const HALF_LN_2_PI: NormDouble<f32> = NormDouble::with_parts(
-        f32::from_bits(0x3F6B3F8E), // 9.189385e-1
-        f32::from_bits(0x32864BEB), // 1.5634177e-8
-    );
+    const HALF_LN_2_PI: NormDouble<f32> =
+        NormDouble::with_parts(f32::from_bits(0x3F6B3F8E), f32::from_bits(0x32864BEB)); // 9.1893853320467e-1
 
     #[inline]
     fn ln_gamma_poly_1(x: Self) -> (Self, Self, Self, Self) {
