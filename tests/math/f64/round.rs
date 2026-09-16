@@ -1,4 +1,4 @@
-use super::mkfloat;
+use super::mk_normal;
 use crate::create_prng;
 
 #[test]
@@ -47,15 +47,15 @@ fn test_round_with(test_f: fn(f64)) {
     let mut rng = create_prng();
 
     for e in -1022..=1023 {
-        test_f(mkfloat(0, e, false));
-        test_f(mkfloat(0, e, true));
-        test_f(mkfloat(u64::MAX, e, false));
-        test_f(mkfloat(u64::MAX, e, true));
+        test_f(mk_normal(0, e, false));
+        test_f(mk_normal(0, e, true));
+        test_f(mk_normal(u64::MAX, e, false));
+        test_f(mk_normal(u64::MAX, e, true));
 
         for _ in 0..5000 {
             let m = rng.random::<u64>();
-            test_f(mkfloat(m, e, true));
-            test_f(mkfloat(m, e, false));
+            test_f(mk_normal(m, e, true));
+            test_f(mk_normal(m, e, false));
         }
     }
 
@@ -73,7 +73,7 @@ fn test_round_with(test_f: fn(f64)) {
 
     for e in 0..=52 {
         for delta in -1000..=1000 {
-            let arg = mkfloat(0, e, false) + delta as f64;
+            let arg = mk_normal(0, e, false) + delta as f64;
             test_f(arg);
             test_f(-arg);
             test_f(arg + 0.25);

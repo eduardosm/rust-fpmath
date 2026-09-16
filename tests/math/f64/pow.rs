@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{RUG_PREC, calc_error_ulp, mkfloat, select_threshold};
+use super::{RUG_PREC, calc_error_ulp, mk_normal, select_threshold};
 use crate::create_prng;
 
 #[test]
@@ -48,7 +48,7 @@ fn test_pow_with(mut f: impl FnMut(f64, f64)) {
             for _ in 0..50 {
                 let mx = rng.random::<u64>();
                 let sx = false;
-                let x = mkfloat(mx, ex, sx);
+                let x = mk_normal(mx, ex, sx);
 
                 let y = (rng.random::<f64>() - 0.5) + (yi as f64);
                 f(x, y);
@@ -63,7 +63,7 @@ fn test_pow_with(mut f: impl FnMut(f64, f64)) {
                 let sx = rng.random::<bool>();
                 let my = rng.random::<u64>();
                 let sy = rng.random::<bool>();
-                f(1.0 + mkfloat(mx, ex, sx), mkfloat(my, ey, sy));
+                f(1.0 + mk_normal(mx, ex, sx), mk_normal(my, ey, sy));
             }
         }
     }
@@ -106,7 +106,7 @@ fn test_powi_with(mut f: impl FnMut(f64, i32)) {
             for _ in 0..100 {
                 let mx = rng.random::<u64>();
                 let sx = false;
-                let x = mkfloat(mx, ex, sx);
+                let x = mk_normal(mx, ex, sx);
 
                 f(x, i32::from(y));
             }
@@ -118,7 +118,7 @@ fn test_powi_with(mut f: impl FnMut(f64, i32)) {
             for _ in 0..1000 {
                 let mx = rng.random::<u64>();
                 let sx = rng.random::<bool>();
-                let x = 1.0 + mkfloat(mx, ex, sx);
+                let x = 1.0 + mk_normal(mx, ex, sx);
                 let y = ((rng.random::<u32>() | 0x8000_0000) >> i) as i32;
 
                 f(x, y);

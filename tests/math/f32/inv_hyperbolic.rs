@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{calc_error_ulp, mkfloat};
+use super::{calc_error_ulp, mk_normal};
 use crate::create_prng;
 
 #[test]
@@ -23,15 +23,15 @@ fn test_asinh_with(mut f: impl FnMut(f32)) {
     let mut rng = create_prng();
 
     for e in -126..=127 {
-        f(mkfloat(0, e, false));
-        f(mkfloat(0, e, true));
-        f(mkfloat(u32::MAX, e, false));
-        f(mkfloat(u32::MAX, e, true));
+        f(mk_normal(0, e, false));
+        f(mk_normal(0, e, true));
+        f(mk_normal(u32::MAX, e, false));
+        f(mk_normal(u32::MAX, e, true));
 
         for _ in 0..10000 {
             let m = rng.random::<u32>();
             let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mk_normal(m, e, s));
         }
     }
 }
@@ -56,12 +56,12 @@ fn test_acosh_with(mut f: impl FnMut(f32)) {
     let mut rng = create_prng();
 
     for e in 0..=127 {
-        f(mkfloat(0, e, false));
-        f(mkfloat(u32::MAX, e, false));
+        f(mk_normal(0, e, false));
+        f(mk_normal(u32::MAX, e, false));
 
         for _ in 0..10000 {
             let m = rng.random::<u32>();
-            f(mkfloat(m, e, false));
+            f(mk_normal(m, e, false));
         }
     }
 }
@@ -86,15 +86,15 @@ fn test_atanh_with(mut f: impl FnMut(f32)) {
     let mut rng = create_prng();
 
     for e in -126..=-1 {
-        f(mkfloat(0, e, false));
-        f(mkfloat(0, e, true));
-        f(mkfloat(u32::MAX, e, false));
-        f(mkfloat(u32::MAX, e, true));
+        f(mk_normal(0, e, false));
+        f(mk_normal(0, e, true));
+        f(mk_normal(u32::MAX, e, false));
+        f(mk_normal(u32::MAX, e, true));
 
         for _ in 0..10000 {
             let m = rng.random::<u32>();
             let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mk_normal(m, e, s));
         }
     }
 }

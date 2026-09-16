@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{calc_error_ulp, mkfloat, purify, select_threshold};
+use super::{calc_error_ulp, mk_normal, purify, select_threshold};
 use crate::create_prng;
 
 #[test]
@@ -46,7 +46,7 @@ fn test_pow_with(mut f: impl FnMut(f32, f32)) {
             for _ in 0..100 {
                 let mx = rng.random::<u32>();
                 let sx = false;
-                let x = mkfloat(mx, ex, sx);
+                let x = mk_normal(mx, ex, sx);
 
                 let y = (rng.random::<f32>() - 0.5) + (yi as f32);
                 f(x, purify(y));
@@ -61,7 +61,7 @@ fn test_pow_with(mut f: impl FnMut(f32, f32)) {
                 let sx = rng.random::<bool>();
                 let my = rng.random::<u32>();
                 let sy = rng.random::<bool>();
-                f(purify(1.0 + mkfloat(mx, ex, sx)), mkfloat(my, ey, sy));
+                f(purify(1.0 + mk_normal(mx, ex, sx)), mk_normal(my, ey, sy));
             }
         }
     }
@@ -103,7 +103,7 @@ fn test_powi_with(mut f: impl FnMut(f32, i32)) {
             for _ in 0..100 {
                 let mx = rng.random::<u32>();
                 let sx = false;
-                let x = mkfloat(mx, ex, sx);
+                let x = mk_normal(mx, ex, sx);
 
                 f(x, i32::from(y));
             }
@@ -115,7 +115,7 @@ fn test_powi_with(mut f: impl FnMut(f32, i32)) {
             for _ in 0..2000 {
                 let mx = rng.random::<u32>();
                 let sx = rng.random::<bool>();
-                let x = purify(1.0 + mkfloat(mx, ex, sx));
+                let x = purify(1.0 + mk_normal(mx, ex, sx));
                 let y = ((rng.random::<u32>() | 0x8000_0000) >> i) as i32;
 
                 f(x, y);

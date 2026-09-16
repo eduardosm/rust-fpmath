@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{RUG_PREC, calc_error_ulp, mkfloat};
+use super::{RUG_PREC, calc_error_ulp, mk_normal};
 use crate::create_prng;
 
 #[test]
@@ -26,19 +26,19 @@ fn test_asinh_with(mut f: impl FnMut(f64)) {
         for _ in 0..9000 {
             let m = rng.random::<u64>();
             let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mk_normal(m, e, s));
         }
     }
     for e in -1022..=1023 {
-        f(mkfloat(0, e, false));
-        f(mkfloat(0, e, true));
-        f(mkfloat(u64::MAX, e, false));
-        f(mkfloat(u64::MAX, e, true));
+        f(mk_normal(0, e, false));
+        f(mk_normal(0, e, true));
+        f(mk_normal(u64::MAX, e, false));
+        f(mk_normal(u64::MAX, e, true));
 
         for _ in 0..1000 {
             let m = rng.random::<u64>();
             let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mk_normal(m, e, s));
         }
     }
 }
@@ -63,22 +63,22 @@ fn test_acosh_with(mut f: impl FnMut(f64)) {
     let mut rng = create_prng();
 
     for e in 0..=100 {
-        f(mkfloat(0, e, false));
-        f(mkfloat(u64::MAX, e, false));
+        f(mk_normal(0, e, false));
+        f(mk_normal(u64::MAX, e, false));
 
         for _ in 0..9000 {
             let m = rng.random::<u64>();
-            f(mkfloat(m, e, false));
+            f(mk_normal(m, e, false));
         }
     }
 
     for e in 0..=1023 {
-        f(mkfloat(0, e, false));
-        f(mkfloat(u64::MAX, e, false));
+        f(mk_normal(0, e, false));
+        f(mk_normal(u64::MAX, e, false));
 
         for _ in 0..1000 {
             let m = rng.random::<u64>();
-            f(mkfloat(m, e, false));
+            f(mk_normal(m, e, false));
         }
     }
 }
@@ -103,15 +103,15 @@ fn test_atanh_with(mut f: impl FnMut(f64)) {
     let mut rng = create_prng();
 
     for e in -1022..=-1 {
-        f(mkfloat(0, e, false));
-        f(mkfloat(0, e, true));
-        f(mkfloat(u64::MAX, e, false));
-        f(mkfloat(u64::MAX, e, true));
+        f(mk_normal(0, e, false));
+        f(mk_normal(0, e, true));
+        f(mk_normal(u64::MAX, e, false));
+        f(mk_normal(u64::MAX, e, true));
 
         for _ in 0..10000 {
             let m = rng.random::<u64>();
             let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mk_normal(m, e, s));
         }
     }
 }

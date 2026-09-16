@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::mkfloat;
+use super::mk_normal;
 use crate::create_prng;
 
 #[test]
@@ -16,18 +16,18 @@ fn test_with(mut f: impl FnMut(f64)) {
     let mut rng = create_prng();
 
     for e in -200..=200 {
-        f(mkfloat(0, e, false));
-        f(mkfloat(u64::MAX, e, false));
+        f(mk_normal(0, e, false));
+        f(mk_normal(u64::MAX, e, false));
 
         for _ in 0..5000 {
             let m = rng.random::<u64>();
-            f(mkfloat(m, e, false));
+            f(mk_normal(m, e, false));
         }
     }
     for e in -1022..=1023 {
         for _ in 0..5000 {
             let m = rng.random::<u64>();
-            f(mkfloat(m, e, false));
+            f(mk_normal(m, e, false));
         }
     }
 

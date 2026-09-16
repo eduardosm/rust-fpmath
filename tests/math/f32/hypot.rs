@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{calc_error_ulp, mkfloat, select_threshold};
+use super::{calc_error_ulp, mk_normal, select_threshold};
 use crate::create_prng;
 
 #[test]
@@ -33,7 +33,7 @@ fn test_with(mut f: impl FnMut(f32, f32)) {
                 let sx = rng.random::<bool>();
                 let my = rng.random::<u32>();
                 let sy = rng.random::<bool>();
-                f(mkfloat(mx, ex, sx), mkfloat(my, ey, sy));
+                f(mk_normal(mx, ex, sx), mk_normal(my, ey, sy));
             }
         }
     }
@@ -44,19 +44,19 @@ fn test_with(mut f: impl FnMut(f32, f32)) {
             let sx = rng.random::<bool>();
             let my = rng.random::<u32>();
             let sy = rng.random::<bool>();
-            f(mkfloat(mx, e, sx), mkfloat(my, e, sy));
+            f(mk_normal(mx, e, sx), mk_normal(my, e, sy));
 
             let mx = rng.random::<u32>();
             let sx = rng.random::<bool>();
             let my = rng.random::<u32>();
             let sy = rng.random::<bool>();
-            f(mkfloat(mx, 0, sx), mkfloat(my, e, sy));
+            f(mk_normal(mx, 0, sx), mk_normal(my, e, sy));
 
             let mx = rng.random::<u32>();
             let sx = rng.random::<bool>();
             let my = rng.random::<u32>();
             let sy = rng.random::<bool>();
-            f(mkfloat(mx, e, sx), mkfloat(my, 0, sy));
+            f(mk_normal(mx, e, sx), mk_normal(my, 0, sy));
         }
     }
 }
