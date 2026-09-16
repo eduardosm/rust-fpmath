@@ -1,5 +1,3 @@
-use rand::RngExt as _;
-
 use super::{calc_error_ulp, mk_normal, purify, purify2};
 use crate::create_prng;
 
@@ -82,10 +80,10 @@ fn test_with(mut f: impl FnMut(f32)) {
 
     for e in -126..=9 {
         f(mk_normal(0, e, false));
-        f(mk_normal(u32::MAX, e, false));
+        f(mk_normal(super::MAX_MANTISSA, e, false));
 
         for _ in 0..1000 {
-            let m = rng.random::<u32>();
+            let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }
     }

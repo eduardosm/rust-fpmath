@@ -1,5 +1,3 @@
-use rand::RngExt as _;
-
 use super::{mk_normal, purify};
 use crate::create_prng;
 
@@ -49,11 +47,11 @@ fn test_with(test_f: fn(f32)) {
     for e in -126..=127 {
         test_f(mk_normal(0, e, false));
         test_f(mk_normal(0, e, true));
-        test_f(mk_normal(u32::MAX, e, false));
-        test_f(mk_normal(u32::MAX, e, true));
+        test_f(mk_normal(super::MAX_MANTISSA, e, false));
+        test_f(mk_normal(super::MAX_MANTISSA, e, true));
 
         for _ in 0..10_000 {
-            let m = rng.random::<u32>();
+            let m = super::gen_mantissa(&mut rng);
             test_f(mk_normal(m, e, true));
             test_f(mk_normal(m, e, false));
         }

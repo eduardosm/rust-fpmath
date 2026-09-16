@@ -1,5 +1,3 @@
-use rand::RngExt as _;
-
 use super::{RUG_PREC, calc_error_ulp, mk_normal};
 use crate::create_prng;
 
@@ -25,16 +23,16 @@ fn test_with(mut f: impl FnMut(f64)) {
 
     for e in -1022..=1023 {
         f(mk_normal(0, e, false));
-        f(mk_normal(u64::MAX, e, false));
+        f(mk_normal(super::MAX_MANTISSA, e, false));
 
         for _ in 0..5000 {
-            let m = rng.random::<u64>();
+            let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }
     }
     for e in -1022..=1023 {
         for _ in 0..5000 {
-            let m = rng.random::<u64>();
+            let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }
     }

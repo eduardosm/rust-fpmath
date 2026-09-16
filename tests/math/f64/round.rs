@@ -42,18 +42,16 @@ fn test_trunc() {
 }
 
 fn test_round_with(test_f: fn(f64)) {
-    use rand::RngExt as _;
-
     let mut rng = create_prng();
 
     for e in -1022..=1023 {
         test_f(mk_normal(0, e, false));
         test_f(mk_normal(0, e, true));
-        test_f(mk_normal(u64::MAX, e, false));
-        test_f(mk_normal(u64::MAX, e, true));
+        test_f(mk_normal(super::MAX_MANTISSA, e, false));
+        test_f(mk_normal(super::MAX_MANTISSA, e, true));
 
         for _ in 0..5000 {
-            let m = rng.random::<u64>();
+            let m = super::gen_mantissa(&mut rng);
             test_f(mk_normal(m, e, true));
             test_f(mk_normal(m, e, false));
         }

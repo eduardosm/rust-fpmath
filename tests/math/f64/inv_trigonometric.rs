@@ -114,11 +114,11 @@ fn test_asin_acos_with(mut f: impl FnMut(f64)) {
     for e in -1022..=-1 {
         f(mk_normal(0, e, false));
         f(mk_normal(0, e, true));
-        f(mk_normal(u64::MAX, e, false));
-        f(mk_normal(u64::MAX, e, true));
+        f(mk_normal(super::MAX_MANTISSA, e, false));
+        f(mk_normal(super::MAX_MANTISSA, e, true));
 
         for _ in 0..10000 {
-            let m = rng.random::<u64>();
+            let m = super::gen_mantissa(&mut rng);
             let s = rng.random::<bool>();
             f(mk_normal(m, e, s));
         }
@@ -191,10 +191,10 @@ fn test_atan_with(mut f: impl FnMut(f64)) {
 
     for e in -1022..=1023 {
         f(mk_normal(0, e, false));
-        f(mk_normal(u64::MAX, e, false));
+        f(mk_normal(super::MAX_MANTISSA, e, false));
 
         for _ in 0..5000 {
-            let m = rng.random::<u64>();
+            let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }
     }
@@ -276,8 +276,8 @@ fn test_atan2_with(mut f: impl FnMut(f64, f64)) {
             if matches!(ex, -900..=900) && (ex & 3) != 3 {
                 continue; // speed up tests
             }
-            let my = rng.random::<u64>();
-            let mx = rng.random::<u64>();
+            let my = super::gen_mantissa(&mut rng);
+            let mx = super::gen_mantissa(&mut rng);
             f(mk_normal(my, ey, false), mk_normal(mx, ex, false));
             f(mk_normal(my, ey, false), mk_normal(mx, ex, true));
         }
@@ -285,18 +285,18 @@ fn test_atan2_with(mut f: impl FnMut(f64, f64)) {
 
     for e in -1022..=1023 {
         for _ in 0..1000 {
-            let my = rng.random::<u64>();
-            let mx = rng.random::<u64>();
+            let my = super::gen_mantissa(&mut rng);
+            let mx = super::gen_mantissa(&mut rng);
             let sx = rng.random::<bool>();
             f(mk_normal(my, e, false), mk_normal(mx, e, sx));
 
-            let my = rng.random::<u64>();
-            let mx = rng.random::<u64>();
+            let my = super::gen_mantissa(&mut rng);
+            let mx = super::gen_mantissa(&mut rng);
             let sx = rng.random::<bool>();
             f(mk_normal(my, 0, false), mk_normal(mx, e, sx));
 
-            let my = rng.random::<u64>();
-            let mx = rng.random::<u64>();
+            let my = super::gen_mantissa(&mut rng);
+            let mx = super::gen_mantissa(&mut rng);
             let sx = rng.random::<bool>();
             f(mk_normal(my, e, false), mk_normal(mx, 0, sx));
         }

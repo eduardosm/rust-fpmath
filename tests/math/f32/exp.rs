@@ -84,11 +84,11 @@ fn test_with(mut f: impl FnMut(f32)) {
     for e in -126..=9 {
         f(mk_normal(0, e, false));
         f(mk_normal(0, e, true));
-        f(mk_normal(u32::MAX, e, false));
-        f(mk_normal(u32::MAX, e, true));
+        f(mk_normal(super::MAX_MANTISSA, e, false));
+        f(mk_normal(super::MAX_MANTISSA, e, true));
 
         for _ in 0..10000 {
-            let m = rng.random::<u32>();
+            let m = super::gen_mantissa(&mut rng);
             let s = rng.random::<bool>();
             f(mk_normal(m, e, s));
         }

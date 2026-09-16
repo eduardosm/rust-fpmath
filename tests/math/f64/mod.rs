@@ -11,8 +11,15 @@ mod round;
 mod sqrt;
 mod trigonometric;
 
+const MAX_MANTISSA: u64 = (1 << 52) - 1;
+
+fn gen_mantissa(rng: &mut impl rand::RngExt) -> u64 {
+    rng.random::<u64>() >> (64 - 52)
+}
+
 fn mk_normal(m: u64, e: i16, s: bool) -> f64 {
-    let m = m >> (64 - 52);
+    assert!(m < (1 << 52));
+    assert!(matches!(e, -1022..=1023));
     let e = u64::from((e + 1023) as u16) << 52;
     let s = u64::from(s) << 63;
     f64::from_bits(m | e | s)
