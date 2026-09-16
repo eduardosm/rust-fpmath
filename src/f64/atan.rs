@@ -1,23 +1,8 @@
-// GENERATE: atan::consts f64
-const FRAC_PI_2_HI: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
-const FRAC_PI_2_LO: f64 = f64::from_bits(0x3C91A62633145C07); // 6.123233995736766e-17
-const FRAC_3PI_4: f64 = f64::from_bits(0x4002D97C7F3321D2); // 2.356194490192345e0
-
 impl crate::generic::Atan for f64 {
-    #[inline]
-    fn frac_pi_2_hi() -> Self {
-        FRAC_PI_2_HI
-    }
-
-    #[inline]
-    fn frac_pi_2_lo() -> Self {
-        FRAC_PI_2_LO
-    }
-
-    #[inline]
-    fn frac_3pi_4() -> Self {
-        FRAC_3PI_4
-    }
+    // GENERATE: atan::consts f64
+    const FRAC_PI_2_HI: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
+    const FRAC_PI_2_LO: f64 = f64::from_bits(0x3C91A62633145C07); // 6.123233995736766e-17
+    const FRAC_3PI_4: f64 = f64::from_bits(0x4002D97C7F3321D2); // 2.356194490192345e0
 
     #[inline]
     fn atan_poly(x2: Self) -> (Self, Self) {

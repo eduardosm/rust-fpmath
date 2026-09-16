@@ -7,16 +7,16 @@ use crate::double::{DenormDouble, NormDouble, SemiDouble};
 use crate::traits::{Float, FloatConsts, Int as _};
 
 pub(crate) trait Gamma: FloatConsts + SinCos + ReduceHalfMulPi + Exp + Ln {
-    fn lo_th() -> Self;
-    fn hi_th() -> Self;
+    const LO_TH: Self;
+    const HI_TH: Self;
 
-    fn th_1() -> Self;
-    fn th_2() -> Self;
-    fn th_3() -> Self;
+    const TH_1: Self;
+    const TH_2: Self;
+    const TH_3: Self;
 
     const POLY_OFF: u8;
 
-    fn half_ln_2_pi() -> NormDouble<Self>;
+    const HALF_LN_2_PI: NormDouble<Self>;
 
     fn ln_gamma_poly_1(x: Self) -> (Self, Self, Self, Self);
     fn ln_gamma_poly_2(x: Self) -> (Self, Self, Self, Self);
@@ -29,7 +29,7 @@ pub(crate) fn gamma<F: Gamma>(x: F) -> F {
     if e == F::RawExp::ZERO && x.raw_mant() == F::Raw::ZERO {
         // gamma(±0) = ±inf
         F::INFINITY.copysign(x)
-    } else if x >= F::hi_th() {
+    } else if x >= F::HI_TH {
         // also handles x = inf
         F::INFINITY
     } else if e == F::MAX_RAW_EXP {
@@ -38,7 +38,7 @@ pub(crate) fn gamma<F: Gamma>(x: F) -> F {
     } else if x.sign() && is_int(x) {
         // gamma(neg integer) = NaN
         F::NAN
-    } else if x < F::lo_th() {
+    } else if x < F::LO_TH {
         // -inf and negative integers are handled above
         F::ZERO
     } else {
@@ -63,7 +63,7 @@ pub(crate) fn ln_gamma<F: Gamma>(x: F) -> (F, i8) {
     } else if x.sign() && is_int(x) {
         // ln_gamma(neg integer) = inf
         (F::INFINITY, 0)
-    } else if x == F::one() || x == F::two() {
+    } else if x == F::ONE || x == F::TWO {
         // ln_gamma(1 or 2) = 0
         // ensure positive zero
         (F::ZERO, 1)
@@ -101,7 +101,7 @@ fn ln_gamma_inner<F: Gamma>(x: F) -> (F, i8) {
 fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
     // For x < 0.5, use gamma reflection formula:
     // Γ(x)*Γ(1-x) = π/sin(πx) => Γ(x) = π/(sin(πx)*Γ(1-x))
-    let reflect = (x < F::half()).then(|| {
+    let reflect = (x < F::HALF).then(|| {
         let (n, z) = reduce_half_mul_pi(x);
         let sinpix = match n {
             0 => hi_lo_sin_inner(z),
@@ -111,18 +111,18 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
             _ => unreachable!(),
         };
         // π / sin(πx)
-        F::pi_ex() / sinpix.to_semi()
+        F::PI_EX / sinpix.to_semi()
     });
     // nx is always greater or equal to 0.5
     let nx = if reflect.is_some() {
-        DenormDouble::new_sub11(F::one(), x)
+        DenormDouble::new_sub11(F::ONE, x)
     } else {
         DenormDouble::new(x, F::ZERO)
     };
 
     // Based on the algorithm used in SLEEF.
 
-    if nx.hi() < F::th_2() {
+    if nx.hi() < F::TH_2 {
         // For small values of `nx`, ln(Γ(nx)) is calculated using a polynomial.
 
         let nx = nx.hi();
@@ -131,11 +131,11 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
         let k1;
         let k2;
         let k3;
-        if nx < F::th_1() {
-            y = nx - F::one();
+        if nx < F::TH_1 {
+            y = nx - F::ONE;
             (r, k1, k2, k3) = F::ln_gamma_poly_1(y);
         } else {
-            y = nx - F::two();
+            y = nx - F::TWO;
             (r, k1, k2, k3) = F::ln_gamma_poly_2(y);
         };
         // r = ln(Γ(nx))
@@ -146,7 +146,7 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
             (-r, reflect)
         } else {
             // ln(Γ(x)), 1
-            (r, DenormDouble::one())
+            (r, DenormDouble::ONE)
         }
     } else {
         // For larger values of `nx`:
@@ -154,23 +154,23 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
         // Γ(nx) = (P(1 / t) / t + 1) * t^(t - 0.5) * e^(-t) * √(2π)
         // P is a polynomial.
 
-        let low = nx.hi() < F::th_3();
+        let low = nx.hi() < F::TH_3;
         let t = if low {
             nx + F::cast_from(F::POLY_OFF)
         } else {
             nx
         };
-        let tinv = F::one() / t.to_single();
+        let tinv = F::ONE / t.to_single();
 
         // p = P(1 / t) * (1 / t) + 1
         let p1 = F::special_poly(tinv);
-        let p = SemiDouble::new(p1) * SemiDouble::new(tinv) + F::one();
+        let p = SemiDouble::new(p1) * SemiDouble::new(tinv) + F::ONE;
 
         // r = (t - 0.5) * ln(t) - t + 0.5 * ln(2π)
         //   = t * (ln(t) - 1) - 0.5 * ln(t) + 0.5 * ln(2π)
         let ln_t = hi_lo_ln_hi_lo_inner(t.to_norm(), F::Exp::ZERO);
-        let r = t.to_semi() * (ln_t - F::one()).to_semi() - ln_t.pmul1(F::half())
-            + F::half_ln_2_pi().to_denorm();
+        let r = t.to_semi() * (ln_t - F::ONE).to_semi() - ln_t.pmul1(F::HALF)
+            + F::HALF_LN_2_PI.to_denorm();
 
         let s = if low {
             let mut den = nx;
@@ -218,15 +218,15 @@ mod tests {
         use crate::gamma;
 
         assert_is_nan!(gamma(F::NAN));
-        assert_is_nan!(gamma(F::neg_infinity()));
-        assert_is_nan!(gamma(-F::one()));
-        assert_is_nan!(gamma(-F::two()));
-        assert_is_nan!(gamma(-F::largest()));
+        assert_is_nan!(gamma(F::NEG_INFINITY));
+        assert_is_nan!(gamma(-F::ONE));
+        assert_is_nan!(gamma(-F::TWO));
+        assert_is_nan!(gamma(-F::LARGEST));
         assert_total_eq!(gamma(F::INFINITY), F::INFINITY);
         assert_total_eq!(gamma(F::ZERO), F::INFINITY);
-        assert_total_eq!(gamma(-F::ZERO), F::neg_infinity());
-        assert_total_eq!(gamma(F::one()), F::one());
-        assert_total_eq!(gamma(F::two()), F::one());
+        assert_total_eq!(gamma(-F::ZERO), F::NEG_INFINITY);
+        assert_total_eq!(gamma(F::ONE), F::ONE);
+        assert_total_eq!(gamma(F::TWO), F::ONE);
     }
 
     fn test_ln_gamma<F: Float + FloatMath>() {
@@ -244,15 +244,15 @@ mod tests {
         };
 
         test_nan(F::NAN);
-        test_nan(F::neg_infinity());
+        test_nan(F::NEG_INFINITY);
         test_value(F::INFINITY, F::INFINITY, 1);
         test_value(F::ZERO, F::INFINITY, 1);
         test_value(-F::ZERO, F::INFINITY, -1);
-        test_value(-F::one(), F::INFINITY, 0);
-        test_value(-F::two(), F::INFINITY, 0);
-        test_value(-F::largest(), F::INFINITY, 0);
-        test_value(F::one(), F::ZERO, 1);
-        test_value(F::two(), F::ZERO, 1);
+        test_value(-F::ONE, F::INFINITY, 0);
+        test_value(-F::TWO, F::INFINITY, 0);
+        test_value(-F::LARGEST, F::INFINITY, 0);
+        test_value(F::ONE, F::ZERO, 1);
+        test_value(F::TWO, F::ZERO, 1);
     }
 
     #[test]

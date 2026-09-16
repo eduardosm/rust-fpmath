@@ -114,16 +114,16 @@ pub(crate) trait Float:
     const MAX_EXP: Self::Exp;
 
     const INFINITY: Self;
-    fn neg_infinity() -> Self;
+    const NEG_INFINITY: Self;
     const NAN: Self;
 
     const ZERO: Self;
-    fn half() -> Self;
-    fn one() -> Self;
-    fn two() -> Self;
+    const HALF: Self;
+    const ONE: Self;
+    const TWO: Self;
 
     #[cfg(test)]
-    fn largest() -> Self;
+    const LARGEST: Self;
 
     /// Workarounds rustc/LLVM bugs
     fn purify(self) -> Self;
@@ -204,7 +204,7 @@ pub(crate) trait Float:
 
     #[inline]
     fn exp2i_fast(x: Self::Exp) -> Self {
-        Self::one().set_exp(x)
+        Self::ONE.set_exp(x)
     }
 
     #[inline]

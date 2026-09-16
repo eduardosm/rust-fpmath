@@ -1,6 +1,3 @@
 impl crate::generic::SinhCosh for f64 {
-    #[inline]
-    fn expo2_hi_th() -> Self {
-        711.0
-    }
+    const EXPO2_HI_TH: Self = 711.0;
 }

@@ -1,49 +1,16 @@
 use crate::generic::scalbn_medium;
 use crate::traits::{Float as _, FloatConsts as _};
 
-// GENERATE: reduce_pi_2::consts f64
-const FRAC_PI_2_HI: f64 = f64::from_bits(0x3FF921FB54400000); // 1.5707963267341256e0
-const FRAC_PI_2_HIEX: f64 = f64::from_bits(0x3DD0B4611A626331); // 6.077100506506192e-11
-const FRAC_PI_2_MI: f64 = f64::from_bits(0x3DD0B4611A600000); // 6.077100506303966e-11
-const FRAC_PI_2_MIEX: f64 = f64::from_bits(0x3BA3198A2E037073); // 2.0222662487959506e-21
-const FRAC_PI_2_LO: f64 = f64::from_bits(0x3BA3198A2E000000); // 2.0222662487111665e-21
-const FRAC_PI_2_LOEX: f64 = f64::from_bits(0x397B839A252049C1); // 8.4784276603689e-32
-
 impl crate::generic::ReducePi2 for f64 {
-    #[inline]
-    fn frac_pi_2_hi() -> Self {
-        FRAC_PI_2_HI
-    }
+    // GENERATE: reduce_pi_2::consts f64
+    const FRAC_PI_2_HI: f64 = f64::from_bits(0x3FF921FB54400000); // 1.5707963267341256e0
+    const FRAC_PI_2_HIEX: f64 = f64::from_bits(0x3DD0B4611A626331); // 6.077100506506192e-11
+    const FRAC_PI_2_MI: f64 = f64::from_bits(0x3DD0B4611A600000); // 6.077100506303966e-11
+    const FRAC_PI_2_MIEX: f64 = f64::from_bits(0x3BA3198A2E037073); // 2.0222662487959506e-21
+    const FRAC_PI_2_LO: f64 = f64::from_bits(0x3BA3198A2E000000); // 2.0222662487111665e-21
+    const FRAC_PI_2_LOEX: f64 = f64::from_bits(0x397B839A252049C1); // 8.4784276603689e-32
 
-    #[inline]
-    fn frac_pi_2_hiex() -> Self {
-        FRAC_PI_2_HIEX
-    }
-
-    #[inline]
-    fn frac_pi_2_mi() -> Self {
-        FRAC_PI_2_MI
-    }
-
-    #[inline]
-    fn frac_pi_2_miex() -> Self {
-        FRAC_PI_2_MIEX
-    }
-
-    #[inline]
-    fn frac_pi_2_lo() -> Self {
-        FRAC_PI_2_LO
-    }
-
-    #[inline]
-    fn frac_pi_2_loex() -> Self {
-        FRAC_PI_2_LOEX
-    }
-
-    #[inline]
-    fn max_reduce_pi_2_medium() -> Self {
-        ((1u64 << 20) - 1) as f64 * f64::FRAC_PI_2
-    }
+    const MAX_REDUCE_PI_2_MEDIUM: Self = ((1u64 << 20) - 1) as f64 * f64::FRAC_PI_2;
 
     const REDUCE_PI_2_MEDIUM_TH1: i16 = 16;
     const REDUCE_PI_2_MEDIUM_TH2: i16 = 49;

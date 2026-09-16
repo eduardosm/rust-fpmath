@@ -7,7 +7,7 @@ pub(crate) fn asinpi<F: AsinAcos + DivPi>(x: F) -> F {
     let e = x.raw_exp();
     if e == F::EXP_OFFSET && x.raw_mant() == F::Raw::ZERO {
         // asinpi(±1) = ±0.5
-        F::half().copysign(x)
+        F::HALF.copysign(x)
     } else if e >= F::EXP_OFFSET {
         // NaN or |x| > 1 (including infinity)
         F::NAN
@@ -24,11 +24,11 @@ pub(crate) fn asinpi<F: AsinAcos + DivPi>(x: F) -> F {
 
         let nx = SemiDouble::new(x * scale);
 
-        (nx * F::frac_1_pi_ex()).to_single() * descale
+        (nx * F::FRAC_1_PI_EX).to_single() * descale
     } else {
         let y = asin_inner(x).to_semi();
 
-        (y * F::frac_1_pi_ex()).to_single()
+        (y * F::FRAC_1_PI_EX).to_single()
     }
 }
 
@@ -37,7 +37,7 @@ pub(crate) fn acospi<F: AsinAcos + DivPi>(x: F) -> F {
     if e == F::EXP_OFFSET && x.raw_mant() == F::Raw::ZERO {
         if x.sign() {
             // acospi(-1) = 1
-            F::one()
+            F::ONE
         } else {
             // acospi(1) = 0
             F::ZERO
@@ -48,11 +48,11 @@ pub(crate) fn acospi<F: AsinAcos + DivPi>(x: F) -> F {
     } else if e == F::RawExp::ZERO {
         // subnormal or zero
         // acospi(x) ~= 0.5
-        F::half()
+        F::HALF
     } else {
         let y = acos_inner(x).to_semi();
 
-        (y * F::frac_1_pi_ex()).to_single()
+        (y * F::FRAC_1_PI_EX).to_single()
     }
 }
 
@@ -70,11 +70,11 @@ mod tests {
         assert_is_nan!(asinpi(f("1.5")));
         assert_is_nan!(asinpi(f("-1.5")));
         assert_is_nan!(asinpi(F::INFINITY));
-        assert_is_nan!(asinpi(F::neg_infinity()));
+        assert_is_nan!(asinpi(F::NEG_INFINITY));
         assert_total_eq!(asinpi(F::ZERO), F::ZERO);
         assert_total_eq!(asinpi(-F::ZERO), -F::ZERO);
-        assert_total_eq!(asinpi(F::one()), F::half());
-        assert_total_eq!(asinpi(-F::one()), -F::half());
+        assert_total_eq!(asinpi(F::ONE), F::HALF);
+        assert_total_eq!(asinpi(-F::ONE), -F::HALF);
     }
 
     fn test_acospi<F: Float + FloatMath>() {
@@ -86,11 +86,11 @@ mod tests {
         assert_is_nan!(acospi(f("1.5")));
         assert_is_nan!(acospi(f("-1.5")));
         assert_is_nan!(acospi(F::INFINITY));
-        assert_is_nan!(acospi(F::neg_infinity()));
-        assert_total_eq!(acospi(F::ZERO), F::half());
-        assert_total_eq!(acospi(-F::ZERO), F::half());
-        assert_total_eq!(acospi(F::one()), F::ZERO);
-        assert_total_eq!(acospi(-F::one()), F::one());
+        assert_is_nan!(acospi(F::NEG_INFINITY));
+        assert_total_eq!(acospi(F::ZERO), F::HALF);
+        assert_total_eq!(acospi(-F::ZERO), F::HALF);
+        assert_total_eq!(acospi(F::ONE), F::ZERO);
+        assert_total_eq!(acospi(-F::ONE), F::ONE);
     }
 
     #[test]

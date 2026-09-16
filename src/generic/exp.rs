@@ -3,13 +3,13 @@ use crate::double::DenormDouble;
 use crate::traits::{CastInto as _, Float, Int as _};
 
 pub(crate) trait Exp: Float {
-    fn log2_e() -> Self;
-    fn ln_2_hi() -> Self;
-    fn ln_2_lo() -> Self;
-    fn exp_lo_th() -> Self;
-    fn exp_hi_th() -> Self;
-    fn exp_m1_lo_th() -> Self;
-    fn exp_m1_hi_th() -> Self;
+    const LOG2_E: Self;
+    const LN_2_HI: Self;
+    const LN_2_LO: Self;
+    const EXP_LO_TH: Self;
+    const EXP_HI_TH: Self;
+    const EXP_M1_LO_TH: Self;
+    const EXP_M1_HI_TH: Self;
 
     fn exp_special_poly(x2: Self) -> Self;
 
@@ -18,10 +18,10 @@ pub(crate) trait Exp: Float {
 
 /// Calculates `e^x`
 pub(crate) fn exp<F: Exp>(x: F) -> F {
-    if x >= F::exp_hi_th() {
+    if x >= F::EXP_HI_TH {
         // also handles x = inf
         F::INFINITY
-    } else if x <= F::exp_lo_th() {
+    } else if x <= F::EXP_LO_TH {
         // also handles x = -inf
         F::ZERO
     } else {
@@ -29,7 +29,7 @@ pub(crate) fn exp<F: Exp>(x: F) -> F {
         if e == F::RawExp::ZERO {
             // x is zero or subnormal
             // exp(x) ~= 1
-            F::one()
+            F::ONE
         } else if e == F::MAX_RAW_EXP {
             // x is NaN, propagate
             x
@@ -40,12 +40,12 @@ pub(crate) fn exp<F: Exp>(x: F) -> F {
 }
 
 pub(crate) fn exp_m1<F: Exp>(x: F) -> F {
-    if x >= F::exp_m1_hi_th() {
+    if x >= F::EXP_M1_HI_TH {
         // also handles x = inf
         F::INFINITY
-    } else if x <= F::exp_m1_lo_th() {
+    } else if x <= F::EXP_M1_LO_TH {
         // also handles x = -inf
-        -F::one()
+        -F::ONE
     } else {
         let e = x.raw_exp();
         if e == F::RawExp::ZERO || e == F::MAX_RAW_EXP {
@@ -82,7 +82,7 @@ pub(super) fn exp_inner_common<F: Exp>(k: i32, r_hi: F, r_lo: F) -> F {
 
     // t2 = exp(r) = 1 + r + (r * t1) / (2 - t1)
     //             = 1 + r_hi + r_lo + (r * t1) / (2 - t1)
-    let t2 = F::one() + (r_hi + (r_lo + r * t1 / (F::two() - t1)));
+    let t2 = F::ONE + (r_hi + (r_lo + r * t1 / (F::TWO - t1)));
 
     // exp(x) = exp(r_hi + r_lo) * 2^k = t2 * 2^k
     scalbn_medium(t2, k)
@@ -100,11 +100,11 @@ pub(super) fn hi_lo_exp_inner_common<F: Exp>(r_hi: F, r_lo: F) -> DenormDouble<F
 
     // t2 = (r * t1) / (2 - t1)
     let rt1 = DenormDouble::new(r_hi, r_lo).to_semi() * t1.to_semi();
-    let twomt1 = t1.qrsub1(F::two());
+    let twomt1 = t1.qrsub1(F::TWO);
     let t2 = rt1.to_semi() / twomt1.to_semi();
 
     // t3 = exp(r) = 1 + r + t2
-    let t3 = DenormDouble::new(r_hi, r_lo).qadd2(t2).qradd1(F::one());
+    let t3 = DenormDouble::new(r_hi, r_lo).qadd2(t2).qradd1(F::ONE);
 
     // exp(x) = exp(r_hi + r_lo) * 2^k = t2 * 2^k
     DenormDouble::new(t3.hi(), t3.lo())
@@ -114,8 +114,8 @@ fn exp_m1_inner<F: Exp>(x: F) -> F {
     // Based on the algorithm used by the msun math library
 
     // pseudo-consts
-    let three = F::one() + F::two();
-    let six = three * F::two();
+    let three = F::ONE + F::TWO;
+    let six = three * F::TWO;
 
     // Split x into k, r_hi, r_lo such as:
     //  - x = k*ln(2) + r_hi + r_lo
@@ -125,8 +125,8 @@ fn exp_m1_inner<F: Exp>(x: F) -> F {
     let (r_hi, r_lo) = F::norm_hi_lo_full(r_hi, r_lo);
 
     let r2 = r_hi * r_hi;
-    let hr = F::half() * r_hi;
-    let hr2 = F::half() * r2;
+    let hr = F::HALF * r_hi;
+    let hr2 = F::HALF * r2;
 
     // t1 = 6/r * ((exp(r) + 1) / (exp(r) - 1) - 2/r)
     let t1 = F::exp_m1_special_poly(r2);
@@ -145,11 +145,11 @@ fn exp_m1_inner<F: Exp>(x: F) -> F {
 
         let t5 = DenormDouble::new_qadd11(s1, sr);
         let t6 = t5.qadd1(st4);
-        let t7 = t6.qsub1(F::one());
+        let t7 = t6.qsub1(F::ONE);
 
         t7.to_single()
     } else {
-        scalbn_medium((r_hi + t4) + F::one(), k)
+        scalbn_medium((r_hi + t4) + F::ONE, k)
     }
 }
 
@@ -160,11 +160,11 @@ fn exp_m1_inner<F: Exp>(x: F) -> F {
 /// * `k` is an integer
 /// * `|r| <= 0.5*ln(2)`
 pub(super) fn exp_split<F: Exp>(x: F) -> (i32, F, F) {
-    let y = x * F::log2_e();
+    let y = x * F::LOG2_E;
     let (k, kf) = round_as_i_f(y);
     // `kf * LN_2_HI` is exact because the lower bits of `LN_2_HI` are zero.
-    let r_hi = x - kf * F::ln_2_hi();
-    let r_lo = -kf * F::ln_2_lo();
+    let r_hi = x - kf * F::LN_2_HI;
+    let r_lo = -kf * F::LN_2_LO;
 
     (k, r_hi, r_lo)
 }
@@ -182,15 +182,15 @@ mod tests {
 
         assert_is_nan!(exp(F::NAN));
         assert_total_eq!(exp(F::INFINITY), F::INFINITY);
-        assert_total_eq!(exp(F::neg_infinity()), F::ZERO);
-        assert_total_eq!(exp(F::ZERO), F::one());
-        assert_total_eq!(exp(-F::ZERO), F::one());
+        assert_total_eq!(exp(F::NEG_INFINITY), F::ZERO);
+        assert_total_eq!(exp(F::ZERO), F::ONE);
+        assert_total_eq!(exp(-F::ZERO), F::ONE);
         assert_total_eq!(exp(lo_th), F::ZERO);
-        assert_total_eq!(exp(lo_th - F::one()), F::ZERO);
-        assert_total_eq!(exp(lo_th - F::two()), F::ZERO);
+        assert_total_eq!(exp(lo_th - F::ONE), F::ZERO);
+        assert_total_eq!(exp(lo_th - F::TWO), F::ZERO);
         assert_total_eq!(exp(hi_th), F::INFINITY);
-        assert_total_eq!(exp(hi_th + F::one()), F::INFINITY);
-        assert_total_eq!(exp(hi_th + F::two()), F::INFINITY);
+        assert_total_eq!(exp(hi_th + F::ONE), F::INFINITY);
+        assert_total_eq!(exp(hi_th + F::TWO), F::INFINITY);
     }
 
     fn test_exp_m1<F: Float + FloatMath>(lo_th: &str, hi_th: &str) {
@@ -201,15 +201,15 @@ mod tests {
 
         assert_is_nan!(exp_m1(F::NAN));
         assert_total_eq!(exp_m1(F::INFINITY), F::INFINITY);
-        assert_total_eq!(exp_m1(F::neg_infinity()), -F::one());
+        assert_total_eq!(exp_m1(F::NEG_INFINITY), -F::ONE);
         assert_total_eq!(exp_m1(F::ZERO), F::ZERO);
         assert_total_eq!(exp_m1(-F::ZERO), -F::ZERO);
-        assert_total_eq!(exp_m1(lo_th), -F::one());
-        assert_total_eq!(exp_m1(lo_th - F::one()), -F::one());
-        assert_total_eq!(exp_m1(lo_th - F::two()), -F::one());
+        assert_total_eq!(exp_m1(lo_th), -F::ONE);
+        assert_total_eq!(exp_m1(lo_th - F::ONE), -F::ONE);
+        assert_total_eq!(exp_m1(lo_th - F::TWO), -F::ONE);
         assert_total_eq!(exp_m1(hi_th), F::INFINITY);
-        assert_total_eq!(exp_m1(hi_th + F::one()), F::INFINITY);
-        assert_total_eq!(exp_m1(hi_th + F::two()), F::INFINITY);
+        assert_total_eq!(exp_m1(hi_th + F::ONE), F::INFINITY);
+        assert_total_eq!(exp_m1(hi_th + F::TWO), F::INFINITY);
     }
 
     #[test]

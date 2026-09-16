@@ -3,19 +3,19 @@ use crate::traits::{CastInto as _, Float, FloatConsts, Int as _};
 
 pub(crate) trait ReducePi2: FloatConsts {
     // trunc(π/2)
-    fn frac_pi_2_hi() -> Self;
+    const FRAC_PI_2_HI: Self;
     // π/2 - trunc(π/2)
-    fn frac_pi_2_hiex() -> Self;
+    const FRAC_PI_2_HIEX: Self;
     // trunc(π/2 - trunc(π/2))
-    fn frac_pi_2_mi() -> Self;
+    const FRAC_PI_2_MI: Self;
     // πpi/2 - trunc(π/2) - trunc(π/2 - trunc(π/2))
-    fn frac_pi_2_miex() -> Self;
+    const FRAC_PI_2_MIEX: Self;
     // trunc(π/2 - trunc(π/2) - trunc(π/2 - trunc(π/2)))
-    fn frac_pi_2_lo() -> Self;
+    const FRAC_PI_2_LO: Self;
     // π/2 - trunc(π/2 - trunc(π/2) - trunc(π/2 - trunc(π/2)))
-    fn frac_pi_2_loex() -> Self;
+    const FRAC_PI_2_LOEX: Self;
 
-    fn max_reduce_pi_2_medium() -> Self;
+    const MAX_REDUCE_PI_2_MEDIUM: Self;
 
     const REDUCE_PI_2_MEDIUM_TH1: Self::Exp;
     const REDUCE_PI_2_MEDIUM_TH2: Self::Exp;
@@ -41,7 +41,7 @@ pub(crate) fn reduce_pi_2<F: ReducePi2>(x: F) -> (u8, F, F) {
     if xabs <= F::FRAC_PI_4 {
         // reduction not needed
         (0, x, F::ZERO)
-    } else if xabs < F::max_reduce_pi_2_medium() {
+    } else if xabs < F::MAX_REDUCE_PI_2_MEDIUM {
         reduce_pi_2_medium(x)
     } else {
         let (x_chunks, e0, jk) = F::reduce_pi_2_prepare(x);
@@ -64,20 +64,20 @@ fn reduce_pi_2_medium<F: ReducePi2>(x: F) -> (u8, F, F) {
     // The directed rounding thing from musl has been removed, assume
     // round-to-nearest
     let xexp = x.exponent();
-    let mut r = x - f_n * F::frac_pi_2_hi();
-    let mut w = f_n * F::frac_pi_2_hiex();
+    let mut r = x - f_n * F::FRAC_PI_2_HI;
+    let mut w = f_n * F::FRAC_PI_2_HIEX;
     let mut y0 = (r - w).purify();
     if (xexp - y0.exponent()) > F::REDUCE_PI_2_MEDIUM_TH1 {
         let t = r;
-        w = f_n * F::frac_pi_2_mi();
+        w = f_n * F::FRAC_PI_2_MI;
         r = (t - w).purify();
-        w = f_n * F::frac_pi_2_miex() - ((t - r) - w);
+        w = f_n * F::FRAC_PI_2_MIEX - ((t - r) - w);
         y0 = (r - w).purify();
         if (xexp - y0.exponent()) > F::REDUCE_PI_2_MEDIUM_TH2 {
             let t = r;
-            w = f_n * F::frac_pi_2_lo();
+            w = f_n * F::FRAC_PI_2_LO;
             r = (t - w).purify();
-            w = f_n * F::frac_pi_2_loex() - ((t - r) - w);
+            w = f_n * F::FRAC_PI_2_LOEX - ((t - r) - w);
             y0 = (r - w).purify();
         }
     }
@@ -92,7 +92,7 @@ pub(super) fn round_fi<F: Float>(x: F) -> (F, i32) {
     let e = x.raw_exp();
     if e < F::EXP_OFFSET {
         // 0.5 <= abs(x) < 1
-        (F::one().copysign(x), 1 - (i32::from(x.sign()) << 1))
+        (F::ONE.copysign(x), 1 - (i32::from(x.sign()) << 1))
     } else {
         // 1 <= abs(x) < 2^min(31, MANT_BITS)
         let shift = F::RawExp::from(F::MANT_BITS) - (e - F::EXP_OFFSET);

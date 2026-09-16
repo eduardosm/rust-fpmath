@@ -17,11 +17,11 @@ pub(crate) fn atand<F: Atan + RadToDeg>(x: F) -> F {
         // subnormal or zero
         // atand(x) ~= x * (180/π)
         // also handles atand(-0) = -0
-        x * F::rad_to_deg()
+        x * F::RAD_TO_DEG
     } else {
         let y = atan_inner(x).to_semi();
 
-        (y * F::rad_to_deg_ex()).to_single()
+        (y * F::RAD_TO_DEG_EX).to_single()
     }
 }
 
@@ -81,13 +81,13 @@ pub(crate) fn atan2d<F: Atan + RadToDeg>(y: F, x: F) -> F {
         let ny = SemiDouble::new(ny * scale);
         let nx = SemiDouble::new(nx);
 
-        let nydeg = ny * F::rad_to_deg_ex();
+        let nydeg = ny * F::RAD_TO_DEG_EX;
 
         (nydeg.to_semi() / nx).to_single() * descale
     } else {
         let y = atan2_inner(ny, nx).to_semi();
 
-        (y * F::rad_to_deg_ex()).to_single()
+        (y * F::RAD_TO_DEG_EX).to_single()
     }
 }
 
@@ -103,7 +103,7 @@ mod tests {
 
         assert_is_nan!(atand(F::NAN));
         assert_total_eq!(atand(F::INFINITY), f("90"));
-        assert_total_eq!(atand(F::neg_infinity()), f("-90"));
+        assert_total_eq!(atand(F::NEG_INFINITY), f("-90"));
         assert_total_eq!(atand(F::ZERO), F::ZERO);
         assert_total_eq!(atand(-F::ZERO), -F::ZERO);
     }
@@ -113,43 +113,43 @@ mod tests {
 
         let f = F::parse;
 
-        assert_is_nan!(atan2d(F::NAN, F::one()));
+        assert_is_nan!(atan2d(F::NAN, F::ONE));
         assert_is_nan!(atan2d(F::NAN, F::ZERO));
         assert_is_nan!(atan2d(F::NAN, F::INFINITY));
         assert_is_nan!(atan2d(F::NAN, F::NAN));
         assert_is_nan!(atan2d(F::INFINITY, F::NAN));
         assert_is_nan!(atan2d(F::ZERO, F::NAN));
-        assert_is_nan!(atan2d(F::one(), F::NAN));
+        assert_is_nan!(atan2d(F::ONE, F::NAN));
         assert_total_eq!(atan2d(F::ZERO, F::ZERO), F::ZERO);
         assert_total_eq!(atan2d(-F::ZERO, F::ZERO), -F::ZERO);
-        assert_total_eq!(atan2d(F::ZERO, F::one()), F::ZERO);
-        assert_total_eq!(atan2d(-F::ZERO, F::one()), -F::ZERO);
+        assert_total_eq!(atan2d(F::ZERO, F::ONE), F::ZERO);
+        assert_total_eq!(atan2d(-F::ZERO, F::ONE), -F::ZERO);
         assert_total_eq!(atan2d(F::ZERO, F::INFINITY), F::ZERO);
         assert_total_eq!(atan2d(-F::ZERO, F::INFINITY), -F::ZERO);
         assert_total_eq!(atan2d(F::ZERO, -F::ZERO), f("180"));
         assert_total_eq!(atan2d(-F::ZERO, -F::ZERO), f("-180"));
-        assert_total_eq!(atan2d(F::ZERO, -F::one()), f("180"));
-        assert_total_eq!(atan2d(-F::ZERO, -F::one()), f("-180"));
+        assert_total_eq!(atan2d(F::ZERO, -F::ONE), f("180"));
+        assert_total_eq!(atan2d(-F::ZERO, -F::ONE), f("-180"));
         assert_total_eq!(atan2d(F::INFINITY, F::ZERO), f("90"));
         assert_total_eq!(atan2d(F::INFINITY, -F::ZERO), f("90"));
-        assert_total_eq!(atan2d(F::INFINITY, F::one()), f("90"));
-        assert_total_eq!(atan2d(F::INFINITY, -F::one()), f("90"));
-        assert_total_eq!(atan2d(F::neg_infinity(), F::ZERO), f("-90"));
-        assert_total_eq!(atan2d(F::neg_infinity(), -F::ZERO), f("-90"));
-        assert_total_eq!(atan2d(F::neg_infinity(), F::one()), f("-90"));
-        assert_total_eq!(atan2d(F::neg_infinity(), -F::one()), f("-90"));
+        assert_total_eq!(atan2d(F::INFINITY, F::ONE), f("90"));
+        assert_total_eq!(atan2d(F::INFINITY, -F::ONE), f("90"));
+        assert_total_eq!(atan2d(F::NEG_INFINITY, F::ZERO), f("-90"));
+        assert_total_eq!(atan2d(F::NEG_INFINITY, -F::ZERO), f("-90"));
+        assert_total_eq!(atan2d(F::NEG_INFINITY, F::ONE), f("-90"));
+        assert_total_eq!(atan2d(F::NEG_INFINITY, -F::ONE), f("-90"));
         assert_total_eq!(atan2d(F::ZERO, F::INFINITY), F::ZERO);
         assert_total_eq!(atan2d(-F::ZERO, F::INFINITY), -F::ZERO);
-        assert_total_eq!(atan2d(F::one(), F::INFINITY), F::ZERO);
-        assert_total_eq!(atan2d(-F::one(), F::INFINITY), -F::ZERO);
-        assert_total_eq!(atan2d(F::ZERO, F::neg_infinity()), f("180"));
-        assert_total_eq!(atan2d(-F::ZERO, F::neg_infinity()), f("-180"));
-        assert_total_eq!(atan2d(F::one(), F::neg_infinity()), f("180"));
-        assert_total_eq!(atan2d(-F::one(), F::neg_infinity()), f("-180"));
+        assert_total_eq!(atan2d(F::ONE, F::INFINITY), F::ZERO);
+        assert_total_eq!(atan2d(-F::ONE, F::INFINITY), -F::ZERO);
+        assert_total_eq!(atan2d(F::ZERO, F::NEG_INFINITY), f("180"));
+        assert_total_eq!(atan2d(-F::ZERO, F::NEG_INFINITY), f("-180"));
+        assert_total_eq!(atan2d(F::ONE, F::NEG_INFINITY), f("180"));
+        assert_total_eq!(atan2d(-F::ONE, F::NEG_INFINITY), f("-180"));
         assert_total_eq!(atan2d(F::INFINITY, F::INFINITY), f("45"));
-        assert_total_eq!(atan2d(F::neg_infinity(), F::INFINITY), f("-45"));
-        assert_total_eq!(atan2d(F::INFINITY, F::neg_infinity()), f("135"));
-        assert_total_eq!(atan2d(F::neg_infinity(), F::neg_infinity()), f("-135"));
+        assert_total_eq!(atan2d(F::NEG_INFINITY, F::INFINITY), f("-45"));
+        assert_total_eq!(atan2d(F::INFINITY, F::NEG_INFINITY), f("135"));
+        assert_total_eq!(atan2d(F::NEG_INFINITY, F::NEG_INFINITY), f("-135"));
     }
 
     #[test]

@@ -1,4 +1,4 @@
-use super::super::{FloatKind, arg_utils, render_const, sollya, split_hi_lo};
+use super::super::{FloatKind, arg_utils, render_double_const, sollya, split_hi_lo};
 
 pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     let fkind: FloatKind = arg_utils::parse_1_arg(args)?;
@@ -9,14 +9,12 @@ pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     // cbrt(2)
     let tmp = rug::Float::with_val(aux_prec, 2).cbrt();
     let (hi, lo) = split_hi_lo(tmp, fkind.split_prec());
-    render_const(fkind, "CBRT_2_HI", hi, &mut out);
-    render_const(fkind, "CBRT_2_LO", lo, &mut out);
+    render_double_const(fkind, "SemiDouble", "CBRT_2_EX", hi, lo, &mut out);
 
     // cbrt(4)
     let tmp = rug::Float::with_val(aux_prec, 4).cbrt();
     let (hi, lo) = split_hi_lo(tmp, fkind.split_prec());
-    render_const(fkind, "CBRT_4_HI", hi, &mut out);
-    render_const(fkind, "CBRT_4_LO", lo, &mut out);
+    render_double_const(fkind, "SemiDouble", "CBRT_4_EX", hi, lo, &mut out);
 
     Ok(out)
 }

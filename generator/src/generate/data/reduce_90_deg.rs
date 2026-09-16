@@ -1,4 +1,4 @@
-use super::super::{FloatKind, arg_utils, render_const, split_hi_lo};
+use super::super::{FloatKind, arg_utils, render_const, render_double_const, split_hi_lo};
 
 pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     let fkind: FloatKind = arg_utils::parse_1_arg(args)?;
@@ -10,8 +10,7 @@ pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     let tmp = rug::Float::with_val(aux_prec, rug::float::Constant::Pi) / 180u8;
     let (hi, lo) = split_hi_lo(tmp.clone(), fkind.split_prec());
     render_const(fkind, "DEG_TO_RAD", tmp, &mut out);
-    render_const(fkind, "DEG_TO_RAD_HI", hi, &mut out);
-    render_const(fkind, "DEG_TO_RAD_LO", lo, &mut out);
+    render_double_const(fkind, "SemiDouble", "DEG_TO_RAD_EX", hi, lo, &mut out);
 
     Ok(out)
 }

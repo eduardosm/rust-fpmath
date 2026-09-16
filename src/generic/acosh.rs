@@ -6,10 +6,10 @@ use crate::traits::Int as _;
 
 pub(crate) fn acosh<F: Ln>(x: F) -> F {
     let e = x.raw_exp();
-    if x < F::one() {
+    if x < F::ONE {
         // x < 1, acosh(x) is NaN
         F::NAN
-    } else if x == F::one() {
+    } else if x == F::ONE {
         // asinh(1) = 0
         F::ZERO
     } else if e == F::MAX_RAW_EXP {
@@ -25,11 +25,11 @@ pub(crate) fn acosh<F: Ln>(x: F) -> F {
 
 fn acosh_inner<F: Ln>(x: F) -> F {
     // t1 = x^2 - 1
-    let t1 = if x < F::two() {
+    let t1 = if x < F::TWO {
         // y = x - 1
-        let y = x - F::one();
+        let y = x - F::ONE;
         let y2 = y * y;
-        let twoy = F::two() * y;
+        let twoy = F::TWO * y;
 
         // t1 = x^2 - 1 = y^2 + 2 * y
         DenormDouble::new_qadd11(twoy, y2)
@@ -37,7 +37,7 @@ fn acosh_inner<F: Ln>(x: F) -> F {
         let x2 = x * x;
 
         // t1 = x^2 - 1
-        DenormDouble::new_qsub11(x2, F::one())
+        DenormDouble::new_qsub11(x2, F::ONE)
     };
 
     // t2 = sqrt(x^2 - 1)
@@ -59,12 +59,12 @@ mod tests {
         use crate::acosh;
 
         assert_is_nan!(acosh(F::NAN));
-        assert_is_nan!(acosh(F::neg_infinity()));
-        assert_is_nan!(acosh(-F::one()));
+        assert_is_nan!(acosh(F::NEG_INFINITY));
+        assert_is_nan!(acosh(-F::ONE));
         assert_is_nan!(acosh(F::ZERO));
-        assert_is_nan!(acosh(F::half()));
+        assert_is_nan!(acosh(F::HALF));
         assert_total_eq!(acosh(F::INFINITY), F::INFINITY);
-        assert_total_eq!(acosh(F::one()), F::ZERO);
+        assert_total_eq!(acosh(F::ONE), F::ZERO);
     }
 
     #[test]

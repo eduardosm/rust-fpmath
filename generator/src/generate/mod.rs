@@ -133,3 +133,59 @@ fn render_const(fkind: FloatKind, name: &str, val: rug::Float, out: &mut String)
         }
     }
 }
+
+fn render_double_const(
+    fkind: FloatKind,
+    double_ty: &str,
+    name: &str,
+    val_hi: rug::Float,
+    val_lo: rug::Float,
+    out: &mut String,
+) {
+    match fkind {
+        FloatKind::F32 => {
+            let val_hi = val_hi.to_f32();
+            let val_lo = val_lo.to_f32();
+            writeln!(
+                out,
+                "const {name}: {double_ty}<f32> = {double_ty}::with_parts("
+            )
+            .unwrap();
+            writeln!(
+                out,
+                "    f32::from_bits(0x{:08X}), // {val_hi:e}",
+                val_hi.to_bits(),
+            )
+            .unwrap();
+            writeln!(
+                out,
+                "    f32::from_bits(0x{:08X}), // {val_lo:e}",
+                val_lo.to_bits(),
+            )
+            .unwrap();
+            out.push_str(");\n");
+        }
+        FloatKind::F64 => {
+            let val_hi = val_hi.to_f64();
+            let val_lo = val_lo.to_f64();
+            writeln!(
+                out,
+                "const {name}: {double_ty}<f64> = {double_ty}::with_parts("
+            )
+            .unwrap();
+            writeln!(
+                out,
+                "    f64::from_bits(0x{:016X}), // {val_hi:e}",
+                val_hi.to_bits(),
+            )
+            .unwrap();
+            writeln!(
+                out,
+                "    f64::from_bits(0x{:016X}), // {val_lo:e}",
+                val_lo.to_bits(),
+            )
+            .unwrap();
+            out.push_str(");\n");
+        }
+    }
+}

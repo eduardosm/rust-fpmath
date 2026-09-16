@@ -1,49 +1,16 @@
 use crate::generic::scalbn_medium;
 use crate::traits::{Float as _, FloatConsts as _};
 
-// GENERATE: reduce_pi_2::consts f32
-const FRAC_PI_2_HI: f32 = f32::from_bits(0x3FC90E00); // 1.5707397e0
-const FRAC_PI_2_HIEX: f32 = f32::from_bits(0x386D5111); // 5.6580702e-5
-const FRAC_PI_2_MI: f32 = f32::from_bits(0x386D5000); // 5.657971e-5
-const FRAC_PI_2_MIEX: f32 = f32::from_bits(0x30885A31); // 9.920936e-10
-const FRAC_PI_2_LO: f32 = f32::from_bits(0x30885A00); // 9.920882e-10
-const FRAC_PI_2_LOEX: f32 = f32::from_bits(0x27C234C5); // 5.390303e-15
-
 impl crate::generic::ReducePi2 for f32 {
-    #[inline]
-    fn frac_pi_2_hi() -> Self {
-        FRAC_PI_2_HI
-    }
+    // GENERATE: reduce_pi_2::consts f32
+    const FRAC_PI_2_HI: f32 = f32::from_bits(0x3FC90E00); // 1.5707397e0
+    const FRAC_PI_2_HIEX: f32 = f32::from_bits(0x386D5111); // 5.6580702e-5
+    const FRAC_PI_2_MI: f32 = f32::from_bits(0x386D5000); // 5.657971e-5
+    const FRAC_PI_2_MIEX: f32 = f32::from_bits(0x30885A31); // 9.920936e-10
+    const FRAC_PI_2_LO: f32 = f32::from_bits(0x30885A00); // 9.920882e-10
+    const FRAC_PI_2_LOEX: f32 = f32::from_bits(0x27C234C5); // 5.390303e-15
 
-    #[inline]
-    fn frac_pi_2_hiex() -> Self {
-        FRAC_PI_2_HIEX
-    }
-
-    #[inline]
-    fn frac_pi_2_mi() -> Self {
-        FRAC_PI_2_MI
-    }
-
-    #[inline]
-    fn frac_pi_2_miex() -> Self {
-        FRAC_PI_2_MIEX
-    }
-
-    #[inline]
-    fn frac_pi_2_lo() -> Self {
-        FRAC_PI_2_LO
-    }
-
-    #[inline]
-    fn frac_pi_2_loex() -> Self {
-        FRAC_PI_2_LOEX
-    }
-
-    #[inline]
-    fn max_reduce_pi_2_medium() -> Self {
-        ((1u32 << 9) - 1) as f32 * f32::FRAC_PI_2
-    }
+    const MAX_REDUCE_PI_2_MEDIUM: Self = ((1u32 << 9) - 1) as f32 * f32::FRAC_PI_2;
 
     const REDUCE_PI_2_MEDIUM_TH1: i16 = 8;
     const REDUCE_PI_2_MEDIUM_TH2: i16 = 20;

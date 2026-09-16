@@ -1,14 +1,11 @@
 use crate::double::NormDouble;
 
-// GENERATE: asin_acos::consts f64
-const FRAC_PI_2_HI: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
-const FRAC_PI_2_LO: f64 = f64::from_bits(0x3C91A62633145C07); // 6.123233995736766e-17
-
 impl crate::generic::AsinAcos for f64 {
-    #[inline]
-    fn frac_pi_2_ex() -> NormDouble<Self> {
-        NormDouble::with_parts(FRAC_PI_2_HI, FRAC_PI_2_LO)
-    }
+    // GENERATE: asin_acos::consts f64
+    const FRAC_PI_2_EX: NormDouble<f64> = NormDouble::with_parts(
+        f64::from_bits(0x3FF921FB54442D18), // 1.5707963267948966e0
+        f64::from_bits(0x3C91A62633145C07), // 6.123233995736766e-17
+    );
 
     #[inline]
     fn asin_poly(x2: Self) -> Self {

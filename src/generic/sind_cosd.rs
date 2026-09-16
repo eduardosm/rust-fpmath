@@ -9,7 +9,7 @@ pub(crate) fn sind<F: SinCos + Reduce90Deg>(x: F) -> F {
     } else if e <= F::RawExp::from(F::MANT_BITS) {
         // subnormal or zero, sind(x) ~= x * (π/180)
         // also handles sind(-0) = -0
-        x * F::deg_to_rad()
+        x * F::DEG_TO_RAD
     } else {
         let (n, y) = reduce_90_deg(x);
 
@@ -30,7 +30,7 @@ pub(crate) fn cosd<F: SinCos + Reduce90Deg>(x: F) -> F {
         F::NAN
     } else if e <= F::RawExp::from(F::MANT_BITS) {
         // subnormal or zero, cosd(x) ~= 1
-        F::one()
+        F::ONE
     } else {
         let (n, y) = reduce_90_deg(x);
 
@@ -55,7 +55,7 @@ pub(crate) fn sind_cosd<F: SinCos + Reduce90Deg>(x: F) -> (F, F) {
         // sind(x) ~= x * (π/180)
         // cosd(x) ~= 1
         // also handles sind(-0) = -0
-        (x * F::deg_to_rad(), F::one())
+        (x * F::DEG_TO_RAD, F::ONE)
     } else {
         let (n, y) = reduce_90_deg(x);
 
@@ -101,9 +101,9 @@ mod tests {
 
         test_nan(F::NAN);
         test_nan(F::INFINITY);
-        test_nan(F::neg_infinity());
-        test_value(F::ZERO, F::ZERO, F::one());
-        test_value(-F::ZERO, -F::ZERO, F::one());
+        test_nan(F::NEG_INFINITY);
+        test_value(F::ZERO, F::ZERO, F::ONE);
+        test_value(-F::ZERO, -F::ZERO, F::ONE);
     }
 
     #[test]

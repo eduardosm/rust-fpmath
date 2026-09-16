@@ -7,7 +7,7 @@ pub(crate) fn ceil<F: Float>(x: F) -> F {
         if !x.sign() && (x.to_raw() & (F::EXP_MASK | F::MANT_MASK)) != F::Raw::ZERO {
             // 0 < x < 1
             // return 1.0
-            F::one()
+            F::ONE
         } else {
             // -1 < x <= 0
             // return zero without losing the sign
@@ -39,14 +39,14 @@ mod tests {
     fn test<F: Float + FloatMath>() {
         use crate::ceil;
 
-        let one = F::one();
+        let one = F::ONE;
         let pt_1 = F::parse("0.1");
         let pt_5 = F::parse("0.5");
         let pt_9 = F::parse("0.9");
 
         assert_is_nan!(ceil(F::NAN));
         assert_total_eq!(ceil(F::INFINITY), F::INFINITY);
-        assert_total_eq!(ceil(F::neg_infinity()), F::neg_infinity());
+        assert_total_eq!(ceil(F::NEG_INFINITY), F::NEG_INFINITY);
 
         for i in 0..20u32 {
             let x = F::cast_from(i);

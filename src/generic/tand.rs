@@ -9,7 +9,7 @@ pub(crate) fn tand<F: Reduce90Deg + Tan>(x: F) -> F {
         // very small, includes subnormal and zero
         // tand(x) ~= x * (π/180)
         // also handles tand(-0) = -0
-        x * F::deg_to_rad()
+        x * F::DEG_TO_RAD
     } else {
         let (n, y) = reduce_90_deg(x);
         let inv = (n & 1) != 0;
@@ -31,7 +31,7 @@ mod tests {
 
         assert_is_nan!(tand(F::NAN));
         assert_is_nan!(tand(F::INFINITY));
-        assert_is_nan!(tand(F::neg_infinity()));
+        assert_is_nan!(tand(F::NEG_INFINITY));
         assert_total_eq!(tand(F::ZERO), F::ZERO);
         assert_total_eq!(tand(-F::ZERO), -F::ZERO);
     }

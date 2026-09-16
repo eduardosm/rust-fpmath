@@ -91,7 +91,7 @@ pub(super) fn hi_lo_sqrt_hi_lo_inner<F: Float>(x: DenormDouble<F>) -> DenormDoub
 
     let y2 = y.square();
 
-    SemiDouble::new_qadd22(x, y2) / y.pmul1(F::two())
+    SemiDouble::new_qadd22(x, y2) / y.pmul1(F::TWO)
 }
 
 #[cfg(test)]
@@ -107,8 +107,8 @@ mod tests {
         use crate::{scalbn, sqrt};
 
         assert_is_nan!(sqrt(F::NAN));
-        assert_is_nan!(sqrt(F::neg_infinity()));
-        assert_is_nan!(sqrt(-F::one()));
+        assert_is_nan!(sqrt(F::NEG_INFINITY));
+        assert_is_nan!(sqrt(-F::ONE));
         assert_total_eq!(sqrt(F::INFINITY), F::INFINITY);
         assert_total_eq!(sqrt(F::ZERO), F::ZERO);
         assert_total_eq!(sqrt(-F::ZERO), -F::ZERO);

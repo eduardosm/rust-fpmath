@@ -3,22 +3,22 @@ use super::{Exp, round_as_i_f};
 use crate::traits::Int as _;
 
 pub(crate) trait Exp10: Exp {
-    fn log2_10() -> Self;
-    fn log10_2_hi() -> Self;
-    fn log10_2_lo() -> Self;
-    fn ln_10() -> Self;
-    fn ln_10_hi() -> Self;
-    fn ln_10_lo() -> Self;
-    fn exp10_lo_th() -> Self;
-    fn exp10_hi_th() -> Self;
+    const LOG2_10: Self;
+    const LOG10_2_HI: Self;
+    const LOG10_2_LO: Self;
+    const LN_10: Self;
+    const LN_10_HI: Self;
+    const LN_10_LO: Self;
+    const EXP10_LO_TH: Self;
+    const EXP10_HI_TH: Self;
 }
 
 /// Returns 10 raised to `x`.
 pub(crate) fn exp10<F: Exp10>(x: F) -> F {
-    if x >= F::exp10_hi_th() {
+    if x >= F::EXP10_HI_TH {
         // also handles x = inf
         F::INFINITY
-    } else if x <= F::exp10_lo_th() {
+    } else if x <= F::EXP10_LO_TH {
         // also handles x = -inf
         F::ZERO
     } else {
@@ -26,7 +26,7 @@ pub(crate) fn exp10<F: Exp10>(x: F) -> F {
         if e == F::RawExp::ZERO {
             // x is zero or subnormal
             // 10^x ~= 1
-            F::one()
+            F::ONE
         } else if e == F::MAX_RAW_EXP {
             // x is NaN, propagate
             x
@@ -55,16 +55,16 @@ fn exp10_inner<F: Exp10>(x: F) -> F {
 /// * `|r| <= 0.5*ln(2)`
 #[inline]
 fn exp10_split<F: Exp10>(x: F) -> (i32, F, F) {
-    let y = x * F::log2_10();
+    let y = x * F::LOG2_10;
     let (k, kf) = round_as_i_f(y);
     // `kf * LOG10_2_HI` is exact because the lower bits
     // of `LOG10_2_HI` are zero.
-    let t_hi = x - kf * F::log10_2_hi();
-    let t_lo = -kf * F::log10_2_lo();
+    let t_hi = x - kf * F::LOG10_2_HI;
+    let t_lo = -kf * F::LOG10_2_LO;
     let (t_hi, t_lo) = F::norm_hi_lo_splitted(t_hi, t_lo);
 
-    let r_hi = t_hi * F::ln_10_hi();
-    let r_lo = t_hi * F::ln_10_lo() + t_lo * F::ln_10();
+    let r_hi = t_hi * F::LN_10_HI;
+    let r_lo = t_hi * F::LN_10_LO + t_lo * F::LN_10;
 
     (k, r_hi, r_lo)
 }
@@ -84,17 +84,17 @@ mod tests {
 
         assert_is_nan!(exp10(F::NAN));
         assert_total_eq!(exp10(F::INFINITY), F::INFINITY);
-        assert_total_eq!(exp10(F::neg_infinity()), F::ZERO);
-        assert_total_eq!(exp10(F::ZERO), F::one());
-        assert_total_eq!(exp10(-F::ZERO), F::one());
-        assert_total_eq!(exp10(F::one()), f("10"));
-        assert_total_eq!(exp10(F::two()), f("100"));
+        assert_total_eq!(exp10(F::NEG_INFINITY), F::ZERO);
+        assert_total_eq!(exp10(F::ZERO), F::ONE);
+        assert_total_eq!(exp10(-F::ZERO), F::ONE);
+        assert_total_eq!(exp10(F::ONE), f("10"));
+        assert_total_eq!(exp10(F::TWO), f("100"));
         assert_total_eq!(exp10(lo_th), F::ZERO);
-        assert_total_eq!(exp10(lo_th - F::one()), F::ZERO);
-        assert_total_eq!(exp10(lo_th - F::two()), F::ZERO);
+        assert_total_eq!(exp10(lo_th - F::ONE), F::ZERO);
+        assert_total_eq!(exp10(lo_th - F::TWO), F::ZERO);
         assert_total_eq!(exp10(hi_th), F::INFINITY);
-        assert_total_eq!(exp10(hi_th + F::one()), F::INFINITY);
-        assert_total_eq!(exp10(hi_th + F::two()), F::INFINITY);
+        assert_total_eq!(exp10(hi_th + F::ONE), F::INFINITY);
+        assert_total_eq!(exp10(hi_th + F::TWO), F::INFINITY);
     }
 
     #[test]

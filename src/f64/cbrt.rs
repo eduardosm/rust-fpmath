@@ -1,21 +1,15 @@
 use crate::double::SemiDouble;
 
-// GENERATE: cbrt::consts f64
-const CBRT_2_HI: f64 = f64::from_bits(0x3FF428A2F8000000); // 1.2599210441112518e0
-const CBRT_2_LO: f64 = f64::from_bits(0x3E38D728AE223DDB); // 5.783621333712523e-9
-const CBRT_4_HI: f64 = f64::from_bits(0x3FF965FEA0000000); // 1.587401032447815e0
-const CBRT_4_LO: f64 = f64::from_bits(0x3E54F5B8F20AC166); // 1.9520384533345454e-8
-
 impl crate::generic::Cbrt for f64 {
-    #[inline]
-    fn cbrt_2_ex() -> SemiDouble<Self> {
-        SemiDouble::with_parts(CBRT_2_HI, CBRT_2_LO)
-    }
-
-    #[inline]
-    fn cbrt_4_ex() -> SemiDouble<Self> {
-        SemiDouble::with_parts(CBRT_4_HI, CBRT_4_LO)
-    }
+    // GENERATE: cbrt::consts f64
+    const CBRT_2_EX: SemiDouble<f64> = SemiDouble::with_parts(
+        f64::from_bits(0x3FF428A2F8000000), // 1.2599210441112518e0
+        f64::from_bits(0x3E38D728AE223DDB), // 5.783621333712523e-9
+    );
+    const CBRT_4_EX: SemiDouble<f64> = SemiDouble::with_parts(
+        f64::from_bits(0x3FF965FEA0000000), // 1.587401032447815e0
+        f64::from_bits(0x3E54F5B8F20AC166), // 1.9520384533345454e-8
+    );
 
     #[inline]
     fn exp_mod_3(e: i16) -> i8 {

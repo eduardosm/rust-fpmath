@@ -3,7 +3,7 @@ use crate::double::{DenormDouble, SemiDouble};
 use crate::traits::{CastInto as _, Int as _};
 
 pub(crate) trait Log2: Ln {
-    fn log2_e_ex() -> SemiDouble<Self>;
+    const LOG2_E_EX: SemiDouble<Self>;
 }
 
 pub(crate) fn log2<F: Log2>(x: F) -> F {
@@ -11,7 +11,7 @@ pub(crate) fn log2<F: Log2>(x: F) -> F {
     let yexp = y.raw_exp();
     if yexp == F::RawExp::ZERO {
         // log2(±0) = -inf
-        F::neg_infinity()
+        F::NEG_INFINITY
     } else if y.sign() {
         // x < 0, log2(x) = NaN
         F::NAN
@@ -44,7 +44,7 @@ fn log2_inner<F: Log2>(x: F, edelta: F::Exp) -> F {
 
     // s = r / (2 + r)
     // So, ln(1 + r) = ln(1 + s) - ln(1 - s)
-    let s = r / (F::two() + r);
+    let s = r / (F::TWO + r);
 
     // p = (ln(1 + s) - ln(1 - s) - 2 * s) / s
     let p = F::ln_special_poly(s);
@@ -52,13 +52,13 @@ fn log2_inner<F: Log2>(x: F, edelta: F::Exp) -> F {
     // t1 = ln(1 + r) = p * s + 2 * s
     //    = r - s * (r - p)
     //    = r - (0.5 * r^2 - s * (0.5 * r^2 + p))
-    let hr2 = F::half() * r * r;
+    let hr2 = F::HALF * r * r;
     let t1 = DenormDouble::new_qsub11(r, hr2)
         .qadd1(s * (hr2 + p))
         .to_semi();
 
     // t2 = log2(1 + r) = ln(1 + r) * log2(e) = t1 * log2(e)
-    let t2 = t1 * F::log2_e_ex();
+    let t2 = t1 * F::LOG2_E_EX;
 
     // log2(x) = k + log2(1 + r) = k + t2
     let kf: F = k.cast_into();
@@ -75,10 +75,10 @@ mod tests {
         use crate::log2;
 
         assert_is_nan!(log2(F::NAN));
-        assert_is_nan!(log2(-F::one()));
-        assert_is_nan!(log2(F::neg_infinity()));
-        assert_total_eq!(log2(F::ZERO), F::neg_infinity());
-        assert_total_eq!(log2(-F::ZERO), F::neg_infinity());
+        assert_is_nan!(log2(-F::ONE));
+        assert_is_nan!(log2(F::NEG_INFINITY));
+        assert_total_eq!(log2(F::ZERO), F::NEG_INFINITY);
+        assert_total_eq!(log2(-F::ZERO), F::NEG_INFINITY);
         assert_total_eq!(log2(F::INFINITY), F::INFINITY);
     }
 

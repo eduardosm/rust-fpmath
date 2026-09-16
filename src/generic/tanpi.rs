@@ -19,7 +19,7 @@ pub(crate) fn tanpi<F: ReduceHalfMulPi + Tan>(x: F) -> F {
         let descale = F::exp2i_fast(-logscale);
 
         let sx = SemiDouble::new(x * scale);
-        let y = sx * F::pi_ex();
+        let y = sx * F::PI_EX;
         y.to_single() * descale
     } else {
         let (n, y) = reduce_half_mul_pi(x);
@@ -42,7 +42,7 @@ mod tests {
 
         assert_is_nan!(tanpi(F::NAN));
         assert_is_nan!(tanpi(F::INFINITY));
-        assert_is_nan!(tanpi(F::neg_infinity()));
+        assert_is_nan!(tanpi(F::NEG_INFINITY));
         assert_total_eq!(tanpi(F::ZERO), F::ZERO);
         assert_total_eq!(tanpi(-F::ZERO), -F::ZERO);
     }

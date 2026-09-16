@@ -28,7 +28,7 @@ fn asinh_inner<F: Ln>(x: F) -> F {
     let x2 = x * x;
 
     // t1 = x^2 + 1
-    let t1 = DenormDouble::new_add11(x2, F::one());
+    let t1 = DenormDouble::new_add11(x2, F::ONE);
 
     // t2 = sqrt(x^2 + 1)
     let t2 = hi_lo_sqrt_hi_lo_inner(t1);
@@ -53,7 +53,7 @@ mod tests {
 
         assert_is_nan!(asinh(F::NAN));
         assert_total_eq!(asinh(F::INFINITY), F::INFINITY);
-        assert_total_eq!(asinh(F::neg_infinity()), F::neg_infinity());
+        assert_total_eq!(asinh(F::NEG_INFINITY), F::NEG_INFINITY);
         assert_total_eq!(asinh(F::ZERO), F::ZERO);
         assert_total_eq!(asinh(-F::ZERO), -F::ZERO);
     }

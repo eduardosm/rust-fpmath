@@ -11,7 +11,7 @@ pub(crate) fn floor<F: Float>(x: F) -> F {
         } else {
             // -1 < x < 0
             // return -1.0
-            -F::one()
+            -F::ONE
         }
     } else {
         // x is NaN or abs(x) >= 1 (including infinity)
@@ -39,14 +39,14 @@ mod tests {
     fn test<F: Float + FloatMath>() {
         use crate::floor;
 
-        let one = F::one();
+        let one = F::ONE;
         let pt_1 = F::parse("0.1");
         let pt_5 = F::parse("0.5");
         let pt_9 = F::parse("0.9");
 
         assert_is_nan!(floor(F::NAN));
         assert_total_eq!(floor(F::INFINITY), F::INFINITY);
-        assert_total_eq!(floor(F::neg_infinity()), F::neg_infinity());
+        assert_total_eq!(floor(F::NEG_INFINITY), F::NEG_INFINITY);
 
         for i in 0..20u32 {
             let x = F::cast_from(i);
