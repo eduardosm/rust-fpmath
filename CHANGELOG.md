@@ -9,6 +9,10 @@
 - Some math functions have been renamed (`log` to `ln`, `log_1p` to `ln_1p`,
   `tgamma` to `gamma`, `lgamma` to `ln_gamma`)
 
+### Fixed
+
+- Fixed large `atanh` error near -1.
+
 ## 0.1.1 (2024-10-14)
 
 ### Added

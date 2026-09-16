@@ -22,20 +22,20 @@ pub(crate) fn atanh<F: Ln>(x: F) -> F {
         // |x| > 1, return NaN
         F::NAN
     } else {
-        atanh_inner(x)
+        atanh_inner(absx, x.sign())
     }
 }
 
-fn atanh_inner<F: Ln>(x: F) -> F {
-    // t1 = 2 * x / (1 - x)
-    let t1 = SemiDouble::new(F::TWO * x) / SemiDouble::new_qsub11(F::ONE, x);
+fn atanh_inner<F: Ln>(absx: F, sign: bool) -> F {
+    // t1 = 2 * |x| / (1 - |x|)
+    let t1 = SemiDouble::new(F::TWO * absx) / SemiDouble::new_qsub11(F::ONE, absx);
 
-    // t2 = (1 + x) / (1 - x) = t1 + 1
+    // t2 = (1 + |x|) / (1 - |x|) = t1 + 1
     let t2 = t1 + F::ONE;
     let t2 = t2.to_norm();
 
-    // atanh(x) = 0.5 * ln((1 + x) / (1 - x))
-    F::HALF * ln_hi_lo_inner(t2.hi(), t2.lo())
+    // atanh(x) = 0.5 * ln((1 + |x|) / (1 - |x|)) * sgn(x)
+    (F::HALF * ln_hi_lo_inner(t2.hi(), t2.lo())).set_sign(sign)
 }
 
 #[cfg(test)]
