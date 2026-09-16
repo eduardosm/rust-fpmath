@@ -11,7 +11,7 @@ mod round;
 mod sqrt;
 mod trigonometric;
 
-fn mkfloat(m: u32, e: i16, s: bool) -> f32 {
+fn mk_normal(m: u32, e: i16, s: bool) -> f32 {
     let m = m >> (32 - 23);
     let e = u32::from((e + 127) as u16) << 23;
     let s = u32::from(s) << 31;

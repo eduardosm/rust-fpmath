@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{RUG_PREC, calc_error_ulp, mkfloat, select_threshold};
+use super::{RUG_PREC, calc_error_ulp, mk_normal, select_threshold};
 use crate::create_prng;
 
 #[test]
@@ -82,15 +82,15 @@ fn test_with(mut f: impl FnMut(f64)) {
     let mut rng = create_prng();
 
     for e in -1022..=12 {
-        f(mkfloat(0, e, false));
-        f(mkfloat(0, e, true));
-        f(mkfloat(u64::MAX, e, false));
-        f(mkfloat(u64::MAX, e, true));
+        f(mk_normal(0, e, false));
+        f(mk_normal(0, e, true));
+        f(mk_normal(u64::MAX, e, false));
+        f(mk_normal(u64::MAX, e, true));
 
         for _ in 0..10000 {
             let m = rng.random::<u64>();
             let s = rng.random::<bool>();
-            f(mkfloat(m, e, s));
+            f(mk_normal(m, e, s));
         }
     }
 

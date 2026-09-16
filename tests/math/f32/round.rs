@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{mkfloat, purify};
+use super::{mk_normal, purify};
 use crate::create_prng;
 
 #[test]
@@ -47,15 +47,15 @@ fn test_with(test_f: fn(f32)) {
     let mut rng = create_prng();
 
     for e in -126..=127 {
-        test_f(mkfloat(0, e, false));
-        test_f(mkfloat(0, e, true));
-        test_f(mkfloat(u32::MAX, e, false));
-        test_f(mkfloat(u32::MAX, e, true));
+        test_f(mk_normal(0, e, false));
+        test_f(mk_normal(0, e, true));
+        test_f(mk_normal(u32::MAX, e, false));
+        test_f(mk_normal(u32::MAX, e, true));
 
         for _ in 0..10_000 {
             let m = rng.random::<u32>();
-            test_f(mkfloat(m, e, true));
-            test_f(mkfloat(m, e, false));
+            test_f(mk_normal(m, e, true));
+            test_f(mk_normal(m, e, false));
         }
     }
 
@@ -73,7 +73,7 @@ fn test_with(test_f: fn(f32)) {
 
     for e in 0..23 {
         for delta in -1000..=1000 {
-            let arg = mkfloat(0, e, false) + delta as f32;
+            let arg = mk_normal(0, e, false) + delta as f32;
             test_f(purify(arg));
             test_f(purify(-arg));
             test_f(purify(arg + 0.25));
