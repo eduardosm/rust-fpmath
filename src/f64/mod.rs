@@ -28,7 +28,7 @@ impl crate::traits::Float for f64 {
     const MANT_BITS: u8 = 52;
     const EXP_BITS: u8 = 11;
 
-    const SIGN_MASK: Self::Raw = 1 << (Self::BITS - 1);
+    const SIGN_MASK: Self::Raw = 1 << (<Self as crate::traits::Float>::BITS - 1);
     const EXP_MASK: Self::Raw = ((1 << Self::EXP_BITS) - 1) << Self::MANT_BITS;
     const MANT_MASK: Self::Raw = (1 << Self::MANT_BITS) - 1;
 
