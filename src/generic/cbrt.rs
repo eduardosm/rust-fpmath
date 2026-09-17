@@ -61,7 +61,7 @@ fn cbrt_inner<F: Cbrt>(x: F, edelta: F::Exp) -> F {
     let td = ((-F::TWO * inv_three) * tb * tc).purify();
 
     // te = tb^2 + (-2 / 3) * tb * (r * tb^4 - tb) = tb^2 + td
-    let te = SemiDouble::new_qadd21(tb2.to_denorm(), td);
+    let te = SemiDouble::new_qadd21(tb2.to_double(), td);
 
     // tf = te * r = cbrt(r)
     let tf = (te * r).to_semi();

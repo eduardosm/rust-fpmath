@@ -1,4 +1,4 @@
-use crate::double::{NormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::traits::{CastFrom as _, CastInto as _, FloatConsts, Int as _};
 
 pub(crate) trait ReduceHalfMulPi: FloatConsts {
@@ -12,7 +12,7 @@ pub(crate) trait ReduceHalfMulPi: FloatConsts {
 /// * `0 <= n <= 3`
 /// * `x = 2*M + 0.5*n + (y_hi + y_lo)/π`
 /// * `M` is an integer
-pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, NormDouble<F>) {
+pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, Double<F>) {
     let xexp = x.exponent();
     if xexp < -F::Exp::TWO {
         // |x| < 0.25
@@ -22,7 +22,7 @@ pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, NormDouble<F>
         let descale = F::exp2i_fast(-F::Exp::cast_from(F::MANT_BITS));
 
         let sx = SemiDouble::new(x * scale);
-        let y = (sx * F::PI_EX).pmul1(descale).to_norm();
+        let y = (sx * F::PI_EX).pmul1(descale).normalize();
 
         (0, y)
     } else if xexp == -F::Exp::TWO {
@@ -32,7 +32,7 @@ pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, NormDouble<F>
         let n = if x.sign() { 3 } else { 1 };
 
         let fpart = SemiDouble::new(fpart);
-        let y = (fpart * F::PI_EX).to_norm();
+        let y = (fpart * F::PI_EX).normalize();
 
         (n, y)
     } else if xexp < F::Exp::cast_from(F::MANT_BITS) {
@@ -56,19 +56,19 @@ pub(crate) fn reduce_half_mul_pi<F: ReduceHalfMulPi>(x: F) -> (u8, NormDouble<F>
         }
 
         let fpart = SemiDouble::new(fpart_f);
-        let y = (fpart * F::PI_EX).to_norm();
+        let y = (fpart * F::PI_EX).normalize();
 
         (n & 3, y)
     } else if xexp == F::Exp::cast_from(F::MANT_BITS) {
         // The lowest bit of the integer part is zero
         let n: u8 = ((x.to_raw() & F::Raw::ONE) << 1).cast_into();
         if x.sign() {
-            (n, NormDouble::ZERO)
+            (n, Double::ZERO)
         } else {
-            (n.wrapping_neg() & 3, NormDouble::ZERO)
+            (n.wrapping_neg() & 3, Double::ZERO)
         }
     } else {
         // The two lowest bits of the integer part are zero
-        (0, NormDouble::ZERO)
+        (0, Double::ZERO)
     }
 }

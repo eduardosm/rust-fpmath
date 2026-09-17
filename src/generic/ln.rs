@@ -1,12 +1,12 @@
-use crate::double::{DenormDouble, NormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::traits::{CastInto as _, Float, Int as _};
 
 pub(crate) trait Ln: Float {
     const SQRT_2: Self;
     const LN_2_HI: Self;
     const LN_2_LO: Self;
-    const FRAC_2_3_EX: NormDouble<Self>;
-    const FRAC_4_10_EX: NormDouble<Self>;
+    const FRAC_2_3_EX: Double<Self>;
+    const FRAC_4_10_EX: Double<Self>;
 
     /// Calculates `(ln(1 + x) - ln(1 - x) - 2 * x) / x`
     ///
@@ -153,7 +153,7 @@ pub(super) fn ln_hi_lo_inner<F: Ln>(x_hi: F, x_lo: F) -> F {
 
     // t1 = k * ln(2) + c
     let kf: F = k.cast_into();
-    let t1 = DenormDouble::new(F::LN_2_HI, F::LN_2_LO).pmul1(kf).ladd(c);
+    let t1 = Double::new(F::LN_2_HI, F::LN_2_LO).pmul1(kf).ladd(c);
 
     // ln(x) = ln(x_hi) + c
     //       = ln(1 + r) + k * ln(2) + c
@@ -166,7 +166,7 @@ pub(super) fn ln_hi_lo_inner<F: Ln>(x_hi: F, x_lo: F) -> F {
 }
 
 /// Calculates ln(x * 2^edelta)
-pub(super) fn hi_lo_ln_inner<F: Ln>(x: F, edelta: F::Exp) -> DenormDouble<F> {
+pub(super) fn hi_lo_ln_inner<F: Ln>(x: F, edelta: F::Exp) -> Double<F> {
     // Algorithm based on one used by the msun math library:
     //  * ln(1 + r) = p * s + 2 * s
     //  * s = r / (2 + r)
@@ -189,19 +189,19 @@ pub(super) fn hi_lo_ln_inner<F: Ln>(x: F, edelta: F::Exp) -> DenormDouble<F> {
 
     // t1 = k * ln(2)
     let kf: F = k.cast_into();
-    let t1 = DenormDouble::new(F::LN_2_HI, F::LN_2_LO).pmul1(kf);
+    let t1 = Double::new(F::LN_2_HI, F::LN_2_LO).pmul1(kf);
 
     // t2 = ln(1 + r) = p * s + 2 * s
     let ps = p * s;
     let twos = s.pmul1(F::TWO);
-    let t2 = twos.to_denorm().qadd2(ps);
+    let t2 = twos.to_double().qadd2(ps);
 
     // ln(2^k * (1 + r)) = t1 + t2
     t1.qadd2(t2)
 }
 
 /// Calculates ln((x_hi + x_lo) * 2^edelta)
-pub(super) fn hi_lo_ln_hi_lo_inner<F: Ln>(x: NormDouble<F>, edelta: F::Exp) -> DenormDouble<F> {
+pub(super) fn hi_lo_ln_hi_lo_inner<F: Ln>(x: Double<F>, edelta: F::Exp) -> Double<F> {
     // Algorithm based on one used by the msun math library:
     //  * ln(1 + r) = p * s + 2 * s
     //  * s = r / (2 + r)
@@ -231,12 +231,12 @@ pub(super) fn hi_lo_ln_hi_lo_inner<F: Ln>(x: NormDouble<F>, edelta: F::Exp) -> D
 
     // t1 = k * ln(2) + c
     let kf: F = k.cast_into();
-    let t1 = DenormDouble::new(F::LN_2_HI, F::LN_2_LO).pmul1(kf).ladd(c);
+    let t1 = Double::new(F::LN_2_HI, F::LN_2_LO).pmul1(kf).ladd(c);
 
     // t2 = ln(1 + r) = p * s + 2 * s
     let ps = p * s;
     let twos = s.pmul1(F::TWO);
-    let t2 = twos.to_denorm().qadd2(ps);
+    let t2 = twos.to_double().qadd2(ps);
 
     // ln(2^k * (1 + r)) + c = t1 + t2
     t1.qadd2(t2)
@@ -245,18 +245,18 @@ pub(super) fn hi_lo_ln_hi_lo_inner<F: Ln>(x: NormDouble<F>, edelta: F::Exp) -> D
 /// Calculates `(ln(1 + x) - ln(1 - x) - 2 * x) / x`
 ///
 /// `-0.1716 < x < 0.1716`
-fn hi_lo_ln_special_poly<F: Ln>(x2: SemiDouble<F>) -> DenormDouble<F> {
+fn hi_lo_ln_special_poly<F: Ln>(x2: SemiDouble<F>) -> Double<F> {
     // p0 = (p - 2/3 * x^2 - 0.4 * x^4) / x^4
     let p0 = F::ln_special_poly_ex(x2.to_single());
 
     // p1 = (p - 2/3 * x^2) / x^4 = p0 + 0.4
-    let p1 = F::FRAC_4_10_EX.to_denorm().qadd1(p0).to_semi();
+    let p1 = F::FRAC_4_10_EX.qadd1(p0).to_semi();
 
     // p2 = (p - 2/3 * x^2) / x^2 = p1 * x2
     let p2 = p1 * x2;
 
     // p3 = p / x^2 = p2 + 2/3
-    let p3 = F::FRAC_2_3_EX.to_denorm().qadd2(p2).to_semi();
+    let p3 = F::FRAC_2_3_EX.qadd2(p2).to_semi();
 
     // (log(1 + x) - log(1 - x) - 2 * x) / x = p3 * x2
     p3 * x2

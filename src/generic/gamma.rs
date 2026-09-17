@@ -3,7 +3,7 @@ use super::ln::hi_lo_ln_hi_lo_inner;
 use super::scalbn;
 use super::sin_cos::{hi_lo_cos_inner, hi_lo_sin_inner};
 use super::{Exp, Ln, ReduceHalfMulPi, SinCos, is_int, reduce_half_mul_pi};
-use crate::double::{DenormDouble, NormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::traits::{Float, FloatConsts, Int as _};
 
 pub(crate) trait Gamma: FloatConsts + SinCos + ReduceHalfMulPi + Exp + Ln {
@@ -16,7 +16,7 @@ pub(crate) trait Gamma: FloatConsts + SinCos + ReduceHalfMulPi + Exp + Ln {
 
     const POLY_OFF: u8;
 
-    const HALF_LN_2_PI: NormDouble<Self>;
+    const HALF_LN_2_PI: Double<Self>;
 
     fn ln_gamma_poly_1(x: Self) -> (Self, Self, Self, Self);
     fn ln_gamma_poly_2(x: Self) -> (Self, Self, Self, Self);
@@ -88,7 +88,7 @@ fn ln_gamma_inner<F: Gamma>(x: F) -> (F, i8) {
     if y.hi() == F::INFINITY {
         (F::INFINITY, 1)
     } else {
-        let s = s.to_norm();
+        let s = s.normalize();
         let (sign, abs_s) = if s.hi().sign() { (-1, -s) } else { (1, s) };
 
         let ln_s = hi_lo_ln_hi_lo_inner(abs_s, F::Exp::ZERO);
@@ -98,7 +98,7 @@ fn ln_gamma_inner<F: Gamma>(x: F) -> (F, i8) {
 }
 
 /// Returns `(y, s)` such as `Γ(x) = s * exp(y)`.
-fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
+fn gamma_inner_common<F: Gamma>(x: F) -> (Double<F>, Double<F>) {
     // For x < 0.5, use gamma reflection formula:
     // Γ(x)*Γ(1-x) = π/sin(πx) => Γ(x) = π/(sin(πx)*Γ(1-x))
     let reflect = (x < F::HALF).then(|| {
@@ -115,9 +115,9 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
     });
     // nx is always greater or equal to 0.5
     let nx = if reflect.is_some() {
-        DenormDouble::new_sub11(F::ONE, x)
+        Double::new_sub11(F::ONE, x)
     } else {
-        DenormDouble::new(x, F::ZERO)
+        Double::new(x, F::ZERO)
     };
 
     // Based on the algorithm used in SLEEF.
@@ -146,7 +146,7 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
             (-r, reflect)
         } else {
             // ln(Γ(x)), 1
-            (r, DenormDouble::ONE)
+            (r, Double::ONE)
         }
     } else {
         // For larger values of `nx`:
@@ -168,9 +168,8 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
 
         // r = (t - 0.5) * ln(t) - t + 0.5 * ln(2π)
         //   = t * (ln(t) - 1) - 0.5 * ln(t) + 0.5 * ln(2π)
-        let ln_t = hi_lo_ln_hi_lo_inner(t.to_norm(), F::Exp::ZERO);
-        let r = t.to_semi() * (ln_t - F::ONE).to_semi() - ln_t.pmul1(F::HALF)
-            + F::HALF_LN_2_PI.to_denorm();
+        let ln_t = hi_lo_ln_hi_lo_inner(t.normalize(), F::Exp::ZERO);
+        let r = t.to_semi() * (ln_t - F::ONE).to_semi() - ln_t.pmul1(F::HALF) + F::HALF_LN_2_PI;
 
         let s = if low {
             let mut den = nx;
@@ -193,7 +192,7 @@ fn gamma_inner_common<F: Gamma>(x: F) -> (DenormDouble<F>, DenormDouble<F>) {
     }
 }
 
-fn finish_poly<F: Float>(y: F, r: F, k1: F, k2: F, k3: F) -> DenormDouble<F> {
+fn finish_poly<F: Float>(y: F, r: F, k1: F, k2: F, k3: F) -> Double<F> {
     let y = SemiDouble::new(y);
 
     // t = y * (k3 + r)

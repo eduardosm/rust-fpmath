@@ -68,8 +68,8 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
 enum FloatKind {
     F32,
     F64,
-    NormDoubleF32,
-    NormDoubleF64,
+    DoubleF32,
+    DoubleF64,
     SemiDoubleF32,
     SemiDoubleF64,
 }
@@ -81,8 +81,8 @@ impl std::str::FromStr for FloatKind {
         match s {
             "f32" => Ok(Self::F32),
             "f64" => Ok(Self::F64),
-            "NormDouble<f32>" => Ok(Self::NormDoubleF32),
-            "NormDouble<f64>" => Ok(Self::NormDoubleF64),
+            "Double<f32>" => Ok(Self::DoubleF32),
+            "Double<f64>" => Ok(Self::DoubleF64),
             "SemiDouble<f32>" => Ok(Self::SemiDoubleF32),
             "SemiDouble<f64>" => Ok(Self::SemiDoubleF64),
             _ => Err("invalid float kind"),
@@ -95,8 +95,8 @@ impl FloatKind {
         match self {
             Self::F32 => 128,
             Self::F64 => 256,
-            Self::NormDoubleF32 => 256,
-            Self::NormDoubleF64 => 384,
+            Self::DoubleF32 => 256,
+            Self::DoubleF64 => 384,
             Self::SemiDoubleF32 => 192,
             Self::SemiDoubleF64 => 320,
         }
@@ -106,8 +106,8 @@ impl FloatKind {
         match self {
             Self::F32 => 24,
             Self::F64 => 53,
-            Self::NormDoubleF32 => 24 * 2,
-            Self::NormDoubleF64 => 53 * 2,
+            Self::DoubleF32 => 24 * 2,
+            Self::DoubleF64 => 53 * 2,
             Self::SemiDoubleF32 => 12 + 24,
             Self::SemiDoubleF64 => 26 + 53,
         }
@@ -117,19 +117,19 @@ impl FloatKind {
         match self {
             Self::F32 => 12,
             Self::F64 => 26,
-            Self::NormDoubleF32 => unimplemented!(),
-            Self::NormDoubleF64 => unimplemented!(),
+            Self::DoubleF32 => unimplemented!(),
+            Self::DoubleF64 => unimplemented!(),
             Self::SemiDoubleF32 => unimplemented!(),
             Self::SemiDoubleF64 => unimplemented!(),
         }
     }
 
-    fn to_norm_double(self) -> Self {
+    fn to_double(self) -> Self {
         match self {
-            Self::F32 => Self::NormDoubleF32,
-            Self::F64 => Self::NormDoubleF64,
-            Self::NormDoubleF32 => unimplemented!(),
-            Self::NormDoubleF64 => unimplemented!(),
+            Self::F32 => Self::DoubleF32,
+            Self::F64 => Self::DoubleF64,
+            Self::DoubleF32 => unimplemented!(),
+            Self::DoubleF64 => unimplemented!(),
             Self::SemiDoubleF32 => unimplemented!(),
             Self::SemiDoubleF64 => unimplemented!(),
         }
@@ -139,8 +139,8 @@ impl FloatKind {
         match self {
             Self::F32 => Self::SemiDoubleF32,
             Self::F64 => Self::SemiDoubleF64,
-            Self::NormDoubleF32 => unimplemented!(),
-            Self::NormDoubleF64 => unimplemented!(),
+            Self::DoubleF32 => unimplemented!(),
+            Self::DoubleF64 => unimplemented!(),
             Self::SemiDoubleF32 => unimplemented!(),
             Self::SemiDoubleF64 => unimplemented!(),
         }
@@ -150,8 +150,8 @@ impl FloatKind {
         match self {
             Self::F32 => "f32",
             Self::F64 => "f64",
-            Self::NormDoubleF32 => "NormDouble<f32>",
-            Self::NormDoubleF64 => "NormDouble<f64>",
+            Self::DoubleF32 => "Double<f32>",
+            Self::DoubleF64 => "Double<f64>",
             Self::SemiDoubleF32 => "SemiDouble<f32>",
             Self::SemiDoubleF64 => "SemiDouble<f64>",
         }
@@ -186,25 +186,25 @@ fn render_const_value(fkind: FloatKind, val: &rug::Float, out: &mut String) {
             let val = val.to_f64();
             write!(out, "f64::from_bits(0x{:016X})", val.to_bits()).unwrap();
         }
-        FloatKind::NormDoubleF32 => {
+        FloatKind::DoubleF32 => {
             let hi = val.to_f32_round(rug::float::Round::Zero);
             let tmp = rug::Float::with_val(val.prec(), val - hi);
             let lo = tmp.to_f32();
             write!(
                 out,
-                "NormDouble::with_parts(f32::from_bits(0x{:08X}), f32::from_bits(0x{:08X}))",
+                "Double::new(f32::from_bits(0x{:08X}), f32::from_bits(0x{:08X}))",
                 hi.to_bits(),
                 lo.to_bits(),
             )
             .unwrap();
         }
-        FloatKind::NormDoubleF64 => {
+        FloatKind::DoubleF64 => {
             let hi = val.to_f64_round(rug::float::Round::Zero);
             let tmp = rug::Float::with_val(val.prec(), val - hi);
             let lo = tmp.to_f64();
             write!(
                 out,
-                "NormDouble::with_parts(f64::from_bits(0x{:016X}), f64::from_bits(0x{:016X}))",
+                "Double::new(f64::from_bits(0x{:016X}), f64::from_bits(0x{:016X}))",
                 hi.to_bits(),
                 lo.to_bits(),
             )
@@ -247,8 +247,8 @@ fn render_const_dec_value(fkind: FloatKind, val: &rug::Float, out: &mut String) 
             let val = val.to_f64();
             write!(out, "{val:e}").unwrap();
         }
-        FloatKind::NormDoubleF32
-        | FloatKind::NormDoubleF64
+        FloatKind::DoubleF32
+        | FloatKind::DoubleF64
         | FloatKind::SemiDoubleF32
         | FloatKind::SemiDoubleF64 => {
             let prec = fkind.float_prec();

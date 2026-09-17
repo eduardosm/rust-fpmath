@@ -42,8 +42,8 @@ pub(crate) fn hypot<F: Float>(x: F, y: F) -> F {
             let smin = SemiDouble::new(smin);
             let smax = SemiDouble::new(smax);
 
-            let smin2 = smin.square().to_norm();
-            let smax2 = smax.square().to_norm();
+            let smin2 = smin.square().normalize();
+            let smax2 = smax.square().normalize();
 
             // sum = (min * scale)^2 + (max * scale)^2
             let sum = smax2.qadd2(smin2);

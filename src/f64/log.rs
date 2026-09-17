@@ -1,15 +1,15 @@
-use crate::double::NormDouble;
+use crate::double::Double;
 
 impl crate::generic::Ln for f64 {
     // GENERATE: ln::consts f64
     const SQRT_2: f64 = f64::from_bits(0x3FF6A09E667F3BCD); // 1.4142135623730951e0
     const LN_2_HI: f64 = f64::from_bits(0x3FE62E42F8000000); // 6.931471675634384e-1
     const LN_2_LO: f64 = f64::from_bits(0x3E4BE8E7BCD5E4F2); // 1.2996506893889889e-8
-    const FRAC_2_3_EX: NormDouble<f64> = NormDouble::with_parts(
+    const FRAC_2_3_EX: Double<f64> = Double::new(
         f64::from_bits(0x3FE5555555555555),
         f64::from_bits(0x3C85555555555555),
     ); // 6.666666666666666666666666666667e-1
-    const FRAC_4_10_EX: NormDouble<f64> = NormDouble::with_parts(
+    const FRAC_4_10_EX: Double<f64> = Double::new(
         f64::from_bits(0x3FD9999999999999),
         f64::from_bits(0x3C83333333333333),
     ); // 4.000000000000000000000000000000e-1

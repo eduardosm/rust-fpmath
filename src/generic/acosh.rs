@@ -1,7 +1,7 @@
 use super::Ln;
 use super::ln::{ln_hi_lo_inner, ln_inner};
 use super::sqrt::hi_lo_sqrt_hi_lo_inner;
-use crate::double::DenormDouble;
+use crate::double::Double;
 use crate::traits::Int as _;
 
 pub(crate) fn acosh<F: Ln>(x: F) -> F {
@@ -32,12 +32,12 @@ fn acosh_inner<F: Ln>(x: F) -> F {
         let twoy = F::TWO * y;
 
         // t1 = x^2 - 1 = y^2 + 2 * y
-        DenormDouble::new_qadd11(twoy, y2)
+        Double::new_qadd11(twoy, y2)
     } else {
         let x2 = x * x;
 
         // t1 = x^2 - 1
-        DenormDouble::new_qsub11(x2, F::ONE)
+        Double::new_qsub11(x2, F::ONE)
     };
 
     // t2 = sqrt(x^2 - 1)

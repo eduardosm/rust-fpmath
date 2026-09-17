@@ -1,4 +1,4 @@
-use crate::double::{DenormDouble, NormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::generic::{ReducePi2, reduce_pi_2};
 use crate::traits::{Float, Int as _};
 
@@ -120,7 +120,7 @@ pub(super) fn sin_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
     x_hi + (x3 * k3 + (t1 + (x_lo - F::HALF * x2 * x_lo)))
 }
 
-pub(super) fn hi_lo_sin_inner<F: SinCos>(x: NormDouble<F>) -> DenormDouble<F> {
+pub(super) fn hi_lo_sin_inner<F: SinCos>(x: Double<F>) -> Double<F> {
     // sin(x) is calculated with a polynomial.
 
     let x_semi = x.to_semi();
@@ -134,7 +134,7 @@ pub(super) fn hi_lo_sin_inner<F: SinCos>(x: NormDouble<F>) -> DenormDouble<F> {
 
     // sin(x) = t1 + x - x^3 / 6
     let x3k3 = x3.to_semi() * (-F::FRAC_1_6_EX);
-    x.to_denorm().qadd2(x3k3 + t1)
+    x.qadd2(x3k3 + t1)
 }
 
 /// Calculates `cos(x_hi + x_lo)`, where
@@ -154,11 +154,11 @@ pub(super) fn cos_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
     let t1 = F::cos_poly(x2, x4);
 
     // cos(x_hi + x_lo) = t1 + 1 - 0.5 * x^2 - x_hi * x_lo
-    let t2 = DenormDouble::new_qsub11(F::ONE, F::HALF * x2);
+    let t2 = Double::new_qsub11(F::ONE, F::HALF * x2);
     t2.lsub(x_hi * x_lo).ladd(t1).to_single()
 }
 
-pub(super) fn hi_lo_cos_inner<F: SinCos>(x: NormDouble<F>) -> DenormDouble<F> {
+pub(super) fn hi_lo_cos_inner<F: SinCos>(x: Double<F>) -> Double<F> {
     // cos(x) is calculated with a polynomial.
 
     // t1 = cos(x) + 0.5 * x^2 - 1
@@ -168,7 +168,7 @@ pub(super) fn hi_lo_cos_inner<F: SinCos>(x: NormDouble<F>) -> DenormDouble<F> {
     let t1 = F::cos_poly(x2_single, x4);
 
     // t2 = 1 - 0.5 * x^2
-    let t2 = DenormDouble::new_qsub12(F::ONE, x2.pmul1(F::HALF));
+    let t2 = Double::new_qsub12(F::ONE, x2.pmul1(F::HALF));
 
     // cos(x) = t1 + t2
     t2.qadd1(t1)

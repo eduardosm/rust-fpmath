@@ -105,7 +105,7 @@ pub(crate) fn pow<F: Ln + Exp>(x: F, y: F) -> F {
         let logx = hi_lo_ln_inner(nx.abs(), xedelta).to_semi();
 
         // ylx = y * ln(|x|)
-        let ylx = (logx * y).to_norm();
+        let ylx = (logx * y).normalize();
 
         // |z| = |x|^y = exp(y * ln(|x|))
         let absz = if ylx.hi() >= F::EXP_HI_TH {

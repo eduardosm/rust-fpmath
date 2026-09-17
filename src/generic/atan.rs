@@ -1,4 +1,4 @@
-use crate::double::{DenormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::traits::{CastInto as _, FloatConsts, Int as _};
 
 pub(crate) trait Atan: FloatConsts {
@@ -82,22 +82,22 @@ pub(crate) fn atan2<F: Atan>(y: F, x: F) -> F {
     }
 }
 
-pub(super) fn atan_inner<F: Atan>(x: F) -> DenormDouble<F> {
+pub(super) fn atan_inner<F: Atan>(x: F) -> Double<F> {
     if x.abs() <= F::ONE {
         atan_inner_common(SemiDouble::new(x))
     } else {
-        let y = DenormDouble::new_recip(x);
+        let y = Double::new_recip(x);
 
         // t1 = atan(1 / x)
         let t1 = atan_inner_common(y.to_semi());
 
         // atan(x) = ±pi/2 - atan(1 / x)
-        let off = DenormDouble::new(F::FRAC_PI_2_HI.copysign(x), F::FRAC_PI_2_LO.copysign(x));
+        let off = Double::new(F::FRAC_PI_2_HI.copysign(x), F::FRAC_PI_2_LO.copysign(x));
         off.qsub2(t1)
     }
 }
 
-pub(super) fn atan2_inner<F: Atan>(mut n: F, mut d: F) -> DenormDouble<F> {
+pub(super) fn atan2_inner<F: Atan>(mut n: F, mut d: F) -> Double<F> {
     let ysgn = n.sign();
     let xsgn = d.sign();
 
@@ -112,19 +112,19 @@ pub(super) fn atan2_inner<F: Atan>(mut n: F, mut d: F) -> DenormDouble<F> {
     }
 
     // z = n/d
-    let z = DenormDouble::new_div11(n, d);
+    let z = Double::new_div11(n, d);
 
     // t1 = atan(n/d)
     let t1 = atan_inner_common(z.to_semi());
 
     // t2 = off * π/2
-    let t2 = DenormDouble::new(F::FRAC_PI_2_HI * off, F::FRAC_PI_2_LO * off);
+    let t2 = Double::new(F::FRAC_PI_2_HI * off, F::FRAC_PI_2_LO * off);
 
     // atan2(y, x) = atan(n/d) + off * π/2 = t1 + t2
     t2.qadd2(t1)
 }
 
-pub(super) fn atan_inner_common<F: Atan>(x: SemiDouble<F>) -> DenormDouble<F> {
+pub(super) fn atan_inner_common<F: Atan>(x: SemiDouble<F>) -> Double<F> {
     let x2 = x.square();
 
     // t1 = (atan(x) - x) / x^3 - k3
@@ -139,7 +139,7 @@ pub(super) fn atan_inner_common<F: Atan>(x: SemiDouble<F>) -> DenormDouble<F> {
     let t3 = x3.to_semi() * t2;
 
     // atan(x) = t3 + x
-    x.to_denorm().qadd2(t3)
+    x.to_double().qadd2(t3)
 }
 
 #[cfg(test)]

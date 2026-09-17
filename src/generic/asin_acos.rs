@@ -1,9 +1,9 @@
 use super::sqrt::two_hi_lo_sqrt_inner;
-use crate::double::{DenormDouble, NormDouble};
+use crate::double::Double;
 use crate::traits::{FloatConsts, Int as _};
 
 pub(crate) trait AsinAcos: FloatConsts {
-    const FRAC_PI_2_EX: NormDouble<Self>;
+    const FRAC_PI_2_EX: Double<Self>;
 
     /// Calculates `(asin(x) - x) / x^3`
     fn asin_poly(x2: Self) -> Self;
@@ -26,7 +26,7 @@ pub(crate) fn asin<F: AsinAcos>(x: F) -> F {
     }
 }
 
-pub(super) fn asin_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
+pub(super) fn asin_inner<F: AsinAcos>(x: F) -> Double<F> {
     if x.exponent() < -F::Exp::ONE {
         // |x| < 0.5
         let x2 = x * x;
@@ -36,7 +36,7 @@ pub(super) fn asin_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
         let t1 = x3 * F::asin_poly(x2);
 
         // t2 = asin(x)
-        DenormDouble::new_qadd11(x, t1)
+        Double::new_qadd11(x, t1)
     } else {
         // |x| >= 0.5
         // |asin(x)| = π/2 - 2 * asin(sqrt((1 - |x|) / 2))
@@ -50,14 +50,14 @@ pub(super) fn asin_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
         let t2 = twoy3 * F::asin_poly(y2);
 
         // t3 = |asin(x)| = π/2 - 2 * asin(y)
-        let t3 = F::FRAC_PI_2_EX.to_denorm().qsub2(twoy.qadd1(t2));
+        let t3 = F::FRAC_PI_2_EX.qsub2(twoy.qadd1(t2));
 
         let sgn = F::ONE.copysign(x);
         t3.pmul1(sgn)
     }
 }
 
-pub(super) fn acos_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
+pub(super) fn acos_inner<F: AsinAcos>(x: F) -> Double<F> {
     // acos(x) = π/2 - asin(x)
     if x.exponent() < -F::Exp::ONE {
         // |x| < 0.5
@@ -69,9 +69,7 @@ pub(super) fn acos_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
         let t1 = x3 * F::asin_poly(x2);
 
         // acos(x) = π/2 - asin(x) = π/2 - t1 - x
-        F::FRAC_PI_2_EX
-            .to_denorm()
-            .qsub2(DenormDouble::new_qadd11(t1, x))
+        F::FRAC_PI_2_EX.qsub2(Double::new_qadd11(t1, x))
     } else {
         // |x| >= 0.5
         // |asin(x)| = π/2 - 2 * asin(sqrt((1 - |x|) / 2))
@@ -97,7 +95,7 @@ pub(super) fn acos_inner<F: AsinAcos>(x: F) -> DenormDouble<F> {
             //         = π/2 + (π/2 - 2 * asin(y))
             //         = π - 2 * asin(y)
             //         = π - t2
-            let pi = F::FRAC_PI_2_EX.to_denorm().pmul1(F::TWO);
+            let pi = F::FRAC_PI_2_EX.pmul1(F::TWO);
             pi.qsub2(t2)
         }
     }

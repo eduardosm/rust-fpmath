@@ -1,7 +1,7 @@
 use super::exp::exp_split;
 use super::ln::hi_lo_ln_inner;
 use super::{Exp, Ln, scalbn};
-use crate::double::{DenormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::traits::{CastInto as _, Int as _};
 
 pub(crate) fn powi<F: Ln + Exp>(x: F, y: i32) -> F {
@@ -94,7 +94,7 @@ pub(crate) fn powi<F: Ln + Exp>(x: F, y: i32) -> F {
             yshift += F::MANT_BITS + 1;
 
             // ylx = yf * ln(|x|)
-            let ylx = (logx * yf).to_norm();
+            let ylx = (logx * yf).normalize();
 
             if ylx.hi() >= F::EXP_HI_TH {
                 if (absy & 1) == 0 || !nx.sign() {
@@ -112,7 +112,7 @@ pub(crate) fn powi<F: Ln + Exp>(x: F, y: i32) -> F {
                 let (k, r_hi, r_lo) = exp_split(ylx.hi());
 
                 // t = |x|^yf / 2^k = exp(yf * ln(|x|)) / 2^k
-                let r = DenormDouble::new(r_hi, r_lo + ylx.lo());
+                let r = Double::new(r_hi, r_lo + ylx.lo());
                 let t = hi_lo_exp_inner(r).to_semi();
 
                 k_total += k;
@@ -129,7 +129,7 @@ pub(crate) fn powi<F: Ln + Exp>(x: F, y: i32) -> F {
     }
 }
 
-fn hi_lo_exp_inner<F: Exp>(r: DenormDouble<F>) -> DenormDouble<F> {
+fn hi_lo_exp_inner<F: Exp>(r: Double<F>) -> Double<F> {
     // Calculates exp(r_hi + r_lo)
     // Similar to `exp_inner_common` in exp.rs, but returns hi/lo parts
     // and assumes k=0

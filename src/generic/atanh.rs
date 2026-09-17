@@ -32,7 +32,7 @@ fn atanh_inner<F: Ln>(absx: F, sign: bool) -> F {
 
     // t2 = (1 + |x|) / (1 - |x|) = t1 + 1
     let t2 = t1 + F::ONE;
-    let t2 = t2.to_norm();
+    let t2 = t2.normalize();
 
     // atanh(x) = 0.5 * ln((1 + |x|) / (1 - |x|)) * sgn(x)
     (F::HALF * ln_hi_lo_inner(t2.hi(), t2.lo())).set_sign(sign)

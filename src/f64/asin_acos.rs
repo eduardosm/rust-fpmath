@@ -1,8 +1,8 @@
-use crate::double::NormDouble;
+use crate::double::Double;
 
 impl crate::generic::AsinAcos for f64 {
     // GENERATE: asin_acos::consts f64
-    const FRAC_PI_2_EX: NormDouble<f64> = NormDouble::with_parts(
+    const FRAC_PI_2_EX: Double<f64> = Double::new(
         f64::from_bits(0x3FF921FB54442D18),
         f64::from_bits(0x3C91A62633145C07),
     ); // 1.570796326794896619231321691640e0
