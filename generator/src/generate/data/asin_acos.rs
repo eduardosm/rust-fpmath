@@ -2,7 +2,7 @@ use super::super::{FloatKind, arg_utils, render_const, sollya};
 
 pub(in super::super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     let fkind: FloatKind = arg_utils::parse_1_arg(args)?;
-    let nd_fkind = fkind.to_norm_double();
+    let nd_fkind = fkind.to_double();
 
     let mut out = String::new();
 

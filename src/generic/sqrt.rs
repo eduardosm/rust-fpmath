@@ -1,4 +1,4 @@
-use crate::double::{DenormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::traits::{Float, Int as _};
 
 pub(crate) fn sqrt<F: Float>(x: F) -> F {
@@ -67,7 +67,7 @@ fn sqrt_split<F: Float>(x: F, edelta: F::Exp) -> (F::Exp, F::Raw) {
 }
 
 /// Calculates `2 * sqrt(x)` with extended precision
-pub(super) fn two_hi_lo_sqrt_inner<F: Float>(x: F) -> DenormDouble<F> {
+pub(super) fn two_hi_lo_sqrt_inner<F: Float>(x: F) -> Double<F> {
     // Improve accuracy with a single Newton iteration
     // y = sqrt(x)
     // sqrt(x)_hi + sqrt(x)_lo = (y * y + x) / (2 * y)
@@ -81,7 +81,7 @@ pub(super) fn two_hi_lo_sqrt_inner<F: Float>(x: F) -> DenormDouble<F> {
 }
 
 /// Calculates `sqrt(x_hi + x_lo)` with extended precision
-pub(super) fn hi_lo_sqrt_hi_lo_inner<F: Float>(x: DenormDouble<F>) -> DenormDouble<F> {
+pub(super) fn hi_lo_sqrt_hi_lo_inner<F: Float>(x: Double<F>) -> Double<F> {
     // Improve accuracy with a single Newton iteration
     // y = sqrt(x)
     // sqrt(x)_hi + sqrt(x)_lo = (y * y + x_hi + x_lo) / (2 * y)

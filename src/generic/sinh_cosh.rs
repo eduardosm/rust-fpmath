@@ -1,6 +1,6 @@
 use super::exp::exp_split;
 use super::{Exp, scalbn_medium};
-use crate::double::DenormDouble;
+use crate::double::Double;
 use crate::traits::{CastInto as _, Float, Int as _};
 
 pub(crate) trait SinhCosh: Exp {
@@ -137,7 +137,7 @@ pub(super) fn sinh_cosh_inner_common_2<F: Float>(
     r: F,
     t1a: F,
     t1b: F,
-) -> (DenormDouble<F>, DenormDouble<F>) {
+) -> (Double<F>, Double<F>) {
     let s1a = F::exp2i_fast((k - 1).cast_into());
     let sra = r * s1a;
     let st1a = t1a * s1a;
@@ -148,16 +148,16 @@ pub(super) fn sinh_cosh_inner_common_2<F: Float>(
 
     if k <= 1 {
         let t2a = s1a - s1b;
-        let t3a = DenormDouble::new_qadd11(sra, srb).qradd1(t2a);
+        let t3a = Double::new_qadd11(sra, srb).qradd1(t2a);
         let abss = t3a.ladd(st1a - st1b);
 
         let t2b = s1a + s1b;
-        let t3b = DenormDouble::new_qsub11(sra, srb).qradd1(t2b);
+        let t3b = Double::new_qsub11(sra, srb).qradd1(t2b);
         let c = t3b.ladd(st1a + st1b);
 
         (abss, c)
     } else {
-        let t2 = DenormDouble::new_qadd11(sra, st1a).qradd1(s1a);
+        let t2 = Double::new_qadd11(sra, st1a).qradd1(s1a);
 
         let t3a = t2.qsub1(s1b);
         let abss = t3a.ladd(srb - st1b);

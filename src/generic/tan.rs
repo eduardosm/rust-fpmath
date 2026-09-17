@@ -1,5 +1,5 @@
 use super::{ReducePi2, reduce_pi_2};
-use crate::double::{DenormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::traits::{Float, Int as _};
 
 pub(crate) trait Tan: Float {
@@ -32,7 +32,7 @@ pub(super) fn tan_inner<F: Tan>(x_hi: F, x_lo: F, inv: bool) -> F {
     // let y = 0.5 * x
     // tan(x) = 2 * tan(y) / (1 - tan(y)^2)
 
-    let y = DenormDouble::new(x_hi, x_lo).pmul1(F::HALF);
+    let y = Double::new(x_hi, x_lo).pmul1(F::HALF);
     let y2 = y.hi() * y.hi();
     let y3 = y.hi() * y2;
 

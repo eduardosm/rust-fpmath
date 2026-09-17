@@ -1,4 +1,4 @@
-use crate::double::NormDouble;
+use crate::double::Double;
 
 impl crate::generic::Gamma for f64 {
     const LO_TH: Self = -10000.0;
@@ -11,7 +11,7 @@ impl crate::generic::Gamma for f64 {
     const POLY_OFF: u8 = 5;
 
     // GENERATE: gamma::consts f64
-    const HALF_LN_2_PI: NormDouble<f64> = NormDouble::with_parts(
+    const HALF_LN_2_PI: Double<f64> = Double::new(
         f64::from_bits(0x3FED67F1C864BEB4),
         f64::from_bits(0x3C94D252F2400510),
     ); // 9.189385332046727417803297364056e-1

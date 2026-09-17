@@ -1,5 +1,5 @@
 use super::reduce_pi_2::round_fi;
-use crate::double::{NormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::traits::{CastFrom, CastInto, Float, Int as _, SInt};
 
 pub(crate) trait Reduce90Deg: Float {
@@ -16,7 +16,7 @@ pub(crate) trait Reduce90Deg: Float {
 /// * `0 <= n <= 3`
 /// * `x = 360*M + 90*n + (y_hi + y_lo)*(180 / π)`
 /// * `M` is an integer
-pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, NormDouble<F>) {
+pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, Double<F>) {
     let xabs = x.abs();
     let xexp = x.exponent();
     if xabs <= F::cast_from(45u32) {
@@ -25,7 +25,7 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, NormDouble<F>) {
         let descale = F::exp2i_fast(-F::Exp::cast_from(F::MANT_BITS));
 
         let sx = SemiDouble::new(x * scale);
-        let y = (sx * F::DEG_TO_RAD_EX).pmul1(descale).to_norm();
+        let y = (sx * F::DEG_TO_RAD_EX).pmul1(descale).normalize();
 
         (0, y)
     } else if xexp <= F::Exp::cast_from(F::MANT_BITS - 4).min(F::Exp::from(31i8)) {
@@ -33,7 +33,7 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, NormDouble<F>) {
 
         let ydeg = x - f_n * F::cast_from(90u32);
         let ydeg = SemiDouble::new(ydeg);
-        let y = (ydeg * F::DEG_TO_RAD_EX).to_norm();
+        let y = (ydeg * F::DEG_TO_RAD_EX).normalize();
 
         (n as u8 & 3, y)
     } else if xexp < F::Exp::cast_from(F::BITS - 1) {
@@ -63,7 +63,7 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, NormDouble<F>) {
         let frem: F = irem.cast_into();
 
         let ydeg = SemiDouble::new(xfrac + frem);
-        let y = (ydeg * F::DEG_TO_RAD_EX).to_norm();
+        let y = (ydeg * F::DEG_TO_RAD_EX).normalize();
 
         let n: u8 = n.cast_into();
         if x.sign() {
@@ -96,7 +96,7 @@ pub(crate) fn reduce_90_deg<F: Reduce90Deg>(x: F) -> (u8, NormDouble<F>) {
         }
 
         let ydeg = SemiDouble::with_parts(F::cast_from(rem90), F::ZERO);
-        let y = (ydeg * F::DEG_TO_RAD_EX).to_norm();
+        let y = (ydeg * F::DEG_TO_RAD_EX).normalize();
 
         if x.sign() {
             (n.wrapping_neg() & 3, -y)

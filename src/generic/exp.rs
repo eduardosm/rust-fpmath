@@ -1,5 +1,5 @@
 use super::{round_as_i_f, scalbn_medium};
-use crate::double::DenormDouble;
+use crate::double::Double;
 use crate::traits::{CastInto as _, Float, Int as _};
 
 pub(crate) trait Exp: Float {
@@ -89,25 +89,25 @@ pub(super) fn exp_inner_common<F: Exp>(k: i32, r_hi: F, r_lo: F) -> F {
 }
 
 /// Calculates `exp(r_hi + r_lo)`
-pub(super) fn hi_lo_exp_inner_common<F: Exp>(r_hi: F, r_lo: F) -> DenormDouble<F> {
+pub(super) fn hi_lo_exp_inner_common<F: Exp>(r_hi: F, r_lo: F) -> Double<F> {
     // Based on the algorithm used by the msun math library
 
     let r = r_hi + r_lo;
     let r2 = r * r;
 
     // t1 = 2 - 2 * r / (exp(r) - 1)
-    let t1 = DenormDouble::new_qadd11(r, F::exp_special_poly(r2));
+    let t1 = Double::new_qadd11(r, F::exp_special_poly(r2));
 
     // t2 = (r * t1) / (2 - t1)
-    let rt1 = DenormDouble::new(r_hi, r_lo).to_semi() * t1.to_semi();
+    let rt1 = Double::new(r_hi, r_lo).to_semi() * t1.to_semi();
     let twomt1 = t1.qrsub1(F::TWO);
     let t2 = rt1.to_semi() / twomt1.to_semi();
 
     // t3 = exp(r) = 1 + r + t2
-    let t3 = DenormDouble::new(r_hi, r_lo).qadd2(t2).qradd1(F::ONE);
+    let t3 = Double::new(r_hi, r_lo).qadd2(t2).qradd1(F::ONE);
 
     // exp(x) = exp(r_hi + r_lo) * 2^k = t2 * 2^k
-    DenormDouble::new(t3.hi(), t3.lo())
+    Double::new(t3.hi(), t3.lo())
 }
 
 fn exp_m1_inner<F: Exp>(x: F) -> F {
@@ -143,7 +143,7 @@ fn exp_m1_inner<F: Exp>(x: F) -> F {
         let sr = r_hi * s1;
         let st4 = t4 * s1;
 
-        let t5 = DenormDouble::new_qadd11(s1, sr);
+        let t5 = Double::new_qadd11(s1, sr);
         let t6 = t5.qadd1(st4);
         let t7 = t6.qsub1(F::ONE);
 

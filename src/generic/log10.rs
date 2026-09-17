@@ -1,5 +1,5 @@
 use super::{Ln, ln::ln_split};
-use crate::double::{DenormDouble, SemiDouble};
+use crate::double::{Double, SemiDouble};
 use crate::traits::{CastInto as _, Int as _};
 
 pub(crate) trait Log10: Ln {
@@ -56,16 +56,14 @@ fn log10_inner<F: Log10>(x: F, edelta: F::Exp) -> F {
     //    = r - (0.5 * r^2 - s * (0.5 * r^2 + p))
     // Split t1 into t1_hi + t1_lo for better accuracy
     let hr2 = (F::HALF * r * r).purify();
-    let t1 = DenormDouble::new_qsub11(r, hr2)
-        .qadd1(s * (hr2 + p))
-        .to_semi();
+    let t1 = Double::new_qsub11(r, hr2).qadd1(s * (hr2 + p)).to_semi();
 
     // t2 = log10(1 + r) = ln(1 + r) * log10(e) = t1 * log10(e)
     let t2 = t1 * F::LOG10_E_EX;
 
     // t3 = k * log10(2)
     let kf: F = k.cast_into();
-    let t3 = DenormDouble::new(F::LOG10_2_HI, F::LOG10_2_LO).pmul1(kf);
+    let t3 = Double::new(F::LOG10_2_HI, F::LOG10_2_LO).pmul1(kf);
 
     // log10(x) = k * log10(2) + log10(1 + r) = t2 + t3
     let t4 = t3.qadd2(t2);

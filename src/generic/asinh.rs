@@ -1,7 +1,7 @@
 use super::Ln;
 use super::ln::{ln_hi_lo_inner, ln_inner};
 use super::sqrt::hi_lo_sqrt_hi_lo_inner;
-use crate::double::DenormDouble;
+use crate::double::Double;
 use crate::traits::Int as _;
 
 pub(crate) fn asinh<F: Ln>(x: F) -> F {
@@ -28,7 +28,7 @@ fn asinh_inner<F: Ln>(x: F) -> F {
     let x2 = x * x;
 
     // t1 = x^2 + 1
-    let t1 = DenormDouble::new_add11(x2, F::ONE);
+    let t1 = Double::new_add11(x2, F::ONE);
 
     // t2 = sqrt(x^2 + 1)
     let t2 = hi_lo_sqrt_hi_lo_inner(t1);
