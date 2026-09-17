@@ -7,18 +7,18 @@ on:
 
 jobs:
   get-version:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       version: ${{ steps.get-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Rust
         run: ./ci/install-rust.sh stable --profile minimal
       - id: get-version
         run: ./ci/get-release-version.sh
 
   get-ci-artifacts:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Download artifacts
         uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe
@@ -40,9 +40,9 @@ jobs:
       - get-ci-artifacts
     permissions:
       contents: write
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Download version-changelog artifact
         uses: actions/download-artifact@v4
         with:
@@ -59,9 +59,9 @@ jobs:
 
   publish-crate:
     needs: create-gh-release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Rust
         run: ./ci/install-rust.sh stable --profile minimal
       - name: Publish

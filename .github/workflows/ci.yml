@@ -21,7 +21,7 @@ jobs:
     # '!cancelled()' is needed because GitHub treats a skipped job (due to a
     # failed dependency) a success.
     if: ${{ !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Report status
         env:
@@ -30,9 +30,9 @@ jobs:
         run: jq --exit-status 'all(.result == "success")' <<< "$NEEDS_JSON"
 
   lint-aux:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install lint utilities
         run: sudo npm install -g markdownlint-cli@0.48.0
       - name: Install Rust
@@ -40,9 +40,9 @@ jobs:
       - run: ./ci/lint-aux.sh
 
   extract-changelog:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Rust
         run: ./ci/install-rust.sh stable --profile minimal
       - run: ./ci/extract-changelog.sh
@@ -54,43 +54,43 @@ jobs:
           if-no-files-found: error
 
   rustfmt:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Rust
         run: ./ci/install-rust.sh stable --profile minimal -c rustfmt
       - run: cargo fmt --all -- --check
 
   clippy:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Rust
         run: ./ci/install-rust.sh stable --profile minimal -c clippy
       - run: ./ci/clippy.sh
 
   build-and-test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         include:
           - rust-version: msrv
           - rust-version: stable
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Rust
         run: ./ci/install-rust.sh "${{ matrix.rust-version }}" --profile minimal
       - run: ./ci/build-and-test.sh
 
   test-i586:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         include:
           - rust-version: msrv
           - rust-version: stable
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -103,17 +103,17 @@ jobs:
       - run: ./ci/test-i586.sh
 
   build-no_std:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Rust
         run: ./ci/install-rust.sh stable --profile minimal -t x86_64-unknown-none
       - run: ./ci/build-no_std.sh
 
   check-generator:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Sollya
         run: |
           sudo apt-get update
@@ -128,9 +128,9 @@ jobs:
       - run: ./ci/check-generator.sh
 
   package-crate:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Rust
         run: ./ci/install-rust.sh stable --profile minimal
       - run: ./ci/package-crate.sh
