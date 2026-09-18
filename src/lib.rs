@@ -859,10 +859,7 @@ pub fn atanh<F: FloatMath>(x: F) -> F {
     F::atanh(x)
 }
 
-/// Calculates the gamma function of `x`
-///
-/// When `x` is greater than 0.5, the error is less than 1 ULP, otherwise the
-/// error is less than 2 ULP.
+/// Calculates the gamma function of `x` with an error of less than 1 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN, negative infinity or a negative integer
@@ -874,13 +871,11 @@ pub fn gamma<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the logarithm of the absolute value of the gamma function of `x`
+/// with an error of less than 1 ULP
 ///
 /// The integer field of the returned tuple is `1` when the gamma function of
 /// `x` is positive, `-1` when the gamma function of `x` is negative, and `0`
 /// when the sign of the gamma function of `x` is not defined.
-///
-/// The error is less than 2 ULP in most cases. However, for some negative
-/// values of `x`, the error can be much higher.
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or negative infinity

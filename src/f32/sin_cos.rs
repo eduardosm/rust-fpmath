@@ -1,10 +1,4 @@
-use crate::double::SemiDouble;
-
 impl crate::generic::SinCos for f32 {
-    // GENERATE: sin_cos::consts f32
-    const FRAC_1_6_EX: SemiDouble<f32> =
-        SemiDouble::with_parts(f32::from_bits(0x3E2AA000), f32::from_bits(0x382AAAAB)); // 1.666666667e-1
-
     #[inline]
     fn sin_poly(x2: Self, x5: Self) -> (Self, Self) {
         // GENERATE: sin_cos::sin_poly f32 3
@@ -14,15 +8,6 @@ impl crate::generic::SinCos for f32 {
 
         let r = horner!(x5, x2, [K5, K7]);
         (r, K3)
-    }
-
-    #[inline]
-    fn sin_poly_ex(x2: Self, x5: Self) -> Self {
-        // GENERATE: sin_cos::sin_poly_ex f32 2
-        const K5: f32 = f32::from_bits(0x3C088602); // 8.332731e-3
-        const K7: f32 = f32::from_bits(0xB94D49A3); // -1.9577755e-4
-
-        horner!(x5, x2, [K5, K7])
     }
 
     #[inline]

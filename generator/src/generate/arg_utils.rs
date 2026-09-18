@@ -43,7 +43,7 @@ where
     }
 }
 
-pub(super) fn parse_3_args<T0, T1, T2>(args: &[&str]) -> Result<(T0, T1, T2), String>
+pub(super) fn parse_4_args<T0, T1, T2, T3>(args: &[&str]) -> Result<(T0, T1, T2, T3), String>
 where
     T0: std::str::FromStr,
     <T0 as std::str::FromStr>::Err: std::fmt::Display,
@@ -51,8 +51,10 @@ where
     <T1 as std::str::FromStr>::Err: std::fmt::Display,
     T2: std::str::FromStr,
     <T2 as std::str::FromStr>::Err: std::fmt::Display,
+    T3: std::str::FromStr,
+    <T3 as std::str::FromStr>::Err: std::fmt::Display,
 {
-    if let [arg1, arg2, arg3] = args {
+    if let [arg1, arg2, arg3, arg4] = args {
         let v1 = arg1
             .parse()
             .map_err(|e| format!("failed to parse first argument {arg1:?}: {e}"))?;
@@ -62,9 +64,12 @@ where
         let v3 = arg3
             .parse()
             .map_err(|e| format!("failed to parse third argument {arg3:?}: {e}"))?;
-        Ok((v1, v2, v3))
+        let v4 = arg4
+            .parse()
+            .map_err(|e| format!("failed to parse fourth argument {arg4:?}: {e}"))?;
+        Ok((v1, v2, v3, v4))
     } else {
-        Err(format!("expected 3 arguments, found {}", args.len()))
+        Err(format!("expected 4 arguments, found {}", args.len()))
     }
 }
 

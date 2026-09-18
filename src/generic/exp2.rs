@@ -61,7 +61,7 @@ fn exp2_split<F: Exp2>(x: F) -> (i32, F, F) {
     let r_hi = t_hi * F::LN_2_HI;
     let r_lo = t_hi * F::LN_2_LO + t_lo * F::LN_2;
 
-    (k, r_hi, r_lo)
+    (k as i32, r_hi, r_lo)
 }
 
 #[cfg(test)]

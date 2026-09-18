@@ -200,48 +200,6 @@ pub(super) fn hi_lo_ln_inner<F: Ln>(x: F, edelta: F::Exp) -> Double<F> {
     t1.qadd2(t2)
 }
 
-/// Calculates ln((x_hi + x_lo) * 2^edelta)
-pub(super) fn hi_lo_ln_hi_lo_inner<F: Ln>(x: Double<F>, edelta: F::Exp) -> Double<F> {
-    // Algorithm based on one used by the msun math library:
-    //  * ln(1 + r) = p * s + 2 * s
-    //  * s = r / (2 + r)
-    //  * p = (ln(1 + s) - ln(1 - s) - 2 * s) / s
-
-    // Split x_hi * 2^edelta = 2^k * (1 + r)
-    //  - k is an integer
-    //  - sqrt(2) / 2 <= 1 + r < sqrt(2)
-    let (k, r) = ln_split(x.hi(), edelta);
-
-    // Calculate a correction term to handle x_lo:
-    // ln(x_hi + x_lo) = ln(x_hi) + c
-    // c = ln(x_hi + x_lo) - ln(x_hi) =
-    //   = ln((x_hi + x_lo) / x_hi) =
-    //   = ln(1 + x_lo / x_hi) ~= x_lo / x_hi
-    let c = x.lo() / x.hi();
-
-    // rp2 = 2 + r
-    let rp2 = SemiDouble::new_qadd11(F::TWO, r);
-
-    // s = r / (2 + r)
-    let s = (SemiDouble::new(r) / rp2).to_semi();
-    let s2 = s.square().to_semi();
-
-    // p = (ln(1 + s) - ln(1 - s) - 2 * s) / s
-    let p = hi_lo_ln_special_poly(s2).to_semi();
-
-    // t1 = k * ln(2) + c
-    let kf: F = k.cast_into();
-    let t1 = Double::new(F::LN_2_HI, F::LN_2_LO).pmul1(kf).ladd(c);
-
-    // t2 = ln(1 + r) = p * s + 2 * s
-    let ps = p * s;
-    let twos = s.pmul1(F::TWO);
-    let t2 = twos.to_double().qadd2(ps);
-
-    // ln(2^k * (1 + r)) + c = t1 + t2
-    t1.qadd2(t2)
-}
-
 /// Calculates `(ln(1 + x) - ln(1 - x) - 2 * x) / x`
 ///
 /// `-0.1716 < x < 0.1716`

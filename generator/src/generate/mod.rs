@@ -2,6 +2,7 @@ use std::fmt::Write as _;
 
 use crate::RunError;
 
+mod approx;
 mod arg_utils;
 mod consts;
 mod data;
@@ -18,6 +19,16 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
 
     let r = match cmd {
         "consts" => consts::gen_consts(&args),
+
+        "ln_1p_poly" => approx::gen_ln_1p_poly(&args),
+        "ln_table" => approx::gen_ln_table(&args),
+        "ln_lo_scale_table" => approx::gen_ln_lo_scale_table(&args),
+        "sin_poly" => approx::gen_sin_poly(&args),
+        "cos_poly" => approx::gen_cos_poly(&args),
+        "gamma_poly" => approx::gen_gamma_poly(&args),
+        "ln_gamma_poly" => approx::gen_ln_gamma_poly(&args),
+        "gamma_lanczos_poly" => approx::gen_gamma_lanczos_poly(&args),
+
         "cbrt::consts" => data::cbrt::gen_consts(&args),
         "cbrt::inv_cbrt_poly" => data::cbrt::gen_inv_cbrt_poly(&args),
         "exp::consts" => data::exp::gen_consts(&args),
@@ -30,9 +41,6 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "ln::ln_special_poly_ex" => data::ln::gen_ln_special_poly_ex(&args),
         "log2::consts" => data::log2::gen_consts(&args),
         "log10::consts" => data::log10::gen_consts(&args),
-        "gamma::consts" => data::gamma::gen_consts(&args),
-        "gamma::ln_gamma_poly" => data::gamma::gen_ln_gamma_poly(&args),
-        "gamma::special_poly" => data::gamma::gen_special_poly(&args),
         "reduce_pi_2::consts" => data::reduce_pi_2::gen_consts(&args),
         "reduce_pi_2_large::frac_2_pi_large" => data::reduce_pi_2_large::gen_frac_2_pi_large(&args),
         "reduce_pi_2_large::frac_pi_2_medium" => {
@@ -40,9 +48,7 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         }
         "reduce_90_deg::consts" => data::reduce_90_deg::gen_consts(&args),
         "reduce_half_mul_pi::consts" => data::reduce_half_mul_pi::gen_consts(&args),
-        "sin_cos::consts" => data::sin_cos::gen_consts(&args),
         "sin_cos::sin_poly" => data::sin_cos::gen_sin_poly(&args),
-        "sin_cos::sin_poly_ex" => data::sin_cos::gen_sin_poly_ex(&args),
         "sin_cos::cos_poly" => data::sin_cos::gen_cos_poly(&args),
         "tan::tan_poly" => data::tan::gen_tan_poly(&args),
         "rad_to_deg::consts" => data::rad_to_deg::gen_consts(&args),

@@ -1,12 +1,4 @@
-use crate::double::SemiDouble;
-
 impl crate::generic::SinCos for f64 {
-    // GENERATE: sin_cos::consts f64
-    const FRAC_1_6_EX: SemiDouble<f64> = SemiDouble::with_parts(
-        f64::from_bits(0x3FC5555550000000),
-        f64::from_bits(0x3E25555555555555),
-    ); // 1.6666666666666666666667e-1
-
     #[inline]
     fn sin_poly(x2: Self, x5: Self) -> (Self, Self) {
         // GENERATE: sin_cos::sin_poly f64 6
@@ -19,18 +11,6 @@ impl crate::generic::SinCos for f64 {
 
         let r = horner!(x5, x2, [K5, K7, K9, K11, K13]);
         (r, K3)
-    }
-
-    #[inline]
-    fn sin_poly_ex(x2: Self, x5: Self) -> Self {
-        // GENERATE: sin_cos::sin_poly_ex f64 5
-        const K5: f64 = f64::from_bits(0x3F81111111110750); // 8.333333333329002e-3
-        const K7: f64 = f64::from_bits(0xBF2A01A019D9811B); // -1.9841269834142906e-4
-        const K9: f64 = f64::from_bits(0x3EC71DE3699EAA4A); // 2.7557314980682144e-6
-        const K11: f64 = f64::from_bits(0xBE5AE5F2E432F576); // -2.505093578125994e-8
-        const K13: f64 = f64::from_bits(0x3DE5DC7074471BDE); // 1.5906037089786052e-10
-
-        horner!(x5, x2, [K5, K7, K9, K11, K13])
     }
 
     #[inline]

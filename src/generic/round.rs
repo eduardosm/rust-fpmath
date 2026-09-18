@@ -30,14 +30,14 @@ pub(crate) fn round<F: Float>(x: F) -> F {
 /// Returns `x` rounded to the nearest integer as both integer and float.
 ///
 /// `x` must be finite and `abs(int) < 2^min(31, MANT_BITS)`
-pub(crate) fn round_as_i_f<F: Float>(x: F) -> (i32, F) {
+pub(crate) fn round_as_i_f<F: Float>(x: F) -> (i64, F) {
     let e = x.raw_exp();
     if e < (F::EXP_OFFSET - F::RawExp::ONE) {
         // abs(x) < 0.5
         (0, F::ZERO)
     } else if e < F::EXP_OFFSET {
         // 0.5 <= abs(x) < 1
-        (1 - (i32::from(x.sign()) << 1), F::ONE.copysign(x))
+        (1 - (i64::from(x.sign()) << 1), F::ONE.copysign(x))
     } else {
         // 1 <= abs(x) < 2^min(31, MANT_BITS)
         let shift = F::RawExp::from(F::MANT_BITS) - (e - F::EXP_OFFSET);
@@ -46,7 +46,7 @@ pub(crate) fn round_as_i_f<F: Float>(x: F) -> (i32, F) {
         let xraw = x.to_raw();
         let fpart = xraw & fmask;
         let mut ipart_raw = xraw & !fmask;
-        let mut ipart_i: i32 = (x.mant() >> shift).cast_into();
+        let mut ipart_i: i64 = (x.mant() >> shift).cast_into();
         if fpart > (fmask / F::Raw::TWO) {
             // frac >= 0.5
             ipart_raw += fmask + F::Raw::ONE;

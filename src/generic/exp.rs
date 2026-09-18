@@ -88,28 +88,6 @@ pub(super) fn exp_inner_common<F: Exp>(k: i32, r_hi: F, r_lo: F) -> F {
     scalbn_medium(t2, k)
 }
 
-/// Calculates `exp(r_hi + r_lo)`
-pub(super) fn hi_lo_exp_inner_common<F: Exp>(r_hi: F, r_lo: F) -> Double<F> {
-    // Based on the algorithm used by the msun math library
-
-    let r = r_hi + r_lo;
-    let r2 = r * r;
-
-    // t1 = 2 - 2 * r / (exp(r) - 1)
-    let t1 = Double::new_qadd11(r, F::exp_special_poly(r2));
-
-    // t2 = (r * t1) / (2 - t1)
-    let rt1 = Double::new(r_hi, r_lo).to_semi() * t1.to_semi();
-    let twomt1 = t1.qrsub1(F::TWO);
-    let t2 = rt1.to_semi() / twomt1.to_semi();
-
-    // t3 = exp(r) = 1 + r + t2
-    let t3 = Double::new(r_hi, r_lo).qadd2(t2).qradd1(F::ONE);
-
-    // exp(x) = exp(r_hi + r_lo) * 2^k = t2 * 2^k
-    Double::new(t3.hi(), t3.lo())
-}
-
 fn exp_m1_inner<F: Exp>(x: F) -> F {
     // Based on the algorithm used by the msun math library
 
@@ -166,7 +144,7 @@ pub(super) fn exp_split<F: Exp>(x: F) -> (i32, F, F) {
     let r_hi = x - kf * F::LN_2_HI;
     let r_lo = -kf * F::LN_2_LO;
 
-    (k, r_hi, r_lo)
+    (k as i32, r_hi, r_lo)
 }
 
 #[cfg(test)]

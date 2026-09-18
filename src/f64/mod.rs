@@ -9,6 +9,7 @@ mod gamma;
 mod log;
 mod log10;
 mod log2;
+mod log_core;
 mod rad_to_deg;
 mod reduce_90_deg;
 mod reduce_half_mul_pi;

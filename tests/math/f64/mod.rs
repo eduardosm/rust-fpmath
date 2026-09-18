@@ -25,6 +25,12 @@ fn mk_normal(m: u64, e: i16, s: bool) -> f64 {
     f64::from_bits(m | e | s)
 }
 
+fn mk_subnormal(m: u64, s: bool) -> f64 {
+    assert!(m < (1 << 52));
+    let s = u64::from(s) << 63;
+    f64::from_bits(m | s)
+}
+
 fn select_threshold(actual: f64, normal_th: f64, subnormal_th: f64) -> f64 {
     if actual == 0.0 || actual.is_subnormal() {
         subnormal_th
