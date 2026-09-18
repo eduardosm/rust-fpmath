@@ -9,14 +9,19 @@ pub(crate) struct Double<F: Float> {
     lo: F,
 }
 
+impl<F: Float> From<F> for Double<F> {
+    #[inline]
+    fn from(value: F) -> Self {
+        Self {
+            hi: value,
+            lo: F::ZERO,
+        }
+    }
+}
+
 impl<F: Float> Double<F> {
     pub(crate) const ZERO: Self = Self {
         hi: F::ZERO,
-        lo: F::ZERO,
-    };
-
-    pub(crate) const ONE: Self = Self {
-        hi: F::ONE,
         lo: F::ZERO,
     };
 
@@ -52,6 +57,11 @@ impl<F: Float> Double<F> {
         let hi = (self.hi + self.lo).purify();
         let lo = (self.hi - hi) + self.lo;
         Self { hi, lo }
+    }
+
+    #[inline]
+    pub(crate) fn abs(self) -> Self {
+        if self.hi.sign() { -self } else { self }
     }
 
     #[inline]
@@ -108,13 +118,6 @@ impl<F: Float> Double<F> {
     }
 
     #[inline]
-    pub(crate) fn qrsub1(self, rhs: F) -> Self {
-        let hi = (rhs - self.hi).purify();
-        let lo = ((rhs - hi) - self.hi) + self.lo;
-        Self { hi, lo }
-    }
-
-    #[inline]
     pub(crate) fn qsub2(self, rhs: Self) -> Self {
         let hi = (self.hi - rhs.hi).purify();
         let lo = ((self.hi - hi) - rhs.hi) + (self.lo - rhs.lo);
@@ -133,13 +136,6 @@ impl<F: Float> Double<F> {
     pub(crate) fn new_qsub11(lhs: F, rhs: F) -> Self {
         let hi = (lhs - rhs).purify();
         let lo = (lhs - hi) - rhs;
-        Self { hi, lo }
-    }
-
-    #[inline]
-    pub(crate) fn new_qsub12(lhs: F, rhs: Self) -> Self {
-        let hi = (lhs - rhs.hi).purify();
-        let lo = ((lhs - hi) - rhs.hi) - rhs.lo;
         Self { hi, lo }
     }
 
@@ -183,6 +179,11 @@ impl<F: Float> Double<F> {
     }
 
     #[inline]
+    pub(crate) fn square(self) -> Self {
+        self * self
+    }
+
+    #[inline]
     pub(crate) fn new_recip(rhs: F) -> Self {
         let (rhs_hi, rhs_lo) = rhs.split_hi_lo();
 
@@ -196,6 +197,31 @@ impl<F: Float> Double<F> {
             + res_hi * (F::ONE - rhs_hi * rhs_inv_hi - rhs_hi * rhs_inv_lo - rhs_lo * rhs_inv);
 
         Self {
+            hi: res_hi,
+            lo: res_lo,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn recip(self) -> Self {
+        let rhs = self;
+        let (rhs_hihi, rhs_hilo) = rhs.hi.split_hi_lo();
+        let rhs_inv = (F::ONE / rhs.hi).purify();
+        let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
+
+        let res_hi = rhs_inv;
+        let res_lo = -res_hi
+            + rhs_inv_hi
+            + rhs_inv_lo
+            + res_hi
+                * (F::ONE
+                    - rhs_hihi * rhs_inv_hi
+                    - rhs_hihi * rhs_inv_lo
+                    - rhs_hilo * rhs_inv_hi
+                    - rhs_hilo * rhs_inv_lo);
+        let res_lo = res_lo - res_hi * rhs.lo * rhs_inv;
+
+        Double {
             hi: res_hi,
             lo: res_lo,
         }
@@ -294,13 +320,36 @@ impl<F: Float> core::ops::Mul for Double<F> {
     }
 }
 
+impl<F: Float> core::ops::Mul<F> for Double<F> {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: F) -> Self {
+        let lhs = self;
+        let (lhs_hihi, lhs_hilo) = lhs.hi.split_hi_lo();
+        let (rhs_hi, rhs_lo) = rhs.split_hi_lo();
+
+        let res_hi = (lhs.hi * rhs).purify();
+        let res_lo = lhs_hihi * rhs_hi - res_hi
+            + lhs_hilo * rhs_hi
+            + lhs_hihi * rhs_lo
+            + lhs_hilo * rhs_lo
+            + lhs.lo * rhs;
+
+        Self {
+            hi: res_hi,
+            lo: res_lo,
+        }
+    }
+}
+
 impl<F: Float> core::ops::Div for Double<F> {
     type Output = Self;
 
     #[inline]
     fn div(self, rhs: Self) -> Self {
         let lhs = self;
-        let (lhs_hihi, lhs_hilo) = self.hi.split_hi_lo();
+        let (lhs_hihi, lhs_hilo) = lhs.hi.split_hi_lo();
         let (rhs_hihi, rhs_hilo) = rhs.hi.split_hi_lo();
         let rhs_inv = F::ONE / rhs.hi;
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();

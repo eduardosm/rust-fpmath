@@ -16,10 +16,12 @@ pub(super) fn gen_consts(args: &[&str]) -> Result<String, String> {
 
     for name in args {
         let value = match name {
+            "LN_2" => rug::Float::with_val(rug_prec, 2).ln(),
             "PI" => rug::Float::with_val(rug_prec, rug::float::Constant::Pi),
             "FRAC_PI_2" => rug::Float::with_val(rug_prec, rug::float::Constant::Pi) / 2,
             "FRAC_PI_4" => rug::Float::with_val(rug_prec, rug::float::Constant::Pi) / 4,
             "FRAC_2_PI" => 2 / rug::Float::with_val(rug_prec, rug::float::Constant::Pi),
+            "LN_PI" => rug::Float::with_val(rug_prec, rug::float::Constant::Pi).ln(),
             _ => {
                 return Err(format!("unknown constant: {name:?}"));
             }

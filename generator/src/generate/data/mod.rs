@@ -5,7 +5,6 @@ pub(super) mod div_pi;
 pub(super) mod exp;
 pub(super) mod exp10;
 pub(super) mod exp2;
-pub(super) mod gamma;
 pub(super) mod ln;
 pub(super) mod log10;
 pub(super) mod log2;

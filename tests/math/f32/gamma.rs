@@ -1,4 +1,4 @@
-use super::{calc_error_ulp, mk_normal, purify};
+use super::{calc_error_ulp, mk_normal, mk_subnormal, purify};
 use crate::create_prng;
 
 #[test]
@@ -11,14 +11,11 @@ fn test_gamma() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        let threshold = if x < 0.5 { 1.9 } else { 0.9 };
-        assert!(
-            err < threshold,
-            "gamma({x:e}) = {actual:e} (error = {err} ULP)",
-        );
+        assert!(err < 0.9, "gamma({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max gamma error = {max_error}");
-    assert!(max_error > 0.5);
+    // 0.499 instead of 0.5 because x87...
+    assert!(max_error > 0.4999);
 }
 
 #[test]
@@ -31,17 +28,9 @@ fn test_ln_gamma() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        let threshold = if (-5.0..=-2.0).contains(&x) {
-            // FIXME
-            400.0
-        } else if (0.5..=7.0).contains(&x) {
-            1.5
-        } else {
-            1.9
-        };
         assert_eq!(expected_sign, actual_sign);
         assert!(
-            err < threshold,
+            err < 0.9,
             "ln_gamma({x:e}) = {actual:e} (error = {err} ULP)",
         );
     });
@@ -52,6 +41,12 @@ fn test_ln_gamma() {
 fn test_with(mut f: impl FnMut(f32)) {
     let mut rng = create_prng();
 
+    // Exhaustive test of all subnormal numbers
+    for m in 0..(1 << 23) {
+        f(mk_subnormal(m, false));
+        f(mk_subnormal(m, true));
+    }
+
     for e in -126..=127 {
         for _ in 0..6000 {
             let m = super::gen_mantissa(&mut rng);
@@ -60,9 +55,35 @@ fn test_with(mut f: impl FnMut(f32)) {
         }
     }
 
+    // Problematic range
+    for e in 1..=2 {
+        for m in 0..(1 << 23) {
+            f(mk_normal(m, e, true));
+        }
+    }
+
     for i in 0..20000 {
         let x = purify((i as f32) / 100.0);
         f(x);
         f(-x);
+    }
+
+    // Some roots of ln_gamma (i.e., where abs(gamma(x)) = 1 and ln_gamma(x) = 0)
+    let roots = [
+        1.0, 2.0, -2.4570246, -2.7476826, -3.143581, -3.9552946, -4.039362, -4.9915447, -5.0082183,
+        -5.9986076,
+    ];
+
+    for root in roots {
+        let root = root as f32;
+        f(root);
+
+        for bump in 1..=2000 {
+            let x = f32::from_bits(root.to_bits() + bump);
+            f(x);
+
+            let x = f32::from_bits(root.to_bits() - bump);
+            f(x);
+        }
     }
 }
