@@ -204,17 +204,7 @@ fn test_tan() {
 fn test_tand() {
     let mut max_error: f64 = 0.0;
     test_with(|x| {
-        let mut expected = rug::Float::with_val(RUG_PREC, x).tan_u(360);
-        if expected.is_infinite() {
-            rug::Assign::assign(
-                &mut expected,
-                if x.is_sign_positive() {
-                    rug::float::Special::Infinity
-                } else {
-                    rug::float::Special::NegInfinity
-                },
-            );
-        }
+        let expected = rug::Float::with_val(RUG_PREC, x).tan_u(360);
         let actual = fpmath::tand(x);
         assert_eq!(purify(fpmath::tand(-x)), purify(-actual));
 
@@ -235,27 +225,7 @@ fn test_tand() {
 fn test_tanpi() {
     let mut max_error: f64 = 0.0;
     test_with(|x| {
-        let mut expected = rug::Float::with_val(RUG_PREC, x).tan_pi();
-        if expected.is_infinite() {
-            rug::Assign::assign(
-                &mut expected,
-                if x.is_sign_positive() {
-                    rug::float::Special::Infinity
-                } else {
-                    rug::float::Special::NegInfinity
-                },
-            );
-        }
-        if !(f64::MIN..=f64::MAX).contains(&expected) {
-            rug::Assign::assign(
-                &mut expected,
-                if x.is_sign_positive() {
-                    rug::float::Special::Infinity
-                } else {
-                    rug::float::Special::NegInfinity
-                },
-            );
-        }
+        let expected = rug::Float::with_val(RUG_PREC, x).tan_pi();
         let actual = fpmath::tanpi(x);
         assert_eq!(purify(fpmath::tanpi(-x)), purify(-actual));
 

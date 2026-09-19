@@ -14,7 +14,7 @@ pub(crate) fn tand<F: Reduce90Deg + Tan>(x: F) -> F {
         let (n, y) = reduce_90_deg(x);
         let inv = (n & 1) != 0;
         if inv && y.hi() == F::ZERO {
-            F::INFINITY.copysign(x)
+            F::INFINITY.set_sign(n == 3)
         } else {
             tan_inner(y.hi(), y.lo(), inv)
         }

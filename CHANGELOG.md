@@ -14,6 +14,10 @@
 - Fixed large `atanh` error near -1.
 - Fixed large `ln_gamma` errors for some negative inputs.
 
+### Changed
+
+- Poles of `tand` and `tanpi` now have alternating signs.
+
 ## 0.1.1 (2024-10-14)
 
 ### Added
