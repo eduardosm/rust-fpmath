@@ -1,4 +1,4 @@
-use super::{ReduceHalfMulPi, Tan, reduce_half_mul_pi, tan::tan_inner};
+use super::{ReduceHalfMulPi, Tan, reduce_half_mul_pi, tan::tan_quadrant};
 use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, Int as _};
 
@@ -23,12 +23,7 @@ pub(crate) fn tanpi<F: ReduceHalfMulPi + Tan>(x: F) -> F {
         y.to_single() * descale
     } else {
         let (n, y) = reduce_half_mul_pi(x);
-        let inv = (n & 1) != 0;
-        if inv && y.hi() == F::ZERO {
-            F::INFINITY.set_sign(n == 3)
-        } else {
-            tan_inner(y.hi(), y.lo(), inv)
-        }
+        tan_quadrant(n, x.sign(), y.hi(), y.lo())
     }
 }
 
@@ -40,11 +35,23 @@ mod tests {
     fn test<F: Float + FloatMath>() {
         use crate::tanpi;
 
+        let f = F::parse;
+
         assert_is_nan!(tanpi(F::NAN));
         assert_is_nan!(tanpi(F::INFINITY));
         assert_is_nan!(tanpi(F::NEG_INFINITY));
         assert_total_eq!(tanpi(F::ZERO), F::ZERO);
         assert_total_eq!(tanpi(-F::ZERO), -F::ZERO);
+        assert_total_eq!(tanpi(f("0.5")), F::INFINITY);
+        assert_total_eq!(tanpi(f("-0.5")), F::NEG_INFINITY);
+        assert_total_eq!(tanpi(f("1.0")), -F::ZERO);
+        assert_total_eq!(tanpi(f("-1.0")), F::ZERO);
+        assert_total_eq!(tanpi(f("1.5")), F::NEG_INFINITY);
+        assert_total_eq!(tanpi(f("-1.5")), F::INFINITY);
+        assert_total_eq!(tanpi(f("2.0")), F::ZERO);
+        assert_total_eq!(tanpi(f("-2.0")), -F::ZERO);
+        assert_total_eq!(tanpi(f("2.5")), F::INFINITY);
+        assert_total_eq!(tanpi(f("-2.5")), F::NEG_INFINITY);
     }
 
     #[test]

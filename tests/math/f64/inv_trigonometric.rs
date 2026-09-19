@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{RUG_PREC, calc_error_ulp, mk_normal, purify, select_threshold};
+use super::{RUG_PREC, calc_error_ulp, mk_normal, select_threshold};
 use crate::create_prng;
 
 #[test]
@@ -137,7 +137,7 @@ fn test_atan() {
     test_atan_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).atan();
         let actual = fpmath::atan(x);
-        assert_eq!(purify(fpmath::atan(-x)), purify(-actual));
+        assert_total_eq!(fpmath::atan(-x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -154,7 +154,7 @@ fn test_atand() {
     test_atan_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).atan_u(360);
         let actual = fpmath::atand(x);
-        assert_eq!(purify(fpmath::atand(-x)), purify(-actual));
+        assert_total_eq!(fpmath::atand(-x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -171,7 +171,7 @@ fn test_atanpi() {
     test_atan_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).atan_pi();
         let actual = fpmath::atanpi(x);
-        assert_eq!(purify(fpmath::atanpi(-x)), -actual);
+        assert_total_eq!(fpmath::atanpi(-x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -206,7 +206,7 @@ fn test_atan2() {
     test_atan2_with(|y, x| {
         let expected = rug::Float::with_val(RUG_PREC, y).atan2(&rug::Float::with_val(RUG_PREC, x));
         let actual = fpmath::atan2(y, x);
-        assert_eq!(purify(fpmath::atan2(-y, x)), -actual);
+        assert_total_eq!(fpmath::atan2(-y, x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -228,7 +228,7 @@ fn test_atan2d() {
         let expected =
             rug::Float::with_val(RUG_PREC, y).atan2_u(&rug::Float::with_val(RUG_PREC, x), 360);
         let actual = fpmath::atan2d(y, x);
-        assert_eq!(purify(fpmath::atan2d(-y, x)), -actual);
+        assert_total_eq!(fpmath::atan2d(-y, x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -250,7 +250,7 @@ fn test_atan2pi() {
         let expected =
             rug::Float::with_val(RUG_PREC, y).atan2_pi(&rug::Float::with_val(RUG_PREC, x));
         let actual = fpmath::atan2pi(y, x);
-        assert_eq!(purify(fpmath::atan2pi(-y, x)), purify(-actual));
+        assert_total_eq!(fpmath::atan2pi(-y, x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);

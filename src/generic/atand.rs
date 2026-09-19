@@ -83,7 +83,8 @@ pub(crate) fn atan2d<F: Atan + RadToDeg>(y: F, x: F) -> F {
 
         let nydeg = ny * F::RAD_TO_DEG_EX;
 
-        (nydeg.to_semi() / nx).to_single() * descale
+        // Copysign is to ensure the sign is preserved when the result is zero
+        ((nydeg.to_semi() / nx).to_single() * descale).copysign(y)
     } else {
         let y = atan2_inner(ny, nx).to_semi();
 
@@ -109,7 +110,7 @@ mod tests {
     }
 
     fn test_atan2d<F: Float + FloatMath>() {
-        use crate::atan2d;
+        use crate::{atan2d, scalbn};
 
         let f = F::parse;
 
@@ -150,6 +151,12 @@ mod tests {
         assert_total_eq!(atan2d(F::NEG_INFINITY, F::INFINITY), f("-45"));
         assert_total_eq!(atan2d(F::INFINITY, F::NEG_INFINITY), f("135"));
         assert_total_eq!(atan2d(F::NEG_INFINITY, F::NEG_INFINITY), f("-135"));
+
+        let small = scalbn(F::ONE, F::MIN_NORMAL_EXP.into() / 2);
+        assert_total_eq!(atan2d(small, F::LARGEST), F::ZERO);
+        assert_total_eq!(atan2d(-small, F::LARGEST), -F::ZERO);
+        assert_total_eq!(atan2d(small, -F::LARGEST), f("180"));
+        assert_total_eq!(atan2d(-small, -F::LARGEST), f("-180"));
     }
 
     #[test]

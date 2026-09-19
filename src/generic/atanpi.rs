@@ -90,7 +90,8 @@ pub(crate) fn atan2pi<F: Atan + DivPi>(y: F, x: F) -> F {
 
         let nyhrev = ny * F::FRAC_1_PI_EX;
 
-        (nyhrev.to_semi() / nx).to_single() * descale
+        // Copysign is to ensure the sign is preserved when the result is zero
+        ((nyhrev.to_semi() / nx).to_single() * descale).copysign(y)
     } else {
         let y = atan2_inner(ny, nx).to_semi();
 
@@ -114,7 +115,7 @@ mod tests {
     }
 
     fn test_atan2pi<F: Float + FloatMath>() {
-        use crate::atan2pi;
+        use crate::{atan2pi, scalbn};
 
         let f = F::parse;
 
@@ -155,6 +156,12 @@ mod tests {
         assert_total_eq!(atan2pi(F::NEG_INFINITY, F::INFINITY), f("-0.25"));
         assert_total_eq!(atan2pi(F::INFINITY, F::NEG_INFINITY), f("0.75"));
         assert_total_eq!(atan2pi(F::NEG_INFINITY, F::NEG_INFINITY), f("-0.75"));
+
+        let small = scalbn(F::ONE, F::MIN_NORMAL_EXP.into() / 2);
+        assert_total_eq!(atan2pi(small, F::LARGEST), F::ZERO);
+        assert_total_eq!(atan2pi(-small, F::LARGEST), -F::ZERO);
+        assert_total_eq!(atan2pi(small, -F::LARGEST), F::ONE);
+        assert_total_eq!(atan2pi(-small, -F::LARGEST), -F::ONE);
     }
 
     #[test]

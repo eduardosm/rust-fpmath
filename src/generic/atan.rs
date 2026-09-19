@@ -158,7 +158,7 @@ mod tests {
     }
 
     fn test_atan2<F: Atan + FloatMath>() {
-        use crate::atan2;
+        use crate::{atan2, scalbn};
 
         assert_is_nan!(atan2(F::NAN, F::ONE));
         assert_is_nan!(atan2(F::NAN, F::ZERO));
@@ -197,6 +197,12 @@ mod tests {
         assert_total_eq!(atan2(F::NEG_INFINITY, F::INFINITY), -F::FRAC_PI_4);
         assert_total_eq!(atan2(F::INFINITY, F::NEG_INFINITY), F::FRAC_3PI_4);
         assert_total_eq!(atan2(F::NEG_INFINITY, F::NEG_INFINITY), -F::FRAC_3PI_4);
+
+        let small = scalbn(F::ONE, F::MIN_NORMAL_EXP.into() / 2);
+        assert_total_eq!(atan2(small, F::LARGEST), F::ZERO);
+        assert_total_eq!(atan2(-small, F::LARGEST), -F::ZERO);
+        assert_total_eq!(atan2(small, -F::LARGEST), F::PI);
+        assert_total_eq!(atan2(-small, -F::LARGEST), -F::PI);
     }
 
     #[test]

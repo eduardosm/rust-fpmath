@@ -1,4 +1,4 @@
-use super::{RUG_PREC, calc_error_ulp, mk_normal, purify, purify2, select_threshold};
+use super::{RUG_PREC, calc_error_ulp, mk_normal, select_threshold};
 use crate::create_prng;
 
 #[test]
@@ -14,12 +14,9 @@ fn test_sin_cos() {
         let actual_sin1 = fpmath::sin(x);
         let actual_cos1 = fpmath::cos(x);
         let (actual_sin2, actual_cos2) = fpmath::sin_cos(x);
-        assert_eq!(purify(fpmath::sin(-x)), purify(-actual_sin1));
-        assert_eq!(purify(fpmath::cos(-x)), purify(actual_cos1));
-        assert_eq!(
-            purify2(fpmath::sin_cos(-x)),
-            purify2((-actual_sin2, actual_cos2))
-        );
+        assert_total_eq!(fpmath::sin(-x), -actual_sin1);
+        assert_total_eq!(fpmath::cos(-x), actual_cos1);
+        assert_total_eq!(fpmath::sin_cos(-x), (-actual_sin2, actual_cos2));
 
         let sin1_err = calc_error_ulp(actual_sin1, expected_sin.clone());
         let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
@@ -72,12 +69,9 @@ fn test_sind_cosd() {
         let actual_sin1 = fpmath::sind(x);
         let actual_cos1 = fpmath::cosd(x);
         let (actual_sin2, actual_cos2) = fpmath::sind_cosd(x);
-        assert_eq!(purify(fpmath::sind(-x)), purify(-actual_sin1));
-        assert_eq!(purify(fpmath::cosd(-x)), purify(actual_cos1));
-        assert_eq!(
-            purify2(fpmath::sind_cosd(-x)),
-            purify2((-actual_sin2, actual_cos2))
-        );
+        assert_total_eq!(fpmath::sind(-x), -actual_sin1);
+        assert_total_eq!(fpmath::cosd(-x), actual_cos1);
+        assert_total_eq!(fpmath::sind_cosd(-x), (-actual_sin2, actual_cos2));
 
         let sin1_err = calc_error_ulp(actual_sin1, expected_sin.clone());
         let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
@@ -134,12 +128,9 @@ fn test_sinpi_cospi() {
         let actual_sin1 = fpmath::sinpi(x);
         let actual_cos1 = fpmath::cospi(x);
         let (actual_sin2, actual_cos2) = fpmath::sinpi_cospi(x);
-        assert_eq!(purify(fpmath::sinpi(-x)), purify(-actual_sin1));
-        assert_eq!(purify(fpmath::cospi(-x)), purify(actual_cos1));
-        assert_eq!(
-            purify2(fpmath::sinpi_cospi(-x)),
-            purify2((-actual_sin2, actual_cos2))
-        );
+        assert_total_eq!(fpmath::sinpi(-x), -actual_sin1);
+        assert_total_eq!(fpmath::cospi(-x), actual_cos1);
+        assert_total_eq!(fpmath::sinpi_cospi(-x), (-actual_sin2, actual_cos2));
 
         let sin1_err = calc_error_ulp(actual_sin1, expected_sin.clone());
         let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
@@ -189,7 +180,7 @@ fn test_tan() {
     test_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).tan();
         let actual = fpmath::tan(x);
-        assert_eq!(purify(fpmath::tan(-x)), purify(-actual));
+        assert_total_eq!(fpmath::tan(-x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -206,7 +197,7 @@ fn test_tand() {
     test_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).tan_u(360);
         let actual = fpmath::tand(x);
-        assert_eq!(purify(fpmath::tand(-x)), purify(-actual));
+        assert_total_eq!(fpmath::tand(-x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
@@ -227,7 +218,7 @@ fn test_tanpi() {
     test_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).tan_pi();
         let actual = fpmath::tanpi(x);
-        assert_eq!(purify(fpmath::tanpi(-x)), purify(-actual));
+        assert_total_eq!(fpmath::tanpi(-x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);

@@ -72,7 +72,7 @@ fn test_atanh() {
     test_atanh_with(|x| {
         let expected = fpmath::atanh(f64::from(x));
         let actual = fpmath::atanh(x);
-        assert_eq!(purify(fpmath::atanh(-x)), purify(-actual));
+        assert_total_eq!(purify(fpmath::atanh(-x)), purify(-actual));
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);

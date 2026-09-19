@@ -1,4 +1,4 @@
-use super::{calc_error_ulp, mk_normal, purify, purify2};
+use super::{calc_error_ulp, mk_normal};
 use crate::create_prng;
 
 #[test]
@@ -13,12 +13,9 @@ fn test_sinh_cosh() {
         let actual_sin1 = fpmath::sinh(x);
         let actual_cos1 = fpmath::cosh(x);
         let (actual_sin2, actual_cos2) = fpmath::sinh_cosh(x);
-        assert_eq!(purify(fpmath::sinh(-x)), purify(-actual_sin1));
-        assert_eq!(purify(fpmath::cosh(-x)), purify(actual_cos1));
-        assert_eq!(
-            purify2(fpmath::sinh_cosh(-x)),
-            purify2((-actual_sin2, actual_cos2))
-        );
+        assert_total_eq!(fpmath::sinh(-x), -actual_sin1);
+        assert_total_eq!(fpmath::cosh(-x), actual_cos1);
+        assert_total_eq!(fpmath::sinh_cosh(-x), (-actual_sin2, actual_cos2));
 
         let sin1_err = calc_error_ulp(actual_sin1, expected_sin);
         let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
@@ -64,7 +61,7 @@ fn test_tanh() {
     test_with(|x| {
         let expected = fpmath::tanh(f64::from(x));
         let actual = fpmath::tanh(x);
-        assert_eq!(fpmath::tanh(-x), -actual);
+        assert_total_eq!(fpmath::tanh(-x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);

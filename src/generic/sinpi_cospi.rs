@@ -1,4 +1,4 @@
-use super::sin_cos::{cos_inner, sin_inner};
+use super::sin_cos::{cos_quadrant, sin_cos_quadrant, sin_quadrant};
 use super::{ReduceHalfMulPi, SinCos, reduce_half_mul_pi};
 use crate::double::SemiDouble;
 use crate::traits::{CastFrom as _, Int as _};
@@ -26,14 +26,7 @@ pub(crate) fn sinpi<F: SinCos + ReduceHalfMulPi>(x: F) -> F {
         }
     } else {
         let (n, y) = reduce_half_mul_pi(x);
-
-        match n {
-            0 => sin_inner(y.hi(), y.lo()),
-            1 => cos_inner(y.hi(), y.lo()),
-            2 => -sin_inner(y.hi(), y.lo()),
-            3 => -cos_inner(y.hi(), y.lo()),
-            _ => unreachable!(),
-        }
+        sin_quadrant(n, x.sign(), y.hi(), y.lo())
     }
 }
 
@@ -47,14 +40,7 @@ pub(crate) fn cospi<F: SinCos + ReduceHalfMulPi>(x: F) -> F {
         F::ONE
     } else {
         let (n, y) = reduce_half_mul_pi(x);
-
-        match n {
-            0 => cos_inner(y.hi(), y.lo()),
-            1 => -sin_inner(y.hi(), y.lo()),
-            2 => -cos_inner(y.hi(), y.lo()),
-            3 => sin_inner(y.hi(), y.lo()),
-            _ => unreachable!(),
-        }
+        cos_quadrant(n, y.hi(), y.lo())
     }
 }
 
@@ -85,16 +71,7 @@ pub(crate) fn sinpi_cospi<F: SinCos + ReduceHalfMulPi>(x: F) -> (F, F) {
         }
     } else {
         let (n, y) = reduce_half_mul_pi(x);
-
-        let sin = sin_inner(y.hi(), y.lo());
-        let cos = cos_inner(y.hi(), y.lo());
-        match n {
-            0 => (sin, cos),
-            1 => (cos, -sin),
-            2 => (-sin, -cos),
-            3 => (-cos, sin),
-            _ => unreachable!(),
-        }
+        sin_cos_quadrant(n, x.sign(), y.hi(), y.lo())
     }
 }
 
@@ -105,6 +82,8 @@ mod tests {
 
     fn test<F: Float + FloatMath>() {
         use crate::{cospi, sinpi, sinpi_cospi};
+
+        let f = F::parse;
 
         let test_nan = |arg: F| {
             let sin1 = sinpi(arg);
@@ -131,6 +110,16 @@ mod tests {
         test_nan(F::NEG_INFINITY);
         test_value(F::ZERO, F::ZERO, F::ONE);
         test_value(-F::ZERO, -F::ZERO, F::ONE);
+        test_value(f("0.5"), F::ONE, F::ZERO);
+        test_value(f("-0.5"), -F::ONE, F::ZERO);
+        test_value(f("1.0"), F::ZERO, -F::ONE);
+        test_value(f("-1.0"), -F::ZERO, -F::ONE);
+        test_value(f("1.5"), -F::ONE, F::ZERO);
+        test_value(f("-1.5"), F::ONE, F::ZERO);
+        test_value(f("2.0"), F::ZERO, F::ONE);
+        test_value(f("-2.0"), -F::ZERO, F::ONE);
+        test_value(f("2.5"), F::ONE, F::ZERO);
+        test_value(f("-2.5"), -F::ONE, F::ZERO);
     }
 
     #[test]
