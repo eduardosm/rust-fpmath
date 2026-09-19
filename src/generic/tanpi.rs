@@ -25,7 +25,7 @@ pub(crate) fn tanpi<F: ReduceHalfMulPi + Tan>(x: F) -> F {
         let (n, y) = reduce_half_mul_pi(x);
         let inv = (n & 1) != 0;
         if inv && y.hi() == F::ZERO {
-            F::INFINITY.copysign(x)
+            F::INFINITY.set_sign(n == 3)
         } else {
             tan_inner(y.hi(), y.lo(), inv)
         }
