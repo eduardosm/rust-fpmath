@@ -138,7 +138,7 @@ pub(crate) trait Float:
 
     #[inline]
     fn is_finite(self) -> bool {
-        self.raw_exp() != Self::RawExp::MAX
+        self.raw_exp() != Self::MAX_RAW_EXP
     }
 
     #[inline]
