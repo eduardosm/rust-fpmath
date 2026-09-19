@@ -137,6 +137,11 @@ pub(crate) trait Float:
     fn exp_to_raw_exp(e: Self::Exp) -> Self::RawExp;
 
     #[inline]
+    fn is_finite(self) -> bool {
+        self.raw_exp() != Self::RawExp::MAX
+    }
+
+    #[inline]
     fn sign(self) -> bool {
         (self.to_raw() & Self::SIGN_MASK) != Self::Raw::ZERO
     }

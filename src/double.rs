@@ -163,6 +163,13 @@ impl<F: Float> Double<F> {
         let (rhs_hi, rhs_lo) = rhs.split_hi_lo();
 
         let rhs_inv = F::ONE / rhs;
+        if !rhs_inv.is_finite() {
+            return Self {
+                hi: rhs_inv,
+                lo: F::ZERO,
+            };
+        }
+
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
 
         let res_hi = (lhs * rhs_inv).purify();
@@ -188,6 +195,13 @@ impl<F: Float> Double<F> {
         let (rhs_hi, rhs_lo) = rhs.split_hi_lo();
 
         let rhs_inv = F::ONE / rhs;
+        if !rhs_inv.is_finite() {
+            return Self {
+                hi: rhs_inv,
+                lo: F::ZERO,
+            };
+        }
+
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
 
         let res_hi = rhs_inv.purify();
@@ -205,8 +219,15 @@ impl<F: Float> Double<F> {
     #[inline]
     pub(crate) fn recip(self) -> Self {
         let rhs = self;
-        let (rhs_hihi, rhs_hilo) = rhs.hi.split_hi_lo();
         let rhs_inv = (F::ONE / rhs.hi).purify();
+        if !rhs_inv.is_finite() {
+            return Self {
+                hi: rhs_inv,
+                lo: F::ZERO,
+            };
+        }
+
+        let (rhs_hihi, rhs_hilo) = rhs.hi.split_hi_lo();
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
 
         let res_hi = rhs_inv;
@@ -349,9 +370,16 @@ impl<F: Float> core::ops::Div for Double<F> {
     #[inline]
     fn div(self, rhs: Self) -> Self {
         let lhs = self;
+        let rhs_inv = F::ONE / rhs.hi;
+        if !rhs_inv.is_finite() {
+            return Self {
+                hi: rhs_inv,
+                lo: F::ZERO,
+            };
+        }
+
         let (lhs_hihi, lhs_hilo) = lhs.hi.split_hi_lo();
         let (rhs_hihi, rhs_hilo) = rhs.hi.split_hi_lo();
-        let rhs_inv = F::ONE / rhs.hi;
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
 
         let res_hi = (lhs.hi * rhs_inv).purify();
@@ -559,6 +587,13 @@ impl<F: Float> core::ops::Div for SemiDouble<F> {
     fn div(self, rhs: Self) -> Double<F> {
         let lhs = self;
         let rhs_inv = F::ONE / (rhs.hi + rhs.lo).purify();
+        if !rhs_inv.is_finite() {
+            return Double {
+                hi: rhs_inv,
+                lo: F::ZERO,
+            };
+        }
+
         let (rhs_inv_hi, rhs_inv_lo) = rhs_inv.split_hi_lo();
 
         let res_hi = ((lhs.hi + lhs.lo) * rhs_inv).purify();
