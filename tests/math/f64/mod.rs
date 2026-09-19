@@ -44,39 +44,29 @@ const RUG_PREC: u32 = 53 + 20;
 fn calc_error_ulp(actual: f64, expected: rug::Float) -> f64 {
     let actual = purify(actual);
 
-    match expected.classify() {
-        std::num::FpCategory::Nan => {
-            if actual.is_nan() {
-                0.0
-            } else {
-                f64::INFINITY
-            }
+    if expected.is_nan() {
+        if actual.is_nan() { 0.0 } else { f64::INFINITY }
+    } else if expected > f64::MAX {
+        if actual == f64::INFINITY {
+            0.0
+        } else {
+            f64::INFINITY
         }
-        std::num::FpCategory::Infinite => {
-            if actual.is_infinite() && actual.is_sign_positive() == expected.is_sign_positive() {
-                0.0
-            } else {
-                f64::INFINITY
-            }
+    } else if expected < f64::MIN {
+        if actual == f64::NEG_INFINITY {
+            0.0
+        } else {
+            f64::INFINITY
         }
-        std::num::FpCategory::Subnormal => unreachable!(),
-        _ if actual.is_infinite() => {
-            if expected.get_exp().is_some_and(|e| e > 1023)
-                && actual.is_sign_positive() == expected.is_sign_positive()
-            {
-                0.0
-            } else {
-                f64::INFINITY
-            }
-        }
-        _ => {
-            let exp = expected
-                .get_exp()
-                .map(|e| (e - 1).max(-1022))
-                .unwrap_or(-1022);
-            let dif = (expected - actual).abs() >> (exp - 52);
-            dif.to_f64()
-        }
+    } else if actual.is_infinite() {
+        f64::INFINITY
+    } else {
+        let exp = expected
+            .get_exp()
+            .map(|e| (e - 1).max(-1022))
+            .unwrap_or(-1022);
+        let dif = (expected - actual).abs() >> (exp - 52);
+        dif.to_f64()
     }
 }
 
