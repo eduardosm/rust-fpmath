@@ -75,6 +75,8 @@ fn purify(x: f64) -> f64 {
     std::hint::black_box(x)
 }
 
-fn purify2((x, y): (f64, f64)) -> (f64, f64) {
-    (std::hint::black_box(x), std::hint::black_box(y))
+impl crate::TotalEq for f64 {
+    fn total_eq(&self, other: &Self) -> bool {
+        self.to_bits() == other.to_bits()
+    }
 }

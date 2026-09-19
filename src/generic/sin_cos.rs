@@ -30,14 +30,7 @@ pub(crate) fn sin<F: SinCos + ReducePi2>(x: F) -> F {
         x
     } else {
         let (n, y_hi, y_lo) = reduce_pi_2(x);
-
-        match n {
-            0 => sin_inner(y_hi, y_lo),
-            1 => cos_inner(y_hi, y_lo),
-            2 => -sin_inner(y_hi, y_lo),
-            3 => -cos_inner(y_hi, y_lo),
-            _ => unreachable!(),
-        }
+        sin_quadrant(n, x.sign(), y_hi, y_lo)
     }
 }
 
@@ -51,14 +44,7 @@ pub(crate) fn cos<F: SinCos + ReducePi2>(x: F) -> F {
         F::ONE
     } else {
         let (n, y_hi, y_lo) = reduce_pi_2(x);
-
-        match n {
-            0 => cos_inner(y_hi, y_lo),
-            1 => -sin_inner(y_hi, y_lo),
-            2 => -cos_inner(y_hi, y_lo),
-            3 => sin_inner(y_hi, y_lo),
-            _ => unreachable!(),
-        }
+        cos_quadrant(n, y_hi, y_lo)
     }
 }
 
@@ -76,7 +62,66 @@ pub(crate) fn sin_cos<F: SinCos + ReducePi2>(x: F) -> (F, F) {
         (x, F::ONE)
     } else {
         let (n, y_hi, y_lo) = reduce_pi_2(x);
+        sin_cos_quadrant(n, x.sign(), y_hi, y_lo)
+    }
+}
 
+pub(super) fn sin_quadrant<F: SinCos>(n: u8, x_sign: bool, y_hi: F, y_lo: F) -> F {
+    if y_hi == F::ZERO && y_lo == F::ZERO {
+        // Sign of zero depends on the sign of the argument,
+        // not the quadrant.
+        match n {
+            0 => F::ZERO.set_sign(x_sign),
+            1 => F::ONE,
+            2 => F::ZERO.set_sign(x_sign),
+            3 => -F::ONE,
+            _ => unreachable!(),
+        }
+    } else {
+        match n {
+            0 => sin_inner(y_hi, y_lo),
+            1 => cos_inner(y_hi, y_lo),
+            2 => -sin_inner(y_hi, y_lo),
+            3 => -cos_inner(y_hi, y_lo),
+            _ => unreachable!(),
+        }
+    }
+}
+
+pub(super) fn cos_quadrant<F: SinCos>(n: u8, y_hi: F, y_lo: F) -> F {
+    if y_hi == F::ZERO && y_lo == F::ZERO {
+        // Zero is always positive, regardless of the quadrant.
+        match n {
+            0 => F::ONE,
+            1 => F::ZERO,
+            2 => -F::ONE,
+            3 => F::ZERO,
+            _ => unreachable!(),
+        }
+    } else {
+        match n {
+            0 => cos_inner(y_hi, y_lo),
+            1 => -sin_inner(y_hi, y_lo),
+            2 => -cos_inner(y_hi, y_lo),
+            3 => sin_inner(y_hi, y_lo),
+            _ => unreachable!(),
+        }
+    }
+}
+
+pub(super) fn sin_cos_quadrant<F: SinCos>(n: u8, x_sign: bool, y_hi: F, y_lo: F) -> (F, F) {
+    if y_hi == F::ZERO && y_lo == F::ZERO {
+        // For sin, the sign of zero depends on the sign of the argument,
+        // not the quadrant. For cos, zero is always positive.
+        let sin = F::ZERO.set_sign(x_sign);
+        match n {
+            0 => (sin, F::ONE),
+            1 => (F::ONE, F::ZERO),
+            2 => (sin, -F::ONE),
+            3 => (-F::ONE, F::ZERO),
+            _ => unreachable!(),
+        }
+    } else {
         let sin = sin_inner(y_hi, y_lo);
         let cos = cos_inner(y_hi, y_lo);
         match n {
@@ -91,7 +136,11 @@ pub(crate) fn sin_cos<F: SinCos + ReducePi2>(x: F) -> (F, F) {
 
 /// Calculates `sin(x_hi + x_lo)`, where
 /// `x_lo` is very small and `|x_hi| <= π/4`
-pub(super) fn sin_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
+fn sin_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
+    if x_hi == F::ZERO && x_lo == F::ZERO {
+        return F::ZERO;
+    }
+
     // sin(x_hi + x_lo) = sin(x_hi) * cos(x_lo) + cos(x_hi) * sin(x_lo)
     // x_lo is small, so sin(x_lo) ~= x_lo and cos(x_lo) ~= 1,
     // then sin(x_hi + x_lo) ~= sin(x_hi) + cos(x_hi) * x_lo
@@ -113,7 +162,7 @@ pub(super) fn sin_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
 
 /// Calculates `cos(x_hi + x_lo)`, where
 /// `x_lo` is very small and `|x_hi| <= π/4`
-pub(super) fn cos_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
+fn cos_inner<F: SinCos>(x_hi: F, x_lo: F) -> F {
     // cos(x_hi + x_lo) = cos(x_hi) * cos(x_lo) - sin(x_hi) * sin(x_lo)
     // x_lo is small, so sin(x_lo) ~= x_lo and cos(x_lo) ~= 1
     // then

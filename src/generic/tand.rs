@@ -1,4 +1,4 @@
-use super::{Reduce90Deg, Tan, reduce_90_deg, tan::tan_inner};
+use super::{Reduce90Deg, Tan, reduce_90_deg, tan::tan_quadrant};
 
 pub(crate) fn tand<F: Reduce90Deg + Tan>(x: F) -> F {
     let e = x.raw_exp();
@@ -12,12 +12,7 @@ pub(crate) fn tand<F: Reduce90Deg + Tan>(x: F) -> F {
         x * F::DEG_TO_RAD
     } else {
         let (n, y) = reduce_90_deg(x);
-        let inv = (n & 1) != 0;
-        if inv && y.hi() == F::ZERO {
-            F::INFINITY.set_sign(n == 3)
-        } else {
-            tan_inner(y.hi(), y.lo(), inv)
-        }
+        tan_quadrant(n, x.sign(), y.hi(), y.lo())
     }
 }
 
@@ -29,11 +24,23 @@ mod tests {
     fn test<F: Float + FloatMath>() {
         use crate::tand;
 
+        let f = F::parse;
+
         assert_is_nan!(tand(F::NAN));
         assert_is_nan!(tand(F::INFINITY));
         assert_is_nan!(tand(F::NEG_INFINITY));
         assert_total_eq!(tand(F::ZERO), F::ZERO);
         assert_total_eq!(tand(-F::ZERO), -F::ZERO);
+        assert_total_eq!(tand(f("90")), F::INFINITY);
+        assert_total_eq!(tand(f("-90")), F::NEG_INFINITY);
+        assert_total_eq!(tand(f("180")), -F::ZERO);
+        assert_total_eq!(tand(f("-180")), F::ZERO);
+        assert_total_eq!(tand(f("270")), F::NEG_INFINITY);
+        assert_total_eq!(tand(f("-270")), F::INFINITY);
+        assert_total_eq!(tand(f("360")), F::ZERO);
+        assert_total_eq!(tand(f("-360")), -F::ZERO);
+        assert_total_eq!(tand(f("450")), F::INFINITY);
+        assert_total_eq!(tand(f("-450")), F::NEG_INFINITY);
     }
 
     #[test]

@@ -7,7 +7,7 @@ fn test_cbrt() {
     test_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).cbrt();
         let actual = fpmath::cbrt(x);
-        assert_eq!(fpmath::cbrt(-x), -actual);
+        assert_total_eq!(fpmath::cbrt(-x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);

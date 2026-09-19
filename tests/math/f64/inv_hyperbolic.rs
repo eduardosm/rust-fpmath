@@ -89,7 +89,7 @@ fn test_atanh() {
     test_atanh_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).atanh();
         let actual = fpmath::atanh(x);
-        assert_eq!(purify(fpmath::atanh(-x)), purify(-actual));
+        assert_total_eq!(purify(fpmath::atanh(-x)), purify(-actual));
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);

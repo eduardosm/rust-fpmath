@@ -1,4 +1,4 @@
-use super::sin_cos::{cos_inner, sin_inner};
+use super::sin_cos::{cos_quadrant, sin_cos_quadrant, sin_quadrant};
 use super::{Reduce90Deg, SinCos, reduce_90_deg};
 
 pub(crate) fn sind<F: SinCos + Reduce90Deg>(x: F) -> F {
@@ -12,14 +12,7 @@ pub(crate) fn sind<F: SinCos + Reduce90Deg>(x: F) -> F {
         x * F::DEG_TO_RAD
     } else {
         let (n, y) = reduce_90_deg(x);
-
-        match n {
-            0 => sin_inner(y.hi(), y.lo()),
-            1 => cos_inner(y.hi(), y.lo()),
-            2 => -sin_inner(y.hi(), y.lo()),
-            3 => -cos_inner(y.hi(), y.lo()),
-            _ => unreachable!(),
-        }
+        sin_quadrant(n, x.sign(), y.hi(), y.lo())
     }
 }
 
@@ -33,14 +26,7 @@ pub(crate) fn cosd<F: SinCos + Reduce90Deg>(x: F) -> F {
         F::ONE
     } else {
         let (n, y) = reduce_90_deg(x);
-
-        match n {
-            0 => cos_inner(y.hi(), y.lo()),
-            1 => -sin_inner(y.hi(), y.lo()),
-            2 => -cos_inner(y.hi(), y.lo()),
-            3 => sin_inner(y.hi(), y.lo()),
-            _ => unreachable!(),
-        }
+        cos_quadrant(n, y.hi(), y.lo())
     }
 }
 
@@ -58,16 +44,7 @@ pub(crate) fn sind_cosd<F: SinCos + Reduce90Deg>(x: F) -> (F, F) {
         (x * F::DEG_TO_RAD, F::ONE)
     } else {
         let (n, y) = reduce_90_deg(x);
-
-        let sin = sin_inner(y.hi(), y.lo());
-        let cos = cos_inner(y.hi(), y.lo());
-        match n {
-            0 => (sin, cos),
-            1 => (cos, -sin),
-            2 => (-sin, -cos),
-            3 => (-cos, sin),
-            _ => unreachable!(),
-        }
+        sin_cos_quadrant(n, x.sign(), y.hi(), y.lo())
     }
 }
 
@@ -78,6 +55,8 @@ mod tests {
 
     fn test<F: Float + FloatMath>() {
         use crate::{cosd, sind, sind_cosd};
+
+        let f = F::parse;
 
         let test_nan = |arg: F| {
             let sin1 = sind(arg);
@@ -104,6 +83,16 @@ mod tests {
         test_nan(F::NEG_INFINITY);
         test_value(F::ZERO, F::ZERO, F::ONE);
         test_value(-F::ZERO, -F::ZERO, F::ONE);
+        test_value(f("90"), F::ONE, F::ZERO);
+        test_value(f("-90"), -F::ONE, F::ZERO);
+        test_value(f("180"), F::ZERO, -F::ONE);
+        test_value(f("-180"), -F::ZERO, -F::ONE);
+        test_value(f("270"), -F::ONE, F::ZERO);
+        test_value(f("-270"), F::ONE, F::ZERO);
+        test_value(f("360"), F::ZERO, F::ONE);
+        test_value(f("-360"), -F::ZERO, F::ONE);
+        test_value(f("450"), F::ONE, F::ZERO);
+        test_value(f("-450"), -F::ONE, F::ZERO);
     }
 
     #[test]

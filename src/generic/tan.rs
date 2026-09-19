@@ -23,12 +23,24 @@ pub(crate) fn tan<F: ReducePi2 + Tan>(x: F) -> F {
         x
     } else {
         let (n, y_hi, y_lo) = reduce_pi_2(x);
-
-        tan_inner(y_hi, y_lo, (n & 1) != 0)
+        tan_quadrant(n, x.sign(), y_hi, y_lo)
     }
 }
 
-pub(super) fn tan_inner<F: Tan>(x_hi: F, x_lo: F, inv: bool) -> F {
+pub(super) fn tan_quadrant<F: Tan>(n: u8, x_sign: bool, y_hi: F, y_lo: F) -> F {
+    let inv = (n & 1) != 0;
+    if y_hi == F::ZERO && y_lo == F::ZERO {
+        if inv {
+            F::INFINITY.set_sign(n == 3)
+        } else {
+            F::ZERO.set_sign(x_sign ^ (n == 2))
+        }
+    } else {
+        tan_inner(y_hi, y_lo, inv)
+    }
+}
+
+fn tan_inner<F: Tan>(x_hi: F, x_lo: F, inv: bool) -> F {
     // let y = 0.5 * x
     // tan(x) = 2 * tan(y) / (1 - tan(y)^2)
 
