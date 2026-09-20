@@ -82,10 +82,10 @@ pub(super) fn exp_inner_common<F: Exp>(k: i32, r_hi: F, r_lo: F) -> F {
 
     // t2 = exp(r) = 1 + r + (r * t1) / (2 - t1)
     //             = 1 + r_hi + r_lo + (r * t1) / (2 - t1)
-    let t2 = F::ONE + (r_hi + (r_lo + r * t1 / (F::TWO - t1)));
+    let t2 = Double::new_qadd11(F::ONE, r_hi).qadd1(r_lo + r * t1 / (F::TWO - t1));
 
     // exp(x) = exp(r_hi + r_lo) * 2^k = t2 * 2^k
-    scalbn_medium(t2, k)
+    scalbn_medium(t2.to_single(), k)
 }
 
 fn exp_m1_inner<F: Exp>(x: F) -> F {
@@ -123,7 +123,7 @@ fn exp_m1_inner<F: Exp>(x: F) -> F {
 
         let t5 = Double::new_qadd11(s1, sr);
         let t6 = t5.qadd1(st4);
-        let t7 = t6.qsub1(F::ONE);
+        let t7 = t6 - F::ONE;
 
         t7.to_single()
     } else {
