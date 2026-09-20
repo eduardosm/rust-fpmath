@@ -14,6 +14,7 @@
 - Fixed large `atanh` error near -1.
 - Fixed large `ln_gamma` errors for some negative inputs.
 - Symmetry of trigonometric functions now applies to the sign of zero too.
+- Fixed `atanpi` and `atan2pi` exceeding 1 ULP of error.
 
 ### Changed
 

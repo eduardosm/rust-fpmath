@@ -6,8 +6,9 @@ pub(crate) trait Atan: FloatConsts {
     const FRAC_PI_2_LO: Self;
     const FRAC_3PI_4: Self;
 
-    // Returns `(k3, (atan(x) - x) / x^3 - k3)`
-    fn atan_poly(x2: Self) -> (Self, Self);
+    /// Returns `(k3, k5, k7, t)` such that
+    /// `atan(x) = x + x^3 * (k3 + x2 * (k5 + x2 * (k7 + x2 * t)))`
+    fn atan_poly(x2: Self) -> (Self, Self, Self, Self);
 }
 
 pub(crate) fn atan<F: Atan>(x: F) -> F {
@@ -126,17 +127,16 @@ pub(super) fn atan2_inner<F: Atan>(mut n: F, mut d: F) -> Double<F> {
 
 pub(super) fn atan_inner_common<F: Atan>(x: SemiDouble<F>) -> Double<F> {
     let x2 = x.square();
-
-    // t1 = (atan(x) - x) / x^3 - k3
-    let (k3, t1) = F::atan_poly(x2.to_single());
-
-    // t2 = (atan(x) - x) / x^3 = t1 + k3
-    let t2 = SemiDouble::new_qadd11(k3, t1);
-
     let x3 = x * x2.to_semi();
+    let x2 = x2.to_single();
+
+    let (k3, k5, k7, t1) = F::atan_poly(x2);
+
+    // t2 = (atan(x) - x) / x^3 = k3 + x2*(k5 + x2*(k7 + x2*t1))
+    let t2 = (((Double::from(t1) * x2).qradd1(k7) * x2).qradd1(k5) * x2).qradd1(k3);
 
     // t3 = atan(x) - x = t2 * x^3
-    let t3 = x3.to_semi() * t2;
+    let t3 = x3.to_semi() * t2.to_semi();
 
     // atan(x) = t3 + x
     x.to_double().qadd2(t3)

@@ -193,7 +193,7 @@ fn test_atan_with(mut f: impl FnMut(f32)) {
         f(mk_normal(0, e, false));
         f(mk_normal(super::MAX_MANTISSA, e, false));
 
-        for _ in 0..5000 {
+        for _ in 0..20000 {
             let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }
@@ -253,7 +253,7 @@ fn test_atan2pi() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        let threshold = select_threshold(actual, 0.95, 1.9);
+        let threshold = select_threshold(actual, 0.9, 1.9);
         assert!(
             err < threshold,
             "atan2pi({x:e}, {y:e}) = {actual:e} (error = {err} ULP)",

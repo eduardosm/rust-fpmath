@@ -5,7 +5,7 @@ impl crate::generic::Atan for f32 {
     const FRAC_3PI_4: f32 = f32::from_bits(0x4016CBE4); // 2.3561945e0
 
     #[inline]
-    fn atan_poly(x2: Self) -> (Self, Self) {
+    fn atan_poly(x2: Self) -> (Self, Self, Self, Self) {
         // GENERATE: atan::atan_poly f32 9
         const K3: f32 = f32::from_bits(0xBEAAAA93); // -3.3333263e-1
         const K5: f32 = f32::from_bits(0x3E4CC690); // 1.999762e-1
@@ -17,7 +17,7 @@ impl crate::generic::Atan for f32 {
         const K17: f32 = f32::from_bits(0x3C244237); // 1.00255525e-2
         const K19: f32 = f32::from_bits(0xBAD2081E); // -1.6024148e-3
 
-        let t = horner!(x2, x2, [K5, K7, K9, K11, K13, K15, K17, K19]);
-        (K3, t)
+        let t = K9 + horner!(x2, x2, [K11, K13, K15, K17, K19]);
+        (K3, K5, K7, t)
     }
 }
