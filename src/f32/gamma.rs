@@ -1,13 +1,11 @@
-use super::log_core::log_core;
-use crate::double::Double;
-use crate::generic::round_as_i_f;
-use crate::scalbn;
+use super::log_core::log_core_f64;
+use crate::generic::{reduce_half_revs, round_fi};
 use crate::traits::Float as _;
 
-// GENERATE: consts Double<f32> PI LN_2 LN_PI
-const PI: Double<f32> = Double::new(f32::from_bits(0x40490FDA), f32::from_bits(0x34222169)); // 3.1415926535898e0
-const LN_2: Double<f32> = Double::new(f32::from_bits(0x3F317217), f32::from_bits(0x3377D1CF)); // 6.9314718055995e-1
-const LN_PI: Double<f32> = Double::new(f32::from_bits(0x3F928682), f32::from_bits(0x330E7A1C)); // 1.1447298858494e0
+// GENERATE: consts f64 PI LN_2 LN_PI
+const PI: f64 = f64::from_bits(0x400921FB54442D18); // 3.141592653589793e0
+const LN_2: f64 = f64::from_bits(0x3FE62E42FEFA39EF); // 6.931471805599453e-1
+const LN_PI: f64 = f64::from_bits(0x3FF250D048E7A1BD); // 1.1447298858494002e0
 
 impl crate::generic::Gamma for f32 {
     fn gamma_finite(x: Self) -> Self {
@@ -37,61 +35,30 @@ impl crate::generic::Gamma for f32 {
         //           = Γ(k + f + i) * prod(j = 0 to |i| - 1, x + j)
         //  Γ(x) = Γ(k + f + i) = Γ(k + f) / prod(j = 0 to |i| - 1, x + j)
 
-        let x = Double::from(x);
-        let k = Double::from(2.875);
+        let x = f64::from(x);
+        let k = 2.875;
 
         let d = x - k;
-        let (i, i_f) = round_as_i_f(d.hi());
-        let f = (d - i_f).normalize();
+        let (i_f, i) = round_fi(d);
+        let f = d - i_f;
 
         // gf = Γ(k + f)
         let gf = {
-            // GENERATE: gamma_poly Double<f32> 16 2.875 -0.5 0.5
-            const K0: Double<f32> =
-                Double::new(f32::from_bits(0x3FE4D3B5), f32::from_bits(0x33F2BB89)); // 1.7877108988969e0
-            const K1: Double<f32> =
-                Double::new(f32::from_bits(0x3FC793AA), f32::from_bits(0x335DCF91)); // 1.5591939012080e0
-            const K2: Double<f32> =
-                Double::new(f32::from_bits(0x3F8688C8), f32::from_bits(0x33CA4A0C)); // 1.0510493266812e0
-            const K3: Double<f32> =
-                Double::new(f32::from_bits(0x3EF0FA16), f32::from_bits(0x3270AE61)); // 4.7065801829339e-1
-            const K4: Double<f32> =
-                Double::new(f32::from_bits(0x3E4159AC), f32::from_bits(0x31A3AE90)); // 1.8881863832014e-1
-            const K5: Double<f32> =
-                Double::new(f32::from_bits(0x3D70F959), f32::from_bits(0x31065CD1)); // 5.8831548410854e-2
-            const K6: Double<f32> =
-                Double::new(f32::from_bits(0x3C9207B6), f32::from_bits(0x309E98EE)); // 1.7825943640472e-2
-            const K7: Double<f32> =
-                Double::new(f32::from_bits(0x3B8A9165), f32::from_bits(0x2CD502E2)); // 4.2287581660790e-3
-            const K8: Double<f32> =
-                Double::new(f32::from_bits(0x3A8FE804), f32::from_bits(0x2DB5C573)); // 1.0979180430890e-3
-            const K9: Double<f32> =
-                Double::new(f32::from_bits(0x394C0448), f32::from_bits(0x2D415F0B)); // 1.9456552043785e-4
-            const K10: Double<f32> =
-                Double::new(f32::from_bits(0x3859FA03), f32::from_bits(0x2C34A870)); // 5.1969675789933e-5
-            const K11: Double<f32> =
-                Double::new(f32::from_bits(0x36A4EBD1), f32::from_bits(0x2AE360B1)); // 4.9150339183116e-6
-            const K12: Double<f32> =
-                Double::new(f32::from_bits(0x36241572), f32::from_bits(0x29EA5DA6)); // 2.4450388213485e-6
-            const K13: Double<f32> =
-                Double::new(f32::from_bits(0xB41DD711), f32::from_bits(0xA83449F9)); // -1.4700006125073e-7
-            const K14: Double<f32> =
-                Double::new(f32::from_bits(0x342F0A78), f32::from_bits(0x286B1839)); // 1.6301954869872e-7
-            const K15: Double<f32> =
-                Double::new(f32::from_bits(0xB348562D), f32::from_bits(0xA7154B6F)); // -4.6644507219122e-8
-            const K16: Double<f32> =
-                Double::new(f32::from_bits(0x32A9DBE6), f32::from_bits(0x26E45280)); // 1.9774189204973e-8
+            // GENERATE: gamma_poly f64 10 2.875 -0.5 0.5
+            const K0: f64 = f64::from_bits(0x3FFC9A76BE5776DF); // 1.7877108988972663e0
+            const K1: f64 = f64::from_bits(0x3FF8F2754DE034AA); // 1.5591939012549951e0
+            const K2: f64 = f64::from_bits(0x3FF0D11919467E31); // 1.0510493266409748e0
+            const K3: f64 = f64::from_bits(0x3FDE1F42CAE80255); // 4.70658014441175e-1
+            const K4: f64 = f64::from_bits(0x3FC82B358A50087A); // 1.8881863835855822e-1
+            const K5: f64 = f64::from_bits(0x3FAE1F2E230C7F02); // 5.883163621751743e-2
+            const K6: f64 = f64::from_bits(0x3F9240F86283980F); // 1.782596684724785e-2
+            const K7: f64 = f64::from_bits(0x3F715151FAE5937A); // 4.227943644171778e-3
+            const K8: f64 = f64::from_bits(0x3F51FBA622CBD87B); // 1.0975954457399784e-3
+            const K9: f64 = f64::from_bits(0x3F29EF7115EF3777); // 1.9787078323790414e-4
+            const K10: f64 = f64::from_bits(0x3F0C0EEDBA051121); // 5.3516988602927156e-5
 
-            K0 + horner!(
-                f,
-                f,
-                [
-                    K1, K2, K3, K4, K5, K6, K7, K8, K9, K10, K11, K12, K13, K14, K15, K16
-                ]
-            )
+            K0 + horner!(f, f, [K1, K2, K3, K4, K5, K6, K7, K8, K9, K10])
         };
-
-        let mut descale = 0;
 
         let y = match i.cmp(&0) {
             core::cmp::Ordering::Equal => gf,
@@ -100,12 +67,8 @@ impl crate::generic::Gamma for f32 {
                 let mut v = k + f;
                 let mut gi = v;
                 for _ in 1..i {
-                    v = v + 1.0;
-                    gi = (gi * v).normalize();
-                    if gi.hi().abs() > 1e20 {
-                        gi = gi.pmul1(f32::exp2i_fast(-50));
-                        descale += 50;
-                    }
+                    v += 1.0;
+                    gi *= v;
                 }
                 // Γ(x) = Γ(k + f) * prod(j = 0 to i - 1, k + f + j) = gf * gi
                 gf * gi
@@ -114,80 +77,55 @@ impl crate::generic::Gamma for f32 {
                 // gi = prod(j = 0 to |i| - 1, x + j)
                 let mut v = x;
                 let mut gi = v;
-                if gi.hi().abs() < 1e-20 {
-                    gi = gi.pmul1(f32::exp2i_fast(50));
-                    descale += 50;
-                }
                 for _ in 1..-i {
-                    v = v + 1.0;
-                    gi = (gi * v).normalize();
-                    if gi.hi().abs() > 1e20 {
-                        gi = gi.pmul1(f32::exp2i_fast(-50));
-                        descale -= 50;
-                    }
+                    v += 1.0;
+                    gi *= v;
                 }
                 // Γ(x) = Γ(k + f) / prod(j = 0 to |i| - 1, x + j) = gf / gi
                 gf / gi
             }
         };
 
-        scalbn(y.to_single(), descale)
+        y as f32
     }
 
     fn ln_gamma_finite(x: Self) -> (Self, i8) {
-        fn ln(x: Double<f32>) -> Double<f32> {
-            let xm1 = (x - 1.0).normalize();
-            if xm1.hi().abs() < 0.0002 {
-                // GENERATE: ln_1p_poly Double<f32> 4 -0.00021 0.00021
-                const K2: Double<f32> =
-                    Double::new(f32::from_bits(0xBEFFFFFF), f32::from_bits(0xB3000000)); // -5.0000000000000e-1
-                const K3: Double<f32> =
-                    Double::new(f32::from_bits(0x3EAAAAAA), f32::from_bits(0x32AAAAAB)); // 3.3333333333333e-1
-                const K4: Double<f32> =
-                    Double::new(f32::from_bits(0xBE800000), f32::from_bits(0xB21DD65B)); // -2.5000000918734e-1
-                const K5: Double<f32> =
-                    Double::new(f32::from_bits(0x3E4CCCCD), f32::from_bits(0x31FFBE70)); // 2.0000001042336e-1
+        fn ln(x: f64) -> f64 {
+            let xm1 = x - 1.0;
+            if xm1.exponent() <= -10 {
+                // GENERATE: ln_1p_poly f64 4 -0.00196 0.00196
+                const K2: f64 = f64::from_bits(0xBFDFFFFFFFFFC9F1); // -4.999999999992318e-1
+                const K3: f64 = f64::from_bits(0x3FD555555554F43F); // 3.3333333333195364e-1
+                const K4: f64 = f64::from_bits(0xBFD000035B35DA72); // -2.5000080020200877e-1
+                const K5: f64 = f64::from_bits(0x3FC999A1376977B1); // 2.0000090795195782e-1
 
-                let xm1_2 = xm1.square();
+                let xm1_2 = xm1 * xm1;
                 xm1 + horner!(xm1_2, xm1, [K2, K3, K4, K5])
             } else {
-                // GENERATE: ln_1p_poly Double<f32> 7 -0.0001 0.0625
-                const K2: Double<f32> =
-                    Double::new(f32::from_bits(0xBEFFFFFF), f32::from_bits(0xB2FFFE14)); // -4.9999999999913e-1
-                const K3: Double<f32> =
-                    Double::new(f32::from_bits(0x3EAAAAAA), f32::from_bits(0x32A794DA)); // 3.3333333297417e-1
-                const K4: Double<f32> =
-                    Double::new(f32::from_bits(0xBE7FFFFC), f32::from_bits(0xB224B7B6)); // -2.4999994998318e-1
-                const K5: Double<f32> =
-                    Double::new(f32::from_bits(0x3E4CCBEE), f32::from_bits(0x3235DD62)); // 1.9999669060721e-1
-                const K6: Double<f32> =
-                    Double::new(f32::from_bits(0xBE2A8BD6), f32::from_bits(0xB2706478)); // -1.6654907076110e-1
-                const K7: Double<f32> =
-                    Double::new(f32::from_bits(0x3E0FE9E5), f32::from_bits(0x30F1D782)); // 1.4054067608843e-1
-                const K8: Double<f32> =
-                    Double::new(f32::from_bits(0xBDCE7E72), f32::from_bits(0xB1BEC5BD)); // -1.0082711834613e-1
+                // GENERATE: ln_1p_poly f64 6 -0.032 0.032
+                const K2: f64 = f64::from_bits(0xBFE000000001FF45); // -5.000000000145312e-1
+                const K3: f64 = f64::from_bits(0x3FD55555555FA9F6); // 3.3333333337091575e-1
+                const K4: f64 = f64::from_bits(0xBFCFFFFF0A7CC9E0); // -2.4999988567431242e-1
+                const K5: f64 = f64::from_bits(0x3FC999981E53B5B4); // 1.9999982338724254e-1
+                const K6: f64 = f64::from_bits(0xBFC55CAB5870E137); // -1.6689054315953353e-1
+                const K7: f64 = f64::from_bits(0x3FC25159F6260532); // 1.431076480767302e-1
 
-                let (k, lo, ln_hi) = log_core(x);
+                let (k, lo, ln_hi) = log_core_f64(x, 0);
                 let lo2 = lo * lo;
-                let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6, K7, K8]);
+                let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6, K7]);
 
                 // ln(x) = ln(2^k * m) = k * ln(2) + ln(m)
                 LN_2 * k + (ln_hi + ln_lo)
             }
         }
 
-        fn sin(x: Double<f32>) -> Double<f32> {
-            // GENERATE: sin_poly Double<f32> 5
-            const K3: Double<f32> =
-                Double::new(f32::from_bits(0xBE2AAAAA), f32::from_bits(0xB22AA91D)); // -1.6666666666631e-1
-            const K5: Double<f32> =
-                Double::new(f32::from_bits(0x3C088888), f32::from_bits(0x30064E28)); // 8.3333333252278e-3
-            const K7: Double<f32> =
-                Double::new(f32::from_bits(0xB9500CFC), f32::from_bits(0xAD28F32F)); // -1.9841263798241e-4
-            const K9: Double<f32> =
-                Double::new(f32::from_bits(0x3638EBBC), f32::from_bits(0x2909A447)); // 2.7555352367962e-6
-            const K11: Double<f32> =
-                Double::new(f32::from_bits(0xB2D4B292), f32::from_bits(0xA6273E8A)); // -2.4761253184112e-8
+        fn sin(x: f64) -> f64 {
+            // GENERATE: sin_poly f64 5
+            const K3: f64 = f64::from_bits(0xBFC55555555523A3); // -1.6666666666631355e-1
+            const K5: f64 = f64::from_bits(0x3F81111110C9C505); // 8.333333325227796e-3
+            const K7: f64 = f64::from_bits(0xBF2A019F951E65D9); // -1.9841263798241088e-4
+            const K9: f64 = f64::from_bits(0x3EC71D77844D2238); // 2.7555352367962157e-6
+            const K11: f64 = f64::from_bits(0xBE5A96524A73E8A7); // -2.476125318411175e-8
 
             let x2 = x * x;
             let x3 = x2 * x;
@@ -195,18 +133,13 @@ impl crate::generic::Gamma for f32 {
             x + horner!(x3, x2, [K3, K5, K7, K9, K11])
         }
 
-        fn cos(x: Double<f32>) -> Double<f32> {
-            // GENERATE: cos_poly Double<f32> 5
-            const K4: Double<f32> =
-                Double::new(f32::from_bits(0x3D2AAAAA), f32::from_bits(0x312AA986)); // 4.1666666666602e-2
-            const K6: Double<f32> =
-                Double::new(f32::from_bits(0xBAB60B60), f32::from_bits(0xAEB3B22B)); // -1.3888888878209e-3
-            const K8: Double<f32> =
-                Double::new(f32::from_bits(0x37D00CFD), f32::from_bits(0x2B2234A4)); // 2.4801580942599e-5
-            const K10: Double<f32> =
-                Double::new(f32::from_bits(0xB493F013), f32::from_bits(0xA845AAA2)); // -2.7555561774953e-7
-            const K12: Double<f32> =
-                Double::new(f32::from_bits(0x310DE345), f32::from_bits(0x244EFC36)); // 2.0647388692416e-9
+        fn cos(x: f64) -> f64 {
+            // GENERATE: cos_poly f64 5
+            const K4: f64 = f64::from_bits(0x3FA55555555530CC); // 4.1666666666601765e-2
+            const K6: f64 = f64::from_bits(0xBF56C16C1676455D); // -1.388888887820925e-3
+            const K8: f64 = f64::from_bits(0x3EFA019FAA234A38); // 2.4801580942599414e-5
+            const K10: f64 = f64::from_bits(0xBE927E026C5AAA26); // -2.755556177495311e-7
+            const K12: f64 = f64::from_bits(0x3E21BC68A677E1B1); // 2.0647388692416302e-9
 
             let x2 = x * x;
             let x4 = x2 * x2;
@@ -233,46 +166,31 @@ impl crate::generic::Gamma for f32 {
             //           = Γ(k + f + i) * prod(j = 0 to |i| - 1, x + j)
             //  Γ(x) = Γ(k + f + i) = Γ(k + f) / prod(j = 0 to |i| - 1, x + j)
 
-            let x = Double::from(x);
-            let k = Double::from(2.0);
+            let x = f64::from(x);
+            let k = 2.0;
 
             let d = x - k;
-            let (i, i_f) = round_as_i_f(d.hi());
-            let f = (d - i_f).normalize();
+            let (i_f, i) = round_fi(d);
+            let f = d - i_f;
 
             // lgf = ln(Γ(k + f))
             let lgf = {
-                // GENERATE: ln_gamma_poly Double<f32> 15 2 -0.5 0.50001
-                const K1: Double<f32> =
-                    Double::new(f32::from_bits(0x3ED87730), f32::from_bits(0x31E4127D)); // 4.2278433509847e-1
-                const K2: Double<f32> =
-                    Double::new(f32::from_bits(0x3EA51A66), f32::from_bits(0x3194C281)); // 3.2246703342418e-1
-                const K3: Double<f32> =
-                    Double::new(f32::from_bits(0xBD89F000), f32::from_bits(0xB1D2B147)); // -6.7352301053834e-2
-                const K4: Double<f32> =
-                    Double::new(f32::from_bits(0x3CA89915), f32::from_bits(0x30453FA9)); // 2.0580808418340e-2
-                const K5: Double<f32> =
-                    Double::new(f32::from_bits(0xBBF2027D), f32::from_bits(0xAFF8F494)); // -7.3855509853372e-3
-                const K6: Double<f32> =
-                    Double::new(f32::from_bits(0x3B3D6EB9), f32::from_bits(0x2DD5EECB)); // 2.8905107417282e-3
-                const K7: Double<f32> =
-                    Double::new(f32::from_bits(0xBA9C5637), f32::from_bits(0xAEC7DFCA)); // -1.1927550403353e-3
-                const K8: Double<f32> =
-                    Double::new(f32::from_bits(0x3A059AD0), f32::from_bits(0x2E7E70E8)); // 5.0966168019864e-4
-                const K9: Double<f32> =
-                    Double::new(f32::from_bits(0xB969FAC8), f32::from_bits(0xAD63DFCE)); // -2.2314036163347e-4
-                const K10: Double<f32> =
-                    Double::new(f32::from_bits(0x38D0BCDB), f32::from_bits(0x2C16FF19)); // 9.9533901774812e-5
-                const K11: Double<f32> =
-                    Double::new(f32::from_bits(0xB83CD94D), f32::from_bits(0xAC7AE746)); // -4.5025073559705e-5
-                const K12: Double<f32> =
-                    Double::new(f32::from_bits(0x37A8B7C3), f32::from_bits(0x2B50EE03)); // 2.0112732105310e-5
-                const K13: Double<f32> =
-                    Double::new(f32::from_bits(0xB7182E46), f32::from_bits(0xAA8C536F)); // -9.0706801293655e-6
-                const K14: Double<f32> =
-                    Double::new(f32::from_bits(0x36B4D890), f32::from_bits(0x2A6E5B20)); // 5.3896294346209e-6
-                const K15: Double<f32> =
-                    Double::new(f32::from_bits(0xB636F594), f32::from_bits(0xAA1B0EEE)); // -2.7263060032275e-6
+                // GENERATE: ln_gamma_poly f64 15 2 -0.5 0.50001
+                const K1: f64 = f64::from_bits(0x3FDB0EE6072093EA); // 4.227843350984687e-1
+                const K2: f64 = f64::from_bits(0x3FD4A34CC4A6140B); // 3.2246703342417565e-1
+                const K3: f64 = f64::from_bits(0xBFB13E001A5628EC); // -6.735230105383366e-2
+                const K4: f64 = f64::from_bits(0x3F951322AC53FA8A); // 2.058080841833968e-2
+                const K5: f64 = f64::from_bits(0xBF7E404FBF1E9289); // -7.385550985337227e-3
+                const K6: f64 = f64::from_bits(0x3F67ADD72357BB2D); // 2.890510741728211e-3
+                const K7: f64 = f64::from_bits(0xBF538AC6F8FBF93C); // -1.1927550403352935e-3
+                const K8: f64 = f64::from_bits(0x3F40B35A1FCE1D04); // 5.096616801986424e-4
+                const K9: f64 = f64::from_bits(0xBF2D3F591C7BF9B1); // -2.231403616334677e-4
+                const K10: f64 = f64::from_bits(0x3F1A179B696FF18D); // 9.953390177481186e-5
+                const K11: f64 = f64::from_bits(0xBF079B29BF5CE8B6); // -4.502507355970532e-5
+                const K12: f64 = f64::from_bits(0x3EF516F86D0EE035); // 2.0112732105309796e-5
+                const K13: f64 = f64::from_bits(0xBEE305C8C8C536EB); // -9.070680129365463e-6
+                const K14: f64 = f64::from_bits(0x3ED69B120EE5B1FE); // 5.389629434620917e-6
+                const K15: f64 = f64::from_bits(0xBEC6DEB29361DDB0); // -2.7263060032274846e-6
 
                 horner!(
                     f,
@@ -287,40 +205,26 @@ impl crate::generic::Gamma for f32 {
                 core::cmp::Ordering::Equal => (lgf, 1),
                 core::cmp::Ordering::Greater => {
                     // gi = prod(j = 0 to i - 1, k + f + j)
-                    let mut descale = 0i16;
                     let mut v = k + f;
                     let mut gi = v;
                     for _ in 1..i {
-                        v = v + 1.0;
-                        gi = (gi * v).normalize();
-                        if gi.hi().abs() > 1e20 {
-                            gi = gi.pmul1(f32::exp2i_fast(-50));
-                            descale += 50;
-                        }
+                        v += 1.0;
+                        gi *= v;
                     }
                     // ln(abs(Γ(x))) = ln(Γ(k + f)) + ln(prod(j = 0 to i - 1, k + f + j)) = lgf + ln(gi)
-                    (lgf + ln(gi) + LN_2 * f32::from(descale), 1)
+                    (lgf + ln(gi), 1)
                 }
                 core::cmp::Ordering::Less => {
                     // gi = prod(j = 0 to |i| - 1, x + j)
-                    let mut descale = 0i16;
                     let mut v = x;
                     let mut gi = v;
-                    if gi.hi().abs() < 1e-20 {
-                        gi = gi.pmul1(f32::exp2i_fast(50));
-                        descale += 50;
-                    }
                     for _ in 1..-i {
-                        v = v + 1.0;
-                        gi = (gi * v).normalize();
-                        if gi.hi().abs() > 1e20 {
-                            gi = gi.pmul1(f32::exp2i_fast(-50));
-                            descale -= 50;
-                        }
+                        v += 1.0;
+                        gi *= v;
                     }
                     // ln(abs(Γ(x))) = ln(Γ(k + f)) - ln(abs(prod(j = 0 to |i| - 1, x + j))) = lgf - ln(abs(gi))
-                    let sign = if gi.hi().sign() { -1 } else { 1 };
-                    (lgf - ln(gi.abs()) + LN_2 * f32::from(descale), sign)
+                    let sign = if gi.is_sign_negative() { -1 } else { 1 };
+                    (lgf - ln(gi.abs()), sign)
                 }
             }
         } else {
@@ -336,41 +240,32 @@ impl crate::generic::Gamma for f32 {
             // Γ(x)*Γ(1-x) = π/sin(πx) => Γ(x) = π/(sin(πx)*Γ(1-x))
 
             // nx = x or 1 - x, so nx >= 0.5
-            let reflect = x.sign();
+            let reflect = x.is_sign_negative();
             let nx = if reflect {
-                Double::new_sub11(1.0, x)
+                1.0 - f64::from(x)
             } else {
-                Double::from(x)
+                f64::from(x)
             };
 
             // p = P(1 / nx)
             let p = {
-                // GENERATE: gamma_lanczos_poly Double<f32> 4 0.5 2.93e-39 0.022223
-                const K0: Double<f32> =
-                    Double::new(f32::from_bits(0x40206C98), f32::from_bits(0x347FB13A)); // 2.5066282746310e0
-                const K1: Double<f32> =
-                    Double::new(f32::from_bits(0x3E55E621), f32::from_bits(0x31A83B58)); // 2.0888568950560e-1
-                const K2: Double<f32> =
-                    Double::new(f32::from_bits(0x3C0E997D), f32::from_bits(0x3035D007)); // 8.7035873068547e-3
-                const K3: Double<f32> =
-                    Double::new(f32::from_bits(0xBBDC4E75), f32::from_bits(0xAF83C2AF)); // -6.7232202341265e-3
-                const K4: Double<f32> =
-                    Double::new(f32::from_bits(0xB9F42FCE), f32::from_bits(0xADC8EDDC)); // -4.6574926192638e-4
+                // GENERATE: gamma_lanczos_poly f64 4 0.5 2.93e-39 0.022223
+                const K0: f64 = f64::from_bits(0x40040D931FF62735); // 2.5066282746310216e0
+                const K1: f64 = f64::from_bits(0x3FCABCC42A83B582); // 2.0888568950560332e-1
+                const K2: f64 = f64::from_bits(0x3F81D32FB6BA00D0); // 8.703587306854749e-3
+                const K3: f64 = f64::from_bits(0xBF7B89CEB07855D3); // -6.723220234126487e-3
+                const K4: f64 = f64::from_bits(0xBF3E85F9D91DBB89); // -4.657492619263783e-4
 
                 let inv_nx = nx.recip();
                 K0 + horner!(inv_nx, inv_nx, [K1, K2, K3, K4])
             };
 
-            let ln_nx = ln(nx);
-
             // ln(Γ(nx)) = (nx - 0.5) * ln(nx) - nx + ln(P(1 / nx))
-            //           = nx * (ln(nx) - 1) - 0.5 * ln(nx) + ln(P(1 / nx))
-            // The second form is used to avoid overflow in intermediate operations.
-            let lg_nx = (ln_nx - 1.0) * nx - ln_nx.pmul1(0.5) + ln(p);
+            let lg_nx = (nx - 0.5) * ln(nx) - nx + ln(p);
 
             if reflect {
                 let (n, z) = reduce_half_revs(x);
-                let z_rad = PI * z;
+                let z_rad = PI * f64::from(z);
                 let sinpix = match n {
                     0 => sin(z_rad),
                     1 => cos(z_rad),
@@ -381,7 +276,7 @@ impl crate::generic::Gamma for f32 {
 
                 // ln(abs(Γ(x))) = ln(π) - ln(abs(sin(πx))) - ln(Γ(1-x))
                 let lgx = LN_PI - ln(sinpix.abs()) - lg_nx;
-                let sign = if sinpix.hi().sign() { -1 } else { 1 };
+                let sign = if sinpix.is_sign_negative() { -1 } else { 1 };
 
                 (lgx, sign)
             } else {
@@ -390,34 +285,6 @@ impl crate::generic::Gamma for f32 {
             }
         };
 
-        if y.hi() == f32::INFINITY {
-            (f32::INFINITY, sign)
-        } else {
-            (y.to_single(), sign)
-        }
-    }
-}
-
-fn reduce_half_revs(x: f32) -> (u8, f32) {
-    let x_exp = x.exponent();
-    if x_exp < -2 {
-        // |x| < 0.25
-        return (0, x);
-    } else if x_exp > 23 + 2 {
-        return (0, 0.0);
-    }
-
-    let x_abs = x.abs();
-    let x_scale = x_abs * 2.0;
-    let (xi, xi_f) = round_as_i_f(x_scale);
-    let x_frac = x_scale - xi_f;
-
-    let n = xi as u8;
-    let y = x_frac * 0.5;
-
-    if x.sign() {
-        (n.wrapping_neg() & 3, -y)
-    } else {
-        (n & 3, y)
+        (y as f32, sign)
     }
 }

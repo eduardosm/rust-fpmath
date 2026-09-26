@@ -1,4 +1,3 @@
-use crate::double::{Double, SemiDouble};
 use crate::traits::{Float, Int as _};
 
 pub(crate) fn sqrt<F: Float>(x: F) -> F {
@@ -7,7 +6,7 @@ pub(crate) fn sqrt<F: Float>(x: F) -> F {
     if yexp == F::RawExp::ZERO {
         // sqrt(±0) = ±0
         y
-    } else if y.sign() {
+    } else if y.is_sign_negative() {
         // x < 0, sqrt(x) = NaN
         F::NAN
     } else if yexp == F::MAX_RAW_EXP {
@@ -64,34 +63,6 @@ fn sqrt_split<F: Float>(x: F, edelta: F::Exp) -> (F::Exp, F::Raw) {
         // exponent is odd, 2 <= m * 2^(-MANT_BITS) < 4
         (k - F::Exp::ONE, m << 1)
     }
-}
-
-/// Calculates `2 * sqrt(x)` with extended precision
-pub(super) fn two_hi_lo_sqrt_inner<F: Float>(x: F) -> Double<F> {
-    // Improve accuracy with a single Newton iteration
-    // y = sqrt(x)
-    // sqrt(x)_hi + sqrt(x)_lo = (y * y + x) / (2 * y)
-
-    let y = sqrt_inner(x, F::Exp::ZERO);
-    let y = SemiDouble::new(y);
-
-    let y2 = y.square();
-
-    SemiDouble::new_qadd12(x, y2) / y
-}
-
-/// Calculates `sqrt(x_hi + x_lo)` with extended precision
-pub(super) fn hi_lo_sqrt_hi_lo_inner<F: Float>(x: Double<F>) -> Double<F> {
-    // Improve accuracy with a single Newton iteration
-    // y = sqrt(x)
-    // sqrt(x)_hi + sqrt(x)_lo = (y * y + x_hi + x_lo) / (2 * y)
-
-    let y = sqrt_inner(x.hi(), F::Exp::ZERO);
-    let y = SemiDouble::new(y);
-
-    let y2 = y.square();
-
-    SemiDouble::new_qadd22(x, y2) / y.pmul1(F::TWO)
 }
 
 #[cfg(test)]

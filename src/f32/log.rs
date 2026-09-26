@@ -1,34 +1,109 @@
-use crate::double::Double;
+use super::log_core::{log_core_f32, log_core_f64};
+use crate::traits::Float as _;
 
-impl crate::generic::Ln for f32 {
-    // GENERATE: ln::consts f32
-    const SQRT_2: f32 = f32::from_bits(0x3FB504F3); // 1.4142135e0
-    const LN_2_HI: f32 = f32::from_bits(0x3F317000); // 6.9311523e-1
-    const LN_2_LO: f32 = f32::from_bits(0x3805FDF4); // 3.1946183e-5
-    const FRAC_2_3_EX: Double<f32> =
-        Double::new(f32::from_bits(0x3F2AAAAA), f32::from_bits(0x332AAAAB)); // 6.6666666666667e-1
-    const FRAC_4_10_EX: Double<f32> =
-        Double::new(f32::from_bits(0x3ECCCCCC), f32::from_bits(0x32CCCCCD)); // 4.0000000000000e-1
+// GENERATE: consts f64 LN_2 LOG2_E LOG10_E LOG10_2
+const LN_2: f64 = f64::from_bits(0x3FE62E42FEFA39EF); // 6.931471805599453e-1
+const LOG2_E: f64 = f64::from_bits(0x3FF71547652B82FE); // 1.4426950408889634e0
+const LOG10_E: f64 = f64::from_bits(0x3FDBCB7B1526E50E); // 4.342944819032518e-1
+const LOG10_2: f64 = f64::from_bits(0x3FD34413509F79FF); // 3.010299956639812e-1
 
-    #[inline]
-    fn ln_special_poly(x: Self) -> Self {
-        // GENERATE: ln::ln_special_poly f32 4
-        const K2: f32 = f32::from_bits(0x3F2AAAAA); // 6.666666e-1
-        const K4: f32 = f32::from_bits(0x3ECCCD3D); // 4.0000334e-1
-        const K6: f32 = f32::from_bits(0x3E921C64); // 2.8537285e-1
-        const K8: f32 = f32::from_bits(0x3E717C5F); // 2.35826e-1
+impl crate::generic::Log for f32 {
+    fn ln_finite(x: Self, edelta: i16) -> Self {
+        // GENERATE: ln_1p_poly f64 5 -0.032 0.032
+        const K2: f64 = f64::from_bits(0xBFE000000002A753); // -5.000000000193076e-1
+        const K3: f64 = f64::from_bits(0x3FD555550FF605CD); // 3.333332687253375e-1
+        const K4: f64 = f64::from_bits(0xBFCFFFFED1D81A63); // -2.4999985929771915e-1
+        const K5: f64 = f64::from_bits(0x3FC9A047AFADF4FF); // 2.0020385816670935e-1
+        const K6: f64 = f64::from_bits(0xBFC55D6E20C696D6); // -1.6691376304986844e-1
 
-        let x2 = x * x;
-        horner!(x2, x2, [K2, K4, K6, K8])
+        // Split x * 2^edelta = 2^k * hi * (1 + lo)
+        let (k, lo, ln_hi) = log_core_f32(x, edelta);
+
+        // ln_lo = ln(1 + lo)
+        let lo2 = lo * lo;
+        let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6]);
+
+        // x * 2^edelta = 2^k * hi * (1 + lo)
+        // ln(x * 2^edelta) = k * ln(2) + ln(hi) + ln(1 + lo)
+        let r = LN_2 * k + (ln_hi + ln_lo);
+        r as f32
     }
 
-    #[inline]
-    fn ln_special_poly_ex(x2: Self) -> Self {
-        // GENERATE: ln::ln_special_poly_ex f32 3
-        const K6: f32 = f32::from_bits(0x3E92495E); // 2.85716e-1
-        const K8: f32 = f32::from_bits(0x3E634F16); // 2.2198138e-1
-        const K10: f32 = f32::from_bits(0x3E454D62); // 1.92678e-1
+    fn ln_1p_finite(x: Self) -> Self {
+        if x.exponent() <= -10 {
+            // GENERATE: ln_1p_poly f64 4 -0.00196 0.00196
+            const K2: f64 = f64::from_bits(0xBFDFFFFFFFFFC9F1); // -4.999999999992318e-1
+            const K3: f64 = f64::from_bits(0x3FD555555554F43F); // 3.3333333333195364e-1
+            const K4: f64 = f64::from_bits(0xBFD000035B35DA72); // -2.5000080020200877e-1
+            const K5: f64 = f64::from_bits(0x3FC999A1376977B1); // 2.0000090795195782e-1
 
-        horner!(x2, x2, [K6, K8, K10])
+            let x = f64::from(x);
+            let x2 = x * x;
+            let r = x + horner!(x2, x, [K2, K3, K4, K5]);
+            r as f32
+        } else {
+            // GENERATE: ln_1p_poly f64 5 -0.032 0.032
+            const K2: f64 = f64::from_bits(0xBFE000000002A753); // -5.000000000193076e-1
+            const K3: f64 = f64::from_bits(0x3FD555550FF605CD); // 3.333332687253375e-1
+            const K4: f64 = f64::from_bits(0xBFCFFFFED1D81A63); // -2.4999985929771915e-1
+            const K5: f64 = f64::from_bits(0x3FC9A047AFADF4FF); // 2.0020385816670935e-1
+            const K6: f64 = f64::from_bits(0xBFC55D6E20C696D6); // -1.6691376304986844e-1
+
+            let xp1 = f64::from(x) + 1.0;
+
+            // Split x + 1 = 2^k * hi * (1 + lo)
+            let (k, lo, ln_hi) = log_core_f64(xp1, 0);
+
+            // ln_lo = ln(1 + lo)
+            let lo2 = lo * lo;
+            let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6]);
+
+            // x * 2^edelta = 2^k * hi * (1 + lo)
+            // ln(x * 2^edelta) = k * ln(2) + ln(hi) + ln(1 + lo)
+            let r = LN_2 * k + (ln_hi + ln_lo);
+            r as f32
+        }
+    }
+
+    fn log2_finite(x: Self, edelta: i16) -> Self {
+        // GENERATE: ln_1p_poly f64 5 -0.032 0.032
+        const K2: f64 = f64::from_bits(0xBFE000000002A753); // -5.000000000193076e-1
+        const K3: f64 = f64::from_bits(0x3FD555550FF605CD); // 3.333332687253375e-1
+        const K4: f64 = f64::from_bits(0xBFCFFFFED1D81A63); // -2.4999985929771915e-1
+        const K5: f64 = f64::from_bits(0x3FC9A047AFADF4FF); // 2.0020385816670935e-1
+        const K6: f64 = f64::from_bits(0xBFC55D6E20C696D6); // -1.6691376304986844e-1
+
+        // Split x * 2^edelta = 2^k * hi * (1 + lo)
+        let (k, lo, ln_hi) = log_core_f32(x, edelta);
+
+        // ln_lo = ln(1 + lo)
+        let lo2 = lo * lo;
+        let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6]);
+
+        // x * 2^edelta = 2^k * hi * (1 + lo)
+        // ln(x * 2^edelta) = k * ln(2) + ln(hi) + ln(1 + lo)
+        let r = k + LOG2_E * (ln_hi + ln_lo);
+        r as f32
+    }
+
+    fn log10_finite(x: Self, edelta: i16) -> Self {
+        // GENERATE: ln_1p_poly f64 5 -0.032 0.032
+        const K2: f64 = f64::from_bits(0xBFE000000002A753); // -5.000000000193076e-1
+        const K3: f64 = f64::from_bits(0x3FD555550FF605CD); // 3.333332687253375e-1
+        const K4: f64 = f64::from_bits(0xBFCFFFFED1D81A63); // -2.4999985929771915e-1
+        const K5: f64 = f64::from_bits(0x3FC9A047AFADF4FF); // 2.0020385816670935e-1
+        const K6: f64 = f64::from_bits(0xBFC55D6E20C696D6); // -1.6691376304986844e-1
+
+        // Split x * 2^edelta = 2^k * hi * (1 + lo)
+        let (k, lo, ln_hi) = log_core_f32(x, edelta);
+
+        // ln_lo = ln(1 + lo)
+        let lo2 = lo * lo;
+        let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6]);
+
+        // x * 2^edelta = 2^k * hi * (1 + lo)
+        // ln(x * 2^edelta) = k * ln(2) + ln(hi) + ln(1 + lo)
+        let r = LOG10_2 * k + LOG10_E * (ln_hi + ln_lo);
+        r as f32
     }
 }

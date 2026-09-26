@@ -1,13 +1,7 @@
-use crate::double::SemiDouble;
 use crate::traits::{Float, Int as _};
 
 pub(crate) trait Cbrt: Float {
-    const CBRT_2_EX: SemiDouble<Self>;
-    const CBRT_4_EX: SemiDouble<Self>;
-
-    fn exp_mod_3(e: Self::Exp) -> i8;
-
-    fn inv_cbrt_poly(x: Self) -> Self;
+    fn cbrt_finite(x: Self, edelta: Self::Exp) -> Self;
 }
 
 pub(crate) fn cbrt<F: Cbrt>(x: F) -> F {
@@ -19,79 +13,8 @@ pub(crate) fn cbrt<F: Cbrt>(x: F) -> F {
         // propagate infinity or NaN
         y
     } else {
-        cbrt_inner(y, edelta)
+        F::cbrt_finite(y, edelta)
     }
-}
-
-fn cbrt_inner<F: Cbrt>(x: F, edelta: F::Exp) -> F {
-    let inv_three = F::ONE / (F::ONE + F::TWO);
-
-    // Split x * 2^edelta = (-1)^sign * 2^k * r * cb0^3 such as
-    // * k is an integer
-    // * k mod 3 = 0
-    // * 1 <= r < 2
-    // * cb0 = cb0_hi + cb0_lo = 1, cbrt(2) or cbrt(4)
-    let (sign, k, r, cb0) = cbrt_split(x, edelta);
-
-    // Based on the algorithm used in SLEEF.
-    // https://github.com/shibatch/sleef/wiki/Divisionless-iterative-approximation-method-of-cube-root
-
-    // ta ~= cbrt(1 / r) with a polynomial approximation
-    let ta = F::inv_cbrt_poly(r);
-
-    // tb ~= cbrt(1 / r) with a Newton iteration
-    // tb = ta - (1 / 3) * (r * ta^4 - ta)
-    let ta2 = ta * ta;
-    let ta4 = ta2 * ta2;
-    let tb = (ta - inv_three * (r * ta4 - ta)).purify();
-
-    // cbrt(r) = r * cbrt(1 / r)^2
-    // cbrt(1 / r) is calculated with another Newton iteration
-    let tb2 = SemiDouble::new(tb * tb);
-    let tb4 = tb2.square().to_semi();
-
-    // tb4r = tb^4 * r
-    let r = SemiDouble::new(r);
-    let tb4r = tb4 * r;
-
-    // tc = r * tb^4 - tb
-    let tc = (tb4r.hi() - tb) + tb4r.lo();
-
-    // td = (-2 / 3) * tb * (r * tb^4 - tb) = (-2 / 3) * tb * tc
-    let td = ((-F::TWO * inv_three) * tb * tc).purify();
-
-    // te = tb^2 + (-2 / 3) * tb * (r * tb^4 - tb) = tb^2 + td
-    let te = SemiDouble::new_qadd21(tb2.to_double(), td);
-
-    // tf = te * r = cbrt(r)
-    let tf = (te * r).to_semi();
-
-    // tg = cbrt(r) * cb0 = tf * cb0
-    let tg = (tf * cb0).to_single();
-
-    // y = cbrt(r) * 2^(k / 3) * cb0 = tg * 2^(k / 3)
-    let y = tg * F::exp2i_fast(k / (F::Exp::ONE + F::Exp::TWO));
-    // cbrt(x) = (-1)^sign * cbrt(r) * 2^(k / 3) * cb0 = (-1)^sign * y
-    F::from_raw(y.to_raw() | (F::Raw::from(sign) << (F::BITS - 1)))
-}
-
-/// Returns `(sign, k, r)` as needed by `cbrt_inner`
-fn cbrt_split<F: Cbrt>(x: F, edelta: F::Exp) -> (bool, F::Exp, F, SemiDouble<F>) {
-    let k = x.exponent() + edelta;
-    // 0 <= kmod3 <= 2
-    let kmod3 = F::exp_mod_3(k);
-
-    let cb0 = match kmod3 {
-        0 => SemiDouble::ONE,
-        1 => F::CBRT_2_EX,
-        2 => F::CBRT_4_EX,
-        _ => unreachable!(),
-    };
-
-    // 1 <= r < 2
-    let r = x.abs().set_exp(F::Exp::ZERO);
-
-    (x.sign(), k - F::Exp::from(kmod3), r, cb0)
 }
 
 #[cfg(test)]

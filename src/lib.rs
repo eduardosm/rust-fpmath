@@ -76,7 +76,6 @@ macro_rules! assert_total_eq {
     };
 }
 
-mod double;
 mod f32;
 mod f64;
 mod generic;
@@ -292,7 +291,7 @@ pub fn scalbn<F: FloatMath>(x: F, y: i32) -> F {
 /// Splits `x` into mantissa and exponent.
 ///
 /// Returns `(m, e)` such as:
-/// * `0.5 <= m < 1.0`
+/// * `0.5 <= |m| < 1.0`
 /// * `x = m * 2^e`
 ///
 /// When `x` is zero, infinity or NaN, returns `x` as mantissa and zero as
@@ -302,7 +301,7 @@ pub fn frexp<F: FloatMath>(x: F) -> (F, i32) {
 }
 
 /// Calculates the Pythagorean addition of `x` and `y` with and error of less
-/// than 1 ULP
+/// than 0.55 ULP
 ///
 /// The Pythagorean addition of `x` and `y` is equal to the length of the
 /// hypotenuse of a triangle with sides of length `x` and `y`.
@@ -324,7 +323,7 @@ pub fn sqrt<F: FloatMath>(x: F) -> F {
     F::sqrt(x)
 }
 
-/// Calculates the cube root of `x` with and error of less than 1 ULP.
+/// Calculates the cube root of `x` with and error of less than 0.55 ULP.
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -335,7 +334,7 @@ pub fn cbrt<F: FloatMath>(x: F) -> F {
     F::cbrt(x)
 }
 
-/// Calculates Euler's number raised to `x` with an error of less than 1 ULP
+/// Calculates Euler's number raised to `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns positive infinity if `x` is positive infinity
@@ -345,7 +344,7 @@ pub fn exp<F: FloatMath>(x: F) -> F {
     F::exp(x)
 }
 
-/// Calculates `exp(x) - 1.0` with an error of less than 1 ULP
+/// Calculates `exp(x) - 1.0` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -356,7 +355,7 @@ pub fn exp_m1<F: FloatMath>(x: F) -> F {
     F::exp_m1(x)
 }
 
-/// Calculates 2 raised to `x` with an error of less than 1 ULP
+/// Calculates 2 raised to `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns positive infinity if `x` is positive infinity
@@ -366,7 +365,7 @@ pub fn exp2<F: FloatMath>(x: F) -> F {
     F::exp2(x)
 }
 
-/// Calculates 10 raised to `x` with an error of less than 1 ULP
+/// Calculates 10 raised to `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns positive infinity if `x` is positive infinity
@@ -376,7 +375,7 @@ pub fn exp10<F: FloatMath>(x: F) -> F {
     F::exp10(x)
 }
 
-/// Calculates the natural logarithm of `x` with an error of less than 1 ULP
+/// Calculates the natural logarithm of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative infinity if `x` is positive or negative zero
@@ -386,7 +385,7 @@ pub fn ln<F: FloatMath>(x: F) -> F {
     F::ln(x)
 }
 
-/// Calculates the natural logarithm of `x + 1` with an error of less than 1 ULP
+/// Calculates the natural logarithm of `x + 1` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -398,7 +397,7 @@ pub fn ln_1p<F: FloatMath>(x: F) -> F {
     F::ln_1p(x)
 }
 
-/// Calculates the base-2 logarithm of `x` with an error of less than 1 ULP
+/// Calculates the base-2 logarithm of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative infinity if `x` is positive or negative zero
@@ -408,7 +407,7 @@ pub fn log2<F: FloatMath>(x: F) -> F {
     F::log2(x)
 }
 
-/// Calculates the base-10 logarithm of `x` with an error of less than 1 ULP
+/// Calculates the base-10 logarithm of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative infinity if `x` is positive or negative zero
@@ -418,7 +417,7 @@ pub fn log10<F: FloatMath>(x: F) -> F {
     F::log10(x)
 }
 
-/// Calculates `x` raised to `y` with an error of less than 1 ULP
+/// Calculates `x` raised to `y` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns 1 when `x` is 1 or `y` is zero
@@ -459,7 +458,7 @@ pub fn pow<F: FloatMath>(x: F, y: F) -> F {
     F::pow(x, y)
 }
 
-/// Calculates `x` raised to `y` with an error of less than 1 ULP
+/// Calculates `x` raised to `y` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns 1 when `x` is 1 or `y` is zero
@@ -490,7 +489,7 @@ pub fn powi<F: FloatMath>(x: F, y: i32) -> F {
     F::powi(x, y)
 }
 
-/// Calculates the sine of `x` radians with an error of less than 1 ULP
+/// Calculates the sine of `x` radians with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -499,7 +498,7 @@ pub fn sin<F: FloatMath>(x: F) -> F {
     F::sin(x)
 }
 
-/// Calculates the cosine of `x` radians with an error of less than 1 ULP
+/// Calculates the cosine of `x` radians with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is infinity or NaN
@@ -516,7 +515,7 @@ pub fn sin_cos<F: FloatMath>(x: F) -> (F, F) {
     F::sin_cos(x)
 }
 
-/// Calculates the tangent of `x` radians with an error of less than 1 ULP
+/// Calculates the tangent of `x` radians with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -525,7 +524,7 @@ pub fn tan<F: FloatMath>(x: F) -> F {
     F::tan(x)
 }
 
-/// Calculates the sine of `x` degrees with an error of less than 1 ULP
+/// Calculates the sine of `x` degrees with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -534,7 +533,7 @@ pub fn sind<F: FloatMath>(x: F) -> F {
     F::sind(x)
 }
 
-/// Calculates the cosine of `x` degrees with an error of less than 1 ULP
+/// Calculates the cosine of `x` degrees with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is infinity or NaN
@@ -551,7 +550,7 @@ pub fn sind_cosd<F: FloatMath>(x: F) -> (F, F) {
     F::sind_cosd(x)
 }
 
-/// Calculates the tangent of `x` degrees with an error of less than 1 ULP
+/// Calculates the tangent of `x` degrees with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -561,7 +560,7 @@ pub fn tand<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the sine of `x` half-revolutions with an error of less
-/// than 1 ULP
+/// than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -571,7 +570,7 @@ pub fn sinpi<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the cosine of `x` half-revolutions with an error of
-/// less than 1 ULP
+/// less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is infinity or NaN
@@ -588,7 +587,7 @@ pub fn sinpi_cospi<F: FloatMath>(x: F) -> (F, F) {
     F::sinpi_cospi(x)
 }
 
-/// Calculates the tangent of `x` half-revolutions with an error of less than 1
+/// Calculates the tangent of `x` half-revolutions with an error of less than 0.55
 /// ULP
 ///
 /// Special cases:
@@ -599,7 +598,7 @@ pub fn tanpi<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the arcsine of `x`, returning the result in radians, with an
-/// error of less than 1 ULP
+/// error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -610,7 +609,7 @@ pub fn asin<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the arccosine of `x`, returning the result in radians, with an
-/// error of less than 1 ULP
+/// error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or greater than one in magnitude (including
@@ -620,7 +619,7 @@ pub fn acos<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the arctangent of `x`, returning the result in radians,
-/// with an error of less than 1 ULP
+/// with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -631,8 +630,8 @@ pub fn atan<F: FloatMath>(x: F) -> F {
     F::atan(x)
 }
 
-/// Calculates the 2-argument arctangent of `x` and 'y', returning the
-/// result in radians with an error of less than 1 ULP
+/// Calculates the 2-argument arctangent of `y` and `x`, returning the
+/// result in radians with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or `y` is NaN
@@ -662,7 +661,7 @@ pub fn atan2<F: FloatMath>(y: F, x: F) -> F {
 }
 
 /// Calculates the arcsine of `x`, returning the result in degrees, with an
-/// error of less than 1 ULP
+/// error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -673,7 +672,7 @@ pub fn asind<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the arccosine of `x`, returning the result in degrees, with an
-/// error of less than 1 ULP
+/// error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or greater than one in magnitude (including
@@ -683,7 +682,7 @@ pub fn acosd<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the arctangent of `x`, returning the result in degrees, with an
-/// error of less than 1 ULP
+/// error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -694,8 +693,8 @@ pub fn atand<F: FloatMath>(x: F) -> F {
     F::atand(x)
 }
 
-/// Calculates the 2-argument arctangent of `x` and 'y', returning the result in
-/// degrees, with an error of less than 1 ULP
+/// Calculates the 2-argument arctangent of `y` and `x`, returning the result in
+/// degrees, with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or `y` is NaN
@@ -726,7 +725,7 @@ pub fn atan2d<F: FloatMath>(y: F, x: F) -> F {
 }
 
 /// Calculates the arcsine of `x`, returning the result in half-revolutions,
-/// with an error of less than 1 ULP
+/// with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -737,7 +736,7 @@ pub fn asinpi<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the arccosine of `x`, returning the result in half-revolutions,
-/// with an error of less than 1 ULP
+/// with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or greater than one in magnitude (including
@@ -747,7 +746,7 @@ pub fn acospi<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the arctangent of `x`, returning the result in half-revolutions,
-/// with an error of less than 1 ULP
+/// with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -758,8 +757,8 @@ pub fn atanpi<F: FloatMath>(x: F) -> F {
     F::atanpi(x)
 }
 
-/// Calculates the 2-argument arctangent of `x` and 'y', returning the result in
-/// half-revolutions, with an error of less than 1 ULP
+/// Calculates the 2-argument arctangent of `y` and `x`, returning the result in
+/// half-revolutions, with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or `y` is NaN
@@ -788,7 +787,7 @@ pub fn atan2pi<F: FloatMath>(y: F, x: F) -> F {
     F::atan2pi(y, x)
 }
 
-/// Calculates the hyperbolic sine of `x` with an error of less than 1 ULP
+/// Calculates the hyperbolic sine of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -799,7 +798,7 @@ pub fn sinh<F: FloatMath>(x: F) -> F {
     F::sinh(x)
 }
 
-/// Calculates the hyperbolic cosine of `x` with an error of less than 1 ULP
+/// Calculates the hyperbolic cosine of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns positive infinity if `x` is positive or negative infinity
@@ -817,7 +816,7 @@ pub fn sinh_cosh<F: FloatMath>(x: F) -> (F, F) {
     F::sinh_cosh(x)
 }
 
-/// Calculates the hyperbolic tangent of `x` with an error of less than 1 ULP
+/// Calculates the hyperbolic tangent of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns negative zero if `x` is negative zero
@@ -828,7 +827,7 @@ pub fn tanh<F: FloatMath>(x: F) -> F {
     F::tanh(x)
 }
 
-/// Calculates the hyperbolic arcsine of `x` with an error of less than 1 ULP
+/// Calculates the hyperbolic arcsine of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN
@@ -839,7 +838,7 @@ pub fn asinh<F: FloatMath>(x: F) -> F {
     F::asinh(x)
 }
 
-/// Calculates the hyperbolic arccosine of `x` with an error of less than 1 ULP
+/// Calculates the hyperbolic arccosine of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or less than one (including negative infinity)
@@ -848,7 +847,7 @@ pub fn acosh<F: FloatMath>(x: F) -> F {
     F::acosh(x)
 }
 
-/// Calculates the hyperbolic arctangent of `x` with an error of less than 1 ULP
+/// Calculates the hyperbolic arctangent of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN or greater than 1 in magnitude
@@ -859,7 +858,7 @@ pub fn atanh<F: FloatMath>(x: F) -> F {
     F::atanh(x)
 }
 
-/// Calculates the gamma function of `x` with an error of less than 1 ULP
+/// Calculates the gamma function of `x` with an error of less than 0.55 ULP
 ///
 /// Special cases:
 /// * Returns NaN if `x` is NaN, negative infinity or a negative integer
@@ -871,7 +870,7 @@ pub fn gamma<F: FloatMath>(x: F) -> F {
 }
 
 /// Calculates the logarithm of the absolute value of the gamma function of `x`
-/// with an error of less than 1 ULP
+/// with an error of less than 0.55 ULP
 ///
 /// The integer field of the returned tuple is `1` when the gamma function of
 /// `x` is positive, `-1` when the gamma function of `x` is negative, and `0`

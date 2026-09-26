@@ -29,20 +29,20 @@ fn test_sinh_cosh() {
         max_cos2_error = max_cos2_error.max(cos2_err);
 
         assert!(
-            sin1_err < 0.9,
+            sin1_err < 0.51,
             "sinh({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
         );
         assert!(
-            sin2_err < 0.9,
+            sin2_err < 0.51,
             "sinh({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
         );
 
         assert!(
-            cos1_err < 0.9,
+            cos1_err < 0.51,
             "cosh({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
         );
         assert!(
-            cos2_err < 0.9,
+            cos2_err < 0.51,
             "cosh({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
         );
     });
@@ -50,10 +50,10 @@ fn test_sinh_cosh() {
     eprintln!("max sinh2 error = {max_sin2_error}");
     eprintln!("max cosh1 error = {max_cos1_error}");
     eprintln!("max cosh2 error = {max_cos2_error}");
-    assert!(max_sin1_error > 0.5);
-    assert!(max_sin2_error > 0.5);
-    assert!(max_cos1_error > 0.5);
-    assert!(max_cos2_error > 0.5);
+    assert!(max_sin1_error > 0.4999);
+    assert!(max_sin2_error > 0.4999);
+    assert!(max_cos1_error >= 0.5);
+    assert!(max_cos2_error >= 0.5);
 }
 
 #[test]
@@ -67,10 +67,10 @@ fn test_tanh() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "tanh({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "tanh({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max tanh error = {max_error}");
-    assert!(max_error > 0.5);
+    eprintln!("max error = {max_error}");
+    assert!(max_error >= 0.4999);
 }
 
 fn test_with(mut f: impl FnMut(f64)) {
@@ -80,7 +80,7 @@ fn test_with(mut f: impl FnMut(f64)) {
         f(mk_normal(0, e, false));
         f(mk_normal(super::MAX_MANTISSA, e, false));
 
-        for _ in 0..100 {
+        for _ in 0..200 {
             let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }
@@ -89,7 +89,7 @@ fn test_with(mut f: impl FnMut(f64)) {
         f(mk_normal(0, e, false));
         f(mk_normal(super::MAX_MANTISSA, e, false));
 
-        for _ in 0..1000 {
+        for _ in 0..2000 {
             let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }

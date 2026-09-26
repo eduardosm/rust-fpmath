@@ -12,10 +12,10 @@ fn test_cbrt() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "cbrt({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "cbrt({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max cbrt error = {max_error}");
-    assert!(max_error > 0.5);
+    eprintln!("max error = {max_error}");
+    assert!(max_error > 0.4999);
 }
 
 fn test_with(mut f: impl FnMut(f32)) {

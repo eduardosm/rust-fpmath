@@ -1,25 +1,20 @@
-mod asin_acos;
-mod atan;
 mod cbrt;
-mod div_pi;
 mod exp;
-mod exp10;
-mod exp2;
+mod f64x2;
 mod gamma;
+mod hyperbolic;
+mod hypot;
+mod inv_hyperbolic;
+mod inv_trigonometric;
 mod log;
-mod log10;
-mod log2;
 mod log_core;
-mod rad_to_deg;
-mod reduce_90_deg;
-mod reduce_half_mul_pi;
-mod reduce_pi_2;
-mod sin_cos;
-mod sinh_cosh;
-mod tan;
+mod pow;
+mod trigonometric;
 
 impl crate::traits::Float for f64 {
     type Raw = u64;
+
+    type SRaw = i64;
 
     type RawExp = u16;
 
@@ -89,12 +84,6 @@ impl crate::traits::Float for f64 {
         (e as Self::RawExp).wrapping_add(Self::EXP_OFFSET)
     }
 
-    #[cfg(test)]
-    #[inline]
-    fn is_nan(self) -> bool {
-        self.is_nan()
-    }
-
     #[inline]
     fn abs(self) -> Self {
         self.abs()
@@ -109,14 +98,6 @@ impl crate::traits::Float for f64 {
     fn parse(s: &str) -> Self {
         s.parse().unwrap()
     }
-}
-
-impl crate::traits::FloatConsts for f64 {
-    // GENERATE: consts f64 PI FRAC_PI_2 FRAC_PI_4 FRAC_2_PI
-    const PI: f64 = f64::from_bits(0x400921FB54442D18); // 3.141592653589793e0
-    const FRAC_PI_2: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
-    const FRAC_PI_4: f64 = f64::from_bits(0x3FE921FB54442D18); // 7.853981633974483e-1
-    const FRAC_2_PI: f64 = f64::from_bits(0x3FE45F306DC9C883); // 6.366197723675814e-1
 }
 
 impl crate::sealed::SealedMath for f64 {}
@@ -337,6 +318,19 @@ impl crate::FloatMath for f64 {
     fn ln_gamma(x: Self) -> (Self, i8) {
         crate::generic::ln_gamma(x)
     }
+}
+
+/// Return an approximation of `(sqrt(x), 1/sqrt(x))`
+pub(crate) fn fast_sqrt(x: f64) -> (f64, f64) {
+    // Initial approximation of r ~= 1/sqrt(x) using bit fiddling.
+    let hx = 0.5 * x;
+    let mut r = f64::from_bits(0x5FE6_EB50_C7B5_37A9_u64.wrapping_sub(x.to_bits() >> 1));
+    // Four Newton iterations to reduce error to nearly 1 ULP
+    // r_next = r * (3 - hi * r^2) / 2
+    for _ in 0..4 {
+        r *= 1.5 - hx * r * r;
+    }
+    (r * x, r)
 }
 
 #[cfg(test)]
