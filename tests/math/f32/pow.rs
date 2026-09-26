@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{calc_error_ulp, mk_normal, purify, select_threshold};
+use super::{calc_error_ulp, mk_normal, mk_subnormal, purify};
 use crate::create_prng;
 
 #[test]
@@ -13,13 +13,12 @@ fn test_pow() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        let threshold = select_threshold(actual, 0.9, 1.9);
         assert!(
-            err < threshold,
+            err < 0.51,
             "pow({x:e}, {y:e}) = {actual:e} (error = {err} ULP)",
         );
     });
-    eprintln!("max pow error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -58,12 +57,36 @@ fn test_pow_with(mut f: impl FnMut(f32, f32)) {
         for ey in 1..=127 {
             for _ in 0..2000 {
                 let mx = super::gen_mantissa(&mut rng);
-                let sx = rng.random::<bool>();
                 let my = super::gen_mantissa(&mut rng);
-                let sy = rng.random::<bool>();
-                f(purify(1.0 + mk_normal(mx, ex, sx)), mk_normal(my, ey, sy));
+
+                f(
+                    purify(1.0 + mk_normal(mx, ex, false)),
+                    mk_normal(my, ey, false),
+                );
+                f(
+                    purify(1.0 + mk_normal(mx, ex, false)),
+                    mk_normal(my, ey, true),
+                );
+                f(
+                    purify(1.0 + mk_normal(mx, ex, true)),
+                    mk_normal(my, ey, false),
+                );
+                f(
+                    purify(1.0 + mk_normal(mx, ex, true)),
+                    mk_normal(my, ey, true),
+                );
             }
         }
+    }
+
+    for _ in 0..100_000 {
+        let mx = super::gen_mantissa(&mut rng);
+        let x = mk_subnormal(mx, false);
+        let my = super::gen_mantissa(&mut rng);
+        let y = mk_normal(my, -1, false);
+
+        f(x, y);
+        f(x, -y);
     }
 }
 
@@ -77,13 +100,12 @@ fn test_powi() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        let threshold = select_threshold(actual, 0.9, 1.9);
         assert!(
-            err < threshold,
+            err < 0.51,
             "powi({x:e}, {y}) = {actual:e} (error = {err} ULP)",
         );
     });
-    eprintln!("max pow error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -102,8 +124,7 @@ fn test_powi_with(mut f: impl FnMut(f32, i32)) {
         for y in min_y..=max_y {
             for _ in 0..100 {
                 let mx = super::gen_mantissa(&mut rng);
-                let sx = false;
-                let x = mk_normal(mx, ex, sx);
+                let x = mk_normal(mx, ex, false);
 
                 f(x, i32::from(y));
             }
@@ -114,13 +135,24 @@ fn test_powi_with(mut f: impl FnMut(f32, i32)) {
         for i in (1..=31).rev() {
             for _ in 0..2000 {
                 let mx = super::gen_mantissa(&mut rng);
-                let sx = rng.random::<bool>();
-                let x = purify(1.0 + mk_normal(mx, ex, sx));
                 let y = ((rng.random::<u32>() | 0x8000_0000) >> i) as i32;
 
-                f(x, y);
-                f(x, -y);
+                let xp = purify(1.0 + mk_normal(mx, ex, false));
+                let xn = purify(1.0 + mk_normal(mx, ex, true));
+
+                f(xp, y);
+                f(xp, -y);
+                f(xn, y);
+                f(xn, -y);
             }
         }
+    }
+
+    for _ in 0..100000 {
+        let mx = super::gen_mantissa(&mut rng);
+        let x = mk_subnormal(mx, false);
+
+        f(x, 1);
+        f(x, -1);
     }
 }

@@ -1,25 +1,19 @@
-mod asin_acos;
-mod atan;
 mod cbrt;
-mod div_pi;
 mod exp;
-mod exp10;
-mod exp2;
 mod gamma;
+mod hyperbolic;
+mod hypot;
+mod inv_hyperbolic;
+mod inv_trigonometric;
 mod log;
-mod log10;
-mod log2;
 mod log_core;
-mod rad_to_deg;
-mod reduce_90_deg;
-mod reduce_half_mul_pi;
-mod reduce_pi_2;
-mod sin_cos;
-mod sinh_cosh;
-mod tan;
+mod pow;
+mod trigonometric;
 
 impl crate::traits::Float for f32 {
     type Raw = u32;
+
+    type SRaw = i32;
 
     type RawExp = u8;
 
@@ -89,12 +83,6 @@ impl crate::traits::Float for f32 {
         (e as Self::RawExp).wrapping_add(Self::EXP_OFFSET)
     }
 
-    #[cfg(test)]
-    #[inline]
-    fn is_nan(self) -> bool {
-        self.is_nan()
-    }
-
     #[inline]
     fn abs(self) -> Self {
         self.abs()
@@ -109,14 +97,6 @@ impl crate::traits::Float for f32 {
     fn parse(s: &str) -> Self {
         s.parse().unwrap()
     }
-}
-
-impl crate::traits::FloatConsts for f32 {
-    // GENERATE: consts f32 PI FRAC_PI_2 FRAC_PI_4 FRAC_2_PI
-    const PI: f32 = f32::from_bits(0x40490FDB); // 3.1415927e0
-    const FRAC_PI_2: f32 = f32::from_bits(0x3FC90FDB); // 1.5707964e0
-    const FRAC_PI_4: f32 = f32::from_bits(0x3F490FDB); // 7.853982e-1
-    const FRAC_2_PI: f32 = f32::from_bits(0x3F22F983); // 6.3661975e-1
 }
 
 impl crate::sealed::SealedMath for f32 {}

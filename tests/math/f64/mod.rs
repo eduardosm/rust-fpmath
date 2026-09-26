@@ -31,14 +31,6 @@ fn mk_subnormal(m: u64, s: bool) -> f64 {
     f64::from_bits(m | s)
 }
 
-fn select_threshold(actual: f64, normal_th: f64, subnormal_th: f64) -> f64 {
-    if actual == 0.0 || actual.is_subnormal() {
-        subnormal_th
-    } else {
-        normal_th
-    }
-}
-
 const RUG_PREC: u32 = 53 + 20;
 
 fn calc_error_ulp(actual: f64, expected: rug::Float) -> f64 {
@@ -46,6 +38,8 @@ fn calc_error_ulp(actual: f64, expected: rug::Float) -> f64 {
 
     if expected.is_nan() {
         if actual.is_nan() { 0.0 } else { f64::INFINITY }
+    } else if actual.is_nan() {
+        f64::INFINITY
     } else if expected > f64::MAX {
         if actual == f64::INFINITY {
             0.0

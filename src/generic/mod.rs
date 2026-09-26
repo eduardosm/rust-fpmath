@@ -1,87 +1,42 @@
 use crate::traits::{Float, Int as _};
 
-mod acosh;
-mod asin_acos;
-mod asind_acosd;
-mod asinh;
-mod asinpi_acospi;
-mod atan;
-mod atand;
-mod atanh;
-mod atanpi;
 mod cbrt;
-mod ceil;
-mod div_pi;
 mod exp;
-mod exp10;
-mod exp2;
-mod floor;
 mod frexp;
 mod gamma;
+mod hyperbolic;
 mod hypot;
-mod ln;
-mod log10;
-mod log2;
+mod inv_hyperbolic;
+mod inv_trigonometric;
+mod log;
 mod pow;
-mod powi;
-mod rad_to_deg;
-mod reduce_90_deg;
-mod reduce_half_mul_pi;
-mod reduce_pi_2;
 mod reduce_pi_2_large;
 mod round;
 mod scalbn;
-mod sin_cos;
-mod sind_cosd;
-mod sinh_cosh;
-mod sinpi_cospi;
 mod sqrt;
-mod tan;
-mod tand;
-mod tanh;
-mod tanpi;
-mod trunc;
+mod trigonometric;
 
-pub(crate) use acosh::acosh;
-pub(crate) use asin_acos::{AsinAcos, acos, asin};
-pub(crate) use asind_acosd::{acosd, asind};
-pub(crate) use asinh::asinh;
-pub(crate) use asinpi_acospi::{acospi, asinpi};
-pub(crate) use atan::{Atan, atan, atan2};
-pub(crate) use atand::{atan2d, atand};
-pub(crate) use atanh::atanh;
-pub(crate) use atanpi::{atan2pi, atanpi};
 pub(crate) use cbrt::{Cbrt, cbrt};
-pub(crate) use ceil::ceil;
-pub(crate) use div_pi::DivPi;
-pub(crate) use exp::{Exp, exp, exp_m1};
-pub(crate) use exp2::{Exp2, exp2};
-pub(crate) use exp10::{Exp10, exp10};
-pub(crate) use floor::floor;
+pub(crate) use exp::{Exp, exp, exp_m1, exp2, exp10};
 pub(crate) use frexp::frexp;
 pub(crate) use gamma::{Gamma, gamma, ln_gamma};
-pub(crate) use hypot::hypot;
-pub(crate) use ln::{Ln, ln, ln_1p};
-pub(crate) use log2::{Log2, log2};
-pub(crate) use log10::{Log10, log10};
-pub(crate) use pow::pow;
-pub(crate) use powi::powi;
-pub(crate) use rad_to_deg::RadToDeg;
-pub(crate) use reduce_90_deg::{Reduce90Deg, reduce_90_deg};
-pub(crate) use reduce_half_mul_pi::{ReduceHalfMulPi, reduce_half_mul_pi};
-pub(crate) use reduce_pi_2::{ReducePi2, reduce_pi_2};
-pub(crate) use round::{round, round_as_i_f};
+pub(crate) use hyperbolic::{Hyperbolic, cosh, sinh, sinh_cosh, tanh};
+pub(crate) use hypot::{Hypot, hypot};
+pub(crate) use inv_hyperbolic::{InvHyperbolic, acosh, asinh, atanh};
+pub(crate) use inv_trigonometric::{
+    InvTrigonometric, acos, acosd, acospi, asin, asind, asinpi, atan, atan2, atan2d, atan2pi,
+    atand, atanpi,
+};
+pub(crate) use log::{Log, ln, ln_1p, log2, log10};
+pub(crate) use pow::{Pow, pow, powi};
+pub(crate) use reduce_pi_2_large::reduce_pi_2_large;
+pub(crate) use round::{ceil, floor, round, round_fi, trunc};
 pub(crate) use scalbn::{scalbn, scalbn_medium};
-pub(crate) use sin_cos::{SinCos, cos, sin, sin_cos};
-pub(crate) use sind_cosd::{cosd, sind, sind_cosd};
-pub(crate) use sinh_cosh::{SinhCosh, cosh, sinh, sinh_cosh};
-pub(crate) use sinpi_cospi::{cospi, sinpi, sinpi_cospi};
 pub(crate) use sqrt::sqrt;
-pub(crate) use tan::{Tan, tan};
-pub(crate) use tand::tand;
-pub(crate) use tanh::tanh;
-pub(crate) use tanpi::tanpi;
-pub(crate) use trunc::trunc;
+pub(crate) use trigonometric::{
+    Trigonometric, cos, cosd, cospi, reduce_90_deg, reduce_half_revs, sin, sin_cos, sind,
+    sind_cosd, sinpi, sinpi_cospi, tan, tand, tanpi,
+};
 
 fn is_int<F: Float>(x: F) -> bool {
     let e = x.raw_exp();

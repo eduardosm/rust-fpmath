@@ -1,4 +1,4 @@
-use super::{RUG_PREC, calc_error_ulp, mk_normal};
+use super::{RUG_PREC, calc_error_ulp, mk_normal, mk_subnormal};
 use crate::create_prng;
 
 #[test]
@@ -12,10 +12,10 @@ fn test_cbrt() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "cbrt({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "cbrt({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max cbrt error = {max_error}");
-    assert!(max_error > 0.5);
+    eprintln!("max error = {max_error}");
+    assert!(max_error >= 0.5);
 }
 
 fn test_with(mut f: impl FnMut(f64)) {
@@ -46,7 +46,7 @@ fn test_with(mut f: impl FnMut(f64)) {
 
     // subnormals
     for i in 0..52 {
-        f(f64::from_bits(1 << i));
-        f(f64::from_bits((1 << (i + 1)) - 1));
+        f(mk_subnormal(1 << i, false));
+        f(mk_subnormal((1 << (i + 1)) - 1, false));
     }
 }

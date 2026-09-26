@@ -1,4 +1,4 @@
-use super::{calc_error_ulp, mk_normal, purify, select_threshold};
+use super::{calc_error_ulp, mk_normal, mk_subnormal, purify};
 use crate::create_prng;
 
 #[test]
@@ -28,22 +28,22 @@ fn test_sin_cos() {
         max_cos2_error = max_cos2_error.max(cos2_err);
 
         assert!(
-            sin1_err < 0.9,
+            sin1_err < 0.51,
             "sin({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
         );
 
         assert!(
-            sin2_err < 0.9,
+            sin2_err < 0.51,
             "sin({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
         );
 
         assert!(
-            cos1_err < 0.9,
+            cos1_err < 0.51,
             "cos({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
         );
 
         assert!(
-            cos2_err < 0.9,
+            cos2_err < 0.51,
             "cos({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
         );
     });
@@ -83,27 +83,21 @@ fn test_sind_cosd() {
         max_cos1_error = max_cos1_error.max(cos1_err);
         max_cos2_error = max_cos2_error.max(cos2_err);
 
-        let sin1_threshold = select_threshold(actual_sin1, 0.9, 1.9);
         assert!(
-            sin1_err < sin1_threshold,
+            sin1_err < 0.51,
             "sind({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
         );
-
-        let sin2_threshold = select_threshold(actual_sin2, 0.9, 1.9);
         assert!(
-            sin2_err < sin2_threshold,
+            sin2_err < 0.51,
             "sind({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
         );
 
-        let cos1_threshold = select_threshold(actual_cos1, 0.9, 1.9);
         assert!(
-            cos1_err < cos1_threshold,
+            cos1_err < 0.51,
             "cosd({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
         );
-
-        let cos2_threshold = select_threshold(actual_cos2, 0.9, 1.9);
         assert!(
-            cos2_err < cos2_threshold,
+            cos2_err < 0.51,
             "cosd({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
         );
     });
@@ -143,27 +137,21 @@ fn test_sinpi_cospi() {
         max_cos1_error = max_cos1_error.max(cos1_err);
         max_cos2_error = max_cos2_error.max(cos2_err);
 
-        let sin1_threshold = select_threshold(actual_sin1, 0.9, 1.9);
         assert!(
-            sin1_err < sin1_threshold,
+            sin1_err < 0.51,
             "sinpi({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
         );
-
-        let sin2_threshold = select_threshold(actual_sin2, 0.9, 1.9);
         assert!(
-            sin2_err < sin2_threshold,
+            sin2_err < 0.51,
             "sinpi({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
         );
 
-        let cos1_threshold = select_threshold(actual_cos1, 0.9, 1.9);
         assert!(
-            cos1_err < cos1_threshold,
+            cos1_err < 0.51,
             "cospi({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
         );
-
-        let cos2_threshold = select_threshold(actual_cos2, 0.9, 1.9);
         assert!(
-            cos2_err < cos2_threshold,
+            cos2_err < 0.51,
             "cospi({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
         );
     });
@@ -188,9 +176,9 @@ fn test_tan() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "tan({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "tan({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max tan error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -205,13 +193,9 @@ fn test_tand() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        let threshold = select_threshold(actual, 0.9, 1.9);
-        assert!(
-            err < threshold,
-            "tand({x:e}) = {actual:e} (error = {err} ULP)",
-        );
+        assert!(err < 0.51, "tand({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max tand error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -226,24 +210,24 @@ fn test_tanpi() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        let threshold = select_threshold(actual, 0.9, 1.9);
-        assert!(
-            err < threshold,
-            "tanpi({x:e}) = {actual:e} (error = {err} ULP)",
-        );
+        assert!(err < 0.51, "tanpi({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max tanpi error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
 fn test_with(mut f: impl FnMut(f32)) {
     let mut rng = create_prng();
 
+    for m in 0..(1 << 23) {
+        f(mk_subnormal(m, false));
+    }
+
     for e in -126..=127 {
         f(mk_normal(0, e, false));
         f(mk_normal(super::MAX_MANTISSA, e, false));
 
-        for _ in 0..1000 {
+        for _ in 0..50000 {
             let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }

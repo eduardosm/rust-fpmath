@@ -1,7 +1,7 @@
-use super::{Exp, Ln, ReduceHalfMulPi, SinCos, is_int};
-use crate::traits::{FloatConsts, Int as _};
+use super::is_int;
+use crate::traits::{Float, Int as _};
 
-pub(crate) trait Gamma: FloatConsts + SinCos + ReduceHalfMulPi + Exp + Ln {
+pub(crate) trait Gamma: Float {
     fn gamma_finite(x: Self) -> Self;
 
     fn ln_gamma_finite(x: Self) -> (Self, i8);
@@ -9,7 +9,7 @@ pub(crate) trait Gamma: FloatConsts + SinCos + ReduceHalfMulPi + Exp + Ln {
 
 pub(crate) fn gamma<F: Gamma>(x: F) -> F {
     let e = x.raw_exp();
-    let sign = x.sign();
+    let sign = x.is_sign_negative();
     if e == F::RawExp::ZERO && x.raw_mant() == F::Raw::ZERO {
         // gamma(±0) = ±inf
         F::INFINITY.copysign(x)
@@ -31,7 +31,7 @@ pub(crate) fn gamma<F: Gamma>(x: F) -> F {
 
 pub(crate) fn ln_gamma<F: Gamma>(x: F) -> (F, i8) {
     let e = x.raw_exp();
-    let sign = x.sign();
+    let sign = x.is_sign_negative();
     if e == F::RawExp::ZERO && x.raw_mant() == F::Raw::ZERO {
         // ln_gamma(0) = inf
         (F::INFINITY, if sign { -1 } else { 1 })
@@ -60,7 +60,7 @@ mod tests {
     use crate::FloatMath;
     use crate::traits::Float;
 
-    fn test_gamma<F: Float + FloatMath>() {
+    fn test_gamma<F: Float + FloatMath>(underflow_firsts: &[F]) {
         use crate::gamma;
 
         assert_is_nan!(gamma(F::NAN));
@@ -73,6 +73,19 @@ mod tests {
         assert_total_eq!(gamma(-F::ZERO), F::NEG_INFINITY);
         assert_total_eq!(gamma(F::ONE), F::ONE);
         assert_total_eq!(gamma(F::TWO), F::ONE);
+
+        // Once the result underflows to zero it must still carry the sign of
+        // the true (tiny, non-zero) value, which alternates between
+        // consecutive negative integers.
+        for &first in underflow_firsts {
+            let mut x = first;
+            let mut negative = true;
+            for _ in 0..8 {
+                assert_total_eq!(gamma(x), if negative { -F::ZERO } else { F::ZERO });
+                x = x - F::ONE;
+                negative = !negative;
+            }
+        }
     }
 
     fn test_ln_gamma<F: Float + FloatMath>() {
@@ -103,13 +116,13 @@ mod tests {
 
     #[test]
     fn test_f32() {
-        test_gamma::<f32>();
+        test_gamma::<f32>(&[-42.5, -42.25, -42.75]);
         test_ln_gamma::<f32>();
     }
 
     #[test]
     fn test_f64() {
-        test_gamma::<f64>();
+        test_gamma::<f64>(&[-180.5, -180.25, -180.75]);
         test_ln_gamma::<f64>();
     }
 }
