@@ -1,4 +1,4 @@
-use super::{calc_error_ulp, mk_normal};
+use super::{calc_error_ulp, mk_normal, mk_subnormal};
 use crate::create_prng;
 
 #[test]
@@ -11,9 +11,9 @@ fn test_ln() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "ln({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "ln({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max ln error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -27,9 +27,9 @@ fn test_ln_1p() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "ln_1p({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "ln_1p({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max ln_1p error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -43,9 +43,9 @@ fn test_log2() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "log2({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "log2({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max log2 error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -59,20 +59,25 @@ fn test_log10() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "log10({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "log10({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max log10 error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
 fn test_log_with(mut f: impl FnMut(f32)) {
     let mut rng = create_prng();
 
+    for e in -1..=0 {
+        for m in 0..(1 << 23) {
+            f(mk_normal(m, e, false));
+        }
+    }
     for e in -126..=127 {
         f(mk_normal(0, e, false));
         f(mk_normal(super::MAX_MANTISSA, e, false));
 
-        for _ in 0..10000 {
+        for _ in 0..100000 {
             let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }
@@ -86,20 +91,25 @@ fn test_log_with(mut f: impl FnMut(f32)) {
     f(f32::MAX);
 
     // subnormals
-    for i in 0..23 {
-        f(f32::from_bits(1 << i));
-        f(f32::from_bits((1 << (i + 1)) - 1));
+    for m in 0..(1 << 23) {
+        f(mk_subnormal(m, false));
+        f(mk_subnormal(m, true));
     }
 }
 
 fn test_log1p_with(mut f: impl FnMut(f32)) {
     let mut rng = create_prng();
 
+    for e in -1..=0 {
+        for m in 0..(1 << 23) {
+            f(mk_normal(m, e, false));
+        }
+    }
     for e in -126..=127 {
         f(mk_normal(0, e, false));
         f(mk_normal(super::MAX_MANTISSA, e, false));
 
-        for _ in 0..10000 {
+        for _ in 0..100000 {
             let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
         }
@@ -117,17 +127,15 @@ fn test_log1p_with(mut f: impl FnMut(f32)) {
         f(mk_normal(0, e, true));
         f(mk_normal(super::MAX_MANTISSA, e, true));
 
-        for _ in 0..1000 {
+        for _ in 0..100000 {
             let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, true));
         }
     }
 
     // subnormals
-    for i in 0..23 {
-        f(f32::from_bits(1 << i));
-        f(-f32::from_bits(1 << i));
-        f(f32::from_bits((1 << (i + 1)) - 1));
-        f(-f32::from_bits((1 << (i + 1)) - 1));
+    for m in 0..(1 << 23) {
+        f(mk_subnormal(m, false));
+        f(mk_subnormal(m, true));
     }
 }

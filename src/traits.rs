@@ -95,6 +95,8 @@ pub(crate) trait Float:
         + core::ops::Shr<Self::RawExp, Output = Self::Raw>
         + core::ops::Shr<Self::Exp, Output = Self::Raw>;
 
+    type SRaw: SInt + CastFrom<Self::Raw> + CastInto<Self>;
+
     type RawExp: UInt + CastFrom<Self::Raw>;
 
     type Exp: SInt + CastInto<Self> + Into<i32>;
@@ -137,12 +139,17 @@ pub(crate) trait Float:
     fn exp_to_raw_exp(e: Self::Exp) -> Self::RawExp;
 
     #[inline]
-    fn is_finite(self) -> bool {
-        self.raw_exp() != Self::MAX_RAW_EXP
+    fn is_infinite(self) -> bool {
+        self.raw_exp() == Self::MAX_RAW_EXP && self.raw_mant() == Self::Raw::ZERO
     }
 
     #[inline]
-    fn sign(self) -> bool {
+    fn is_nan(self) -> bool {
+        self.raw_exp() == Self::MAX_RAW_EXP && self.raw_mant() != Self::Raw::ZERO
+    }
+
+    #[inline]
+    fn is_sign_negative(self) -> bool {
         (self.to_raw() & Self::SIGN_MASK) != Self::Raw::ZERO
     }
 
@@ -161,8 +168,8 @@ pub(crate) trait Float:
     fn normalize_arg(self) -> (Self, Self::Exp) {
         if self.raw_exp() == Self::RawExp::ZERO {
             // convert possible subnormal to normal
-            let escale = Self::Exp::cast_from(Self::MANT_BITS);
-            (self * Self::exp2i_fast(escale), -escale)
+            let scale = Self::Exp::cast_from(Self::MANT_BITS);
+            (self * Self::exp2i_fast(scale), -scale)
         } else {
             (self, Self::Exp::ZERO)
         }
@@ -177,9 +184,6 @@ pub(crate) trait Float:
     fn mant(self) -> Self::Raw {
         (self.to_raw() & Self::MANT_MASK) | (Self::MANT_MASK + Self::Raw::ONE)
     }
-
-    #[cfg(test)]
-    fn is_nan(self) -> bool;
 
     fn abs(self) -> Self;
 
@@ -225,29 +229,6 @@ pub(crate) trait Float:
         (hi, lo)
     }
 
-    #[inline]
-    fn norm_hi_lo_full(hi: Self, lo: Self) -> (Self, Self) {
-        let lo = lo.purify();
-        let hi2 = (hi + lo).purify();
-        let lo2 = (hi - hi2) + lo;
-        (hi2, lo2)
-    }
-
-    #[inline]
-    fn norm_hi_lo_splitted(hi: Self, lo: Self) -> (Self, Self) {
-        let lo = lo.purify();
-        let hi2 = hi.split_hi();
-        let lo2 = (hi - hi2) + lo;
-        (hi2, lo2)
-    }
-
     #[cfg(test)]
     fn parse(s: &str) -> Self;
-}
-
-pub(crate) trait FloatConsts: Float {
-    const PI: Self;
-    const FRAC_PI_2: Self;
-    const FRAC_PI_4: Self;
-    const FRAC_2_PI: Self;
 }

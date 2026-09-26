@@ -35,3 +35,6 @@ features = ["force-cross"] # needed for i586 support
 members = [
     "generator",
 ]
+
+[profile.dev]
+opt-level = 1

@@ -11,11 +11,10 @@ fn test_gamma() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "gamma({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "gamma({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max gamma error = {max_error}");
-    // 0.499 instead of 0.5 because x87...
-    assert!(max_error > 0.4999);
+    eprintln!("max error = {max_error}");
+    assert!(max_error > 0.5);
 }
 
 #[test]
@@ -30,12 +29,12 @@ fn test_ln_gamma() {
 
         assert_eq!(expected_sign, actual_sign);
         assert!(
-            err < 0.9,
+            err < 0.51,
             "ln_gamma({x:e}) = {actual:e} (error = {err} ULP)",
         );
     });
-    eprintln!("max ln_gamma error = {max_error}");
-    assert!(max_error > 0.5);
+    eprintln!("max error = {max_error}");
+    assert!(max_error >= 0.5);
 }
 
 fn test_with(mut f: impl FnMut(f32)) {

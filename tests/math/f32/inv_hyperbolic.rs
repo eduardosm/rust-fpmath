@@ -1,5 +1,3 @@
-use rand::RngExt as _;
-
 use super::{calc_error_ulp, mk_normal, purify};
 use crate::create_prng;
 
@@ -13,9 +11,9 @@ fn test_asinh() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "asinh({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "asinh({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max asinh error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -28,10 +26,10 @@ fn test_asinh_with(mut f: impl FnMut(f32)) {
         f(mk_normal(super::MAX_MANTISSA, e, false));
         f(mk_normal(super::MAX_MANTISSA, e, true));
 
-        for _ in 0..10000 {
+        for _ in 0..20000 {
             let m = super::gen_mantissa(&mut rng);
-            let s = rng.random::<bool>();
-            f(mk_normal(m, e, s));
+            f(mk_normal(m, e, false));
+            f(mk_normal(m, e, true));
         }
     }
 }
@@ -46,9 +44,9 @@ fn test_acosh() {
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "acosh({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "acosh({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max acosh error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -59,9 +57,17 @@ fn test_acosh_with(mut f: impl FnMut(f32)) {
         f(mk_normal(0, e, false));
         f(mk_normal(super::MAX_MANTISSA, e, false));
 
-        for _ in 0..10000 {
+        for _ in 0..40000 {
             let m = super::gen_mantissa(&mut rng);
             f(mk_normal(m, e, false));
+        }
+    }
+
+    for e in -20..=-2 {
+        for _ in 0..5000 {
+            let m = super::gen_mantissa(&mut rng);
+            let x = purify(1.0 + mk_normal(m, e, false));
+            f(x);
         }
     }
 }
@@ -72,14 +78,14 @@ fn test_atanh() {
     test_atanh_with(|x| {
         let expected = fpmath::atanh(f64::from(x));
         let actual = fpmath::atanh(x);
-        assert_total_eq!(purify(fpmath::atanh(-x)), purify(-actual));
+        assert_total_eq!(fpmath::atanh(-x), -actual);
 
         let err = calc_error_ulp(actual, expected);
         max_error = max_error.max(err);
 
-        assert!(err < 0.9, "atanh({x:e}) = {actual:e} (error = {err} ULP)");
+        assert!(err < 0.51, "atanh({x:e}) = {actual:e} (error = {err} ULP)");
     });
-    eprintln!("max atanh error = {max_error}");
+    eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
 }
 
@@ -95,10 +101,9 @@ fn test_atanh_with(mut f: impl FnMut(f32)) {
         f(mk_normal(0, e, false));
         f(mk_normal(super::MAX_MANTISSA, e, false));
 
-        for _ in 0..10000 {
+        for _ in 0..40000 {
             let m = super::gen_mantissa(&mut rng);
-            let s = rng.random::<bool>();
-            f(mk_normal(m, e, s));
+            f(mk_normal(m, e, false));
         }
     }
 }

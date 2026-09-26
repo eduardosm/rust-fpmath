@@ -11,14 +11,14 @@
 
 ### Fixed
 
-- Fixed large `atanh` error near -1.
-- Fixed large `ln_gamma` errors for some negative inputs.
+- Fixed cases of errors being larger than documented maximum.
 - Symmetry of trigonometric functions now applies to the sign of zero too.
-- Fixed `atanpi` and `atan2pi` exceeding 1 ULP of error.
 
 ### Changed
 
+- Maximum error has been brought down to 0.55 ULP from 1 ULP.
 - Poles of `tand` and `tanpi` now have alternating signs.
+- `f32` math functions now use `f64` internally.
 
 ## 0.1.1 (2024-10-14)
 

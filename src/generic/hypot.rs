@@ -1,8 +1,10 @@
-use super::sqrt::hi_lo_sqrt_hi_lo_inner;
-use crate::double::SemiDouble;
 use crate::traits::{Float, Int as _};
 
-pub(crate) fn hypot<F: Float>(x: F, y: F) -> F {
+pub(crate) trait Hypot: Float {
+    fn hypot_finite(x: Self, y: Self) -> Self;
+}
+
+pub(crate) fn hypot<F: Hypot>(x: F, y: F) -> F {
     let xexp = x.raw_exp();
     let yexp = y.raw_exp();
     if xexp == F::MAX_RAW_EXP || yexp == F::MAX_RAW_EXP {
@@ -16,45 +18,7 @@ pub(crate) fn hypot<F: Float>(x: F, y: F) -> F {
             F::NAN
         }
     } else {
-        // min = min(|x|, |y|)
-        // max = max(|x|, |y|)
-        let absx = x.abs();
-        let absy = y.abs();
-        let (min, max) = if absx < absy {
-            (absx, absy)
-        } else {
-            (absy, absx)
-        };
-
-        let maxexp = max.exponent();
-        let logscale = maxexp.clamp(F::MIN_NORMAL_EXP, -F::MIN_NORMAL_EXP);
-        let scale = F::exp2i_fast(-logscale);
-        let descale = F::exp2i_fast(logscale);
-
-        let smin = min * scale;
-        let smax = max * scale;
-
-        if smax.raw_exp() == F::RawExp::ZERO {
-            F::ZERO
-        } else {
-            // hypot(x, y) = hypot(min, max)
-            //             = hypot(min * scale, max * scale) / scale
-            let smin = SemiDouble::new(smin);
-            let smax = SemiDouble::new(smax);
-
-            let smin2 = smin.square().normalize();
-            let smax2 = smax.square().normalize();
-
-            // sum = (min * scale)^2 + (max * scale)^2
-            let sum = smax2.qadd2(smin2);
-
-            // z = sqrt((min * scale)^2 + (max * scale)^2)
-            //   = hypot(min * scale, max * scale)
-            let z = hi_lo_sqrt_hi_lo_inner(sum);
-
-            // hypot(x, y) = hypot(min * scale, max * scale) / scale
-            z.to_single() * descale
-        }
+        F::hypot_finite(x, y)
     }
 }
 

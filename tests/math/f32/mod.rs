@@ -35,6 +35,8 @@ fn calc_error_ulp(actual: f32, expected: f64) -> f32 {
 
     if expected.is_nan() {
         if actual.is_nan() { 0.0 } else { f32::INFINITY }
+    } else if actual.is_nan() {
+        f32::INFINITY
     } else if expected > f64::from(f32::MAX) {
         if actual == f32::INFINITY {
             0.0
@@ -57,14 +59,6 @@ fn calc_error_ulp(actual: f32, expected: f64) -> f32 {
         };
         let dif = fpmath::scalbn((expected - f64::from(actual)).abs(), 23 - exp);
         dif as f32
-    }
-}
-
-fn select_threshold(actual: f32, normal_th: f32, subnormal_th: f32) -> f32 {
-    if actual == 0.0 || actual.is_subnormal() {
-        subnormal_th
-    } else {
-        normal_th
     }
 }
 
