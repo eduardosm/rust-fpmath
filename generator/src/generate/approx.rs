@@ -2,14 +2,28 @@ use std::fmt::Write as _;
 
 use super::{FloatKind, arg_utils, julia, render_const_dec_value, render_const_value, sollya};
 
-pub(super) fn gen_inv_cbrt_poly(args: &[&str]) -> Result<String, String> {
+pub(super) fn gen_cbrt_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
 
     let mut out = String::new();
 
-    let func = "x^(-1/3)";
+    let func = "x^(1/3)";
     let poly_i = (0..num_coeffs).collect::<Vec<_>>();
     let range = (1.0 - 0.001, 2.0 + 0.001);
+
+    sollya::run_and_render_remez(fkind, func, range, &poly_i, 0, "K", &mut out);
+
+    Ok(out)
+}
+
+pub(super) fn gen_cbrt_1p_poly(args: &[&str]) -> Result<String, String> {
+    let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
+
+    let mut out = String::new();
+
+    let func = "((1 + x)^(1/3) - 1) / x";
+    let poly_i = (0..num_coeffs).collect::<Vec<_>>();
+    let range = (range_start, range_end);
 
     sollya::run_and_render_remez(fkind, func, range, &poly_i, 0, "K", &mut out);
 

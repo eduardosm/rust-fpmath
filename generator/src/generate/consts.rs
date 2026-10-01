@@ -16,8 +16,8 @@ pub(super) fn gen_consts(args: &[&str]) -> Result<String, String> {
 
     for name in args {
         let value = match name {
-            "INV_CBRT_2" => rug::Float::with_val(rug_prec, 2).cbrt().recip(),
-            "INV_CBRT_4" => rug::Float::with_val(rug_prec, 4).cbrt().recip(),
+            "CBRT_2" => rug::Float::with_val(rug_prec, 2).cbrt(),
+            "CBRT_4" => rug::Float::with_val(rug_prec, 4).cbrt(),
             "LN_2" => rug::Float::with_val(rug_prec, 2).ln(),
             "LN_10" => rug::Float::with_val(rug_prec, 10).ln(),
             "LOG2_E" => rug::Float::with_val(rug_prec, 1).exp().log2(),

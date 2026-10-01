@@ -1,19 +1,21 @@
 use crate::traits::{Float, Int as _};
 
 pub(crate) trait Cbrt: Float {
-    fn cbrt_finite(x: Self, edelta: Self::Exp) -> Self;
+    /// Calculates `cbrt(x)` for a finite and non-zero (but possibly
+    /// subnormal) `x`.
+    fn cbrt_finite(x: Self) -> Self;
 }
 
 pub(crate) fn cbrt<F: Cbrt>(x: F) -> F {
-    let (y, edelta) = x.normalize_arg();
-    let yexp = y.raw_exp();
-    if yexp == F::RawExp::ZERO || yexp == F::MAX_RAW_EXP {
+    let abs_raw = x.to_raw() & !F::SIGN_MASK;
+    if abs_raw != F::Raw::ZERO && abs_raw < F::EXP_MASK {
+        // x is finite and non-zero
+        F::cbrt_finite(x)
+    } else {
         // cbrt(±0) = ±0
         // or
         // propagate infinity or NaN
-        y
-    } else {
-        F::cbrt_finite(y, edelta)
+        x
     }
 }
 
