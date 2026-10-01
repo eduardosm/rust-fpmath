@@ -24,7 +24,8 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "reduce_pi_2::frac_2_pi_large" => reduce_pi_2::gen_frac_2_pi_large(&args),
         "reduce_pi_2::frac_pi_2_medium" => reduce_pi_2::gen_frac_pi_2_medium(&args),
 
-        "inv_cbrt_poly" => approx::gen_inv_cbrt_poly(&args),
+        "cbrt_poly" => approx::gen_cbrt_poly(&args),
+        "cbrt_1p_poly" => approx::gen_cbrt_1p_poly(&args),
         "exp_m1_poly" => approx::gen_exp_m1_poly(&args),
         "ln_1p_poly" => approx::gen_ln_1p_poly(&args),
         "ln_table" => approx::gen_ln_table(&args),

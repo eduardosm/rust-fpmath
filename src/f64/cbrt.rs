@@ -1,59 +1,69 @@
-use super::f64x2::F64x2;
 use crate::traits::Float as _;
 
-// GENERATE: consts f64 INV_CBRT_2 INV_CBRT_4
-const INV_CBRT_2: f64 = f64::from_bits(0x3FE965FEA53D6E3D); // 7.937005259840998e-1
-const INV_CBRT_4: f64 = f64::from_bits(0x3FE428A2F98D728B); // 6.299605249474366e-1
+// GENERATE: consts f64 CBRT_2 CBRT_4
+const CBRT_2: f64 = f64::from_bits(0x3FF428A2F98D728B); // 1.2599210498948732e0
+const CBRT_4: f64 = f64::from_bits(0x3FF965FEA53D6E3D); // 1.5874010519681996e0
+
+// [1, cbrt(2), cbrt(4)]
+static CBRT_SCALE: [f64; 3] = [1.0, CBRT_2, CBRT_4];
 
 impl crate::generic::Cbrt for f64 {
-    fn cbrt_finite(x: Self, edelta: Self::Exp) -> Self {
-        // Split |x| * 2^edelta = 2^k * r such as
+    #[inline]
+    fn cbrt_finite(x: Self) -> Self {
+        let (xn, edelta) = x.normalize_arg();
+
+        // Split |x| = 2^k * r0 such as
         // * k is an integer
-        // * 1 <= r < 8
-        let k = x.exponent() + edelta;
-        // 0 <= kmod3 <= 2
-        let kmod3 = (((k + 1077) as u16) % 3) as i16;
+        // * 1 <= r0 < 2
+        let k = xn.exponent() + edelta;
+        let r0 = xn.abs().set_exp(0);
 
-        // 1 <= r < 8
-        let r = x.abs().set_exp(kmod3);
+        // k = 3 * kdiv3 + kmod3, with 0 <= kmod3 <= 2
+        let kp = (k + 1077) as u16;
+        let kmod3 = kp % 3;
+        let kdiv3 = (kp / 3) as i16 - 359;
 
-        // t1 ~= cbrt(1 / r) with a polynomial approximation
-        // The polynomial approximation is for range [1, 2]
-        // cbrt(1 / r) = cbrt(1 / r') * cbrt(1 / 2^kmod3)
-        let t0 = {
-            // GENERATE: inv_cbrt_poly f64 5
-            const K0: f64 = f64::from_bits(0x3FFAC22A09449B4C); // 1.6724033700972596e0
-            const K1: f64 = f64::from_bits(0xBFF2DFACC184CCFE); // -1.1796081122709547e0
-            const K2: f64 = f64::from_bits(0x3FE67A424D6E9E1B); // 7.024241936059669e-1
-            const K3: f64 = f64::from_bits(0xBFCCB7D044D303A5); // -2.2435954437790176e-1
-            const K4: f64 = f64::from_bits(0x3F9DCE72DC97E5B4); // 2.9107851709317692e-2
+        // cbrt(|x|) = cbrt(r) * 2^kdiv3, with 1 <= r = r0 * 2^kmod3 < 8
+        let r = r0.set_exp(kmod3 as i16);
 
-            let r0 = r.set_exp(0);
-            K0 + horner!(r0, r0, [K1, K2, K3, K4])
-        };
-        let t1 = match kmod3 {
-            0 => t0,
-            1 => t0 * INV_CBRT_2,
-            2 => t0 * INV_CBRT_4,
-            _ => unreachable!(),
+        // y ~= cbrt(r)
+        let y = {
+            // GENERATE: cbrt_poly f64 4
+            const K0: f64 = f64::from_bits(0x3FE1B7EA3EA937F0); // 5.537005637977455e-1
+            const K1: f64 = f64::from_bits(0x3FE2BA2945673001); // 5.852247577217896e-1
+            const K2: f64 = f64::from_bits(0xBFC4B11B5561E2F4); // -1.6165486973820686e-1
+            const K3: f64 = f64::from_bits(0x3F975B306FDD2341); // 2.2808796718240435e-2
+
+            let t = K0 + horner!(r0, r0, [K1, K2, K3]);
+            t * CBRT_SCALE[usize::from(kmod3)]
         };
 
-        // ti ~= cbrt(1 / r)
-        // initially, ti = t1
-        let ti = t1;
+        // Round y to a multiple of 2^-16.
+        // Since 0.99 ~< y ~< 2.01, yc^2 and yc^3 are exact.
+        let round_16 = f64::exp2i_fast(36);
+        let yc = ((y + round_16).purify() - round_16).purify();
 
-        // refine ti with Newton iterations
-        // for each iteration: ti = ti - (1 / 3) * (r * ti^4 - ti)
-        let frac_1_3 = F64x2::div11(1.0, 3.0);
-        let ti = ti - frac_1_3 * (r * F64x2::square1(ti).square() - ti);
-        let ti = ti - frac_1_3 * (r * ti.square().square() - ti);
-        let ti = ti - frac_1_3 * (r * ti.square().square() - ti);
+        // r = yc^3 * (1 + e)
+        // cbrt(r) = yc * cbrt(1 + e)
+        // `r - yc^3` is exact
+        let yc3 = yc * yc * yc;
+        let e = (r - yc3) / yc3;
 
-        // t2 = cbrt(r) = r * cbrt(1 / r)^2 = ti^2 * r
-        let t2 = ti.square() * r;
+        // c ~= cbrt(1 + e) - 1
+        let c = {
+            // GENERATE: cbrt_1p_poly f64 4 -0.000275 0.000275
+            const K0: f64 = f64::from_bits(0x3FD5555555555555); // 3.333333333333333e-1
+            const K1: f64 = f64::from_bits(0xBFBC71C71C71C718); // -1.1111111111111105e-1
+            const K2: f64 = f64::from_bits(0x3FAF9ADD4FA7553F); // 6.172839734396484e-2
+            const K3: f64 = f64::from_bits(0xBFA511E8E98E2CB0); // -4.1152266035248686e-2
 
-        // cbrt(x) = sgn(x) * cbrt(r) * 2^((k - mod(k, 3)) / 3)
-        //         = sgn(x) * t2 * 2^((k - mod(k, 3)) / 3)
-        t2.scalbn_to_f64(((k - kmod3) / 3).into()).copysign(x)
+            e * (K0 + horner!(e, e, [K1, K2, K3]))
+        };
+
+        // cbrt(r) ~= yc * (1 + c)
+        let t = yc + yc * c;
+
+        // cbrt(x) = sgn(x) * cbrt(r) * 2^kdiv3
+        (t * f64::exp2i_fast(kdiv3)).copysign(x)
     }
 }

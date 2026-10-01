@@ -1,68 +1,52 @@
-use crate::generic::scalbn_medium;
 use crate::traits::Float as _;
 
-// GENERATE: consts f32 INV_CBRT_2 INV_CBRT_4
-const INV_CBRT_2: f32 = f32::from_bits(0x3F4B2FF5); // 7.937005e-1
-const INV_CBRT_4: f32 = f32::from_bits(0x3F214518); // 6.2996054e-1
+// GENERATE: consts f64 CBRT_2 CBRT_4
+const CBRT_2: f64 = f64::from_bits(0x3FF428A2F98D728B); // 1.2599210498948732e0
+const CBRT_4: f64 = f64::from_bits(0x3FF965FEA53D6E3D); // 1.5874010519681996e0
+
+// [1, cbrt(2), cbrt(4)]
+static CBRT_SCALE: [f64; 3] = [1.0, CBRT_2, CBRT_4];
 
 impl crate::generic::Cbrt for f32 {
-    fn cbrt_finite(x: Self, edelta: Self::Exp) -> Self {
-        // Split |x| * 2^edelta = 2^k * r such as
+    #[inline]
+    fn cbrt_finite(x: Self) -> Self {
+        let absx = f64::from(x.abs());
+
+        // Split |x| = 2^k * r0 such as
         // * k is an integer
-        // * 1 <= r < 8
-        let k = x.exponent() + edelta;
-        // 0 <= kmod3 <= 2
-        let kmod3 = (((k + 153) as u16) % 3) as i16;
+        // * 1 <= r0 < 2
+        let k = absx.exponent();
+        let r0 = absx.set_exp(0);
 
-        // 1 <= r < 8
-        let r = x.abs().set_exp(kmod3);
+        // k = 3 * kdiv3 + kmod3, with 0 <= kmod3 <= 2
+        let kp = (k + 153) as u16;
+        let kmod3 = kp % 3;
+        let kdiv3 = (kp / 3) as i16 - 51;
 
-        // t1 ~= cbrt(1 / r) with a polynomial approximation
-        // The polynomial approximation is for range [1, 2]
-        // cbrt(1 / r) = cbrt(1 / r') * cbrt(1 / 2^kmod3)
-        let t0 = {
-            // GENERATE: inv_cbrt_poly f32 3
-            const K0: f32 = f32::from_bits(0x3FB21939); // 1.3913947e0
-            const K1: f32 = f32::from_bits(0xBEF9C752); // -4.8784882e-1
-            const K2: f32 = f32::from_bits(0x3DC257A9); // 9.489376e-2
+        // cbrt(|x|) = cbrt(r0 * 2^kmod3) * 2^kdiv3
+        //           = cbrt(r0) * cbrt(2^kmod3) * 2^kdiv3
+        // s = cbrt(2^kmod3) * 2^kdiv3
+        let s = f64::from_bits(
+            CBRT_SCALE[usize::from(kmod3)]
+                .to_bits()
+                .wrapping_add((kdiv3 as u64) << f64::MANT_BITS),
+        );
 
-            let r0 = r.set_exp(0);
-            K0 + horner!(r0, r0, [K1, K2])
+        // y0 ~= cbrt(|x|)
+        let y0 = {
+            // GENERATE: cbrt_poly f64 3
+            const K0: f64 = f64::from_bits(0x3FE3EE5A15141A55); // 6.22845688981054e-1
+            const K1: f64 = f64::from_bits(0x3FDC0069D19700AE); // 4.375252291465682e-1
+            const K2: f64 = f64::from_bits(0xBFAE8D1148F1473C); // -5.967000976001066e-2
+
+            (K0 + horner!(r0, r0, [K1, K2])) * s
         };
-        let t1 = match kmod3 {
-            0 => t0,
-            1 => t0 * INV_CBRT_2,
-            2 => t0 * INV_CBRT_4,
-            _ => unreachable!(),
-        };
 
-        let r = f64::from(r);
+        // Refine y0 with a Halley iteration:
+        // y1 = y0 * (y0^3 + 2 * |x|) / (2 * y0^3 + |x|)
+        let y03 = y0 * y0 * y0;
+        let y1 = y0 * (y03 + 2.0 * absx) / (2.0 * y03 + absx);
 
-        // ti ~= cbrt(1 / r)
-        // initially, ti = t1
-        let mut ti = f64::from(t1);
-
-        // refine ti with Newton iterations
-        // for each iteration: ti = ti - (1 / 3) * (r * ti^4 - ti)
-        let frac_1_3 = 1.0 / 3.0;
-        ti = ti - frac_1_3 * (r * pow4(ti) - ti);
-        ti = ti - frac_1_3 * (r * pow4(ti) - ti);
-        ti = ti - frac_1_3 * (r * pow4(ti) - ti);
-
-        // t2 = cbrt(r) = r * cbrt(1 / r)^2 = ti^2 * r
-        let t2 = ti * ti * r;
-
-        // y = cbrt(x)
-        //   = sgn(x) * cbrt(r) * 2^((k - mod(k, 3)) / 3)
-        //   = sgn(x) * t2 * 2^((k - mod(k, 3)) / 3)
-        let y = scalbn_medium(t2, ((k - kmod3) / 3).into()).set_sign(x.is_sign_negative());
-
-        y as f32
+        (y1 as f32).copysign(x)
     }
-}
-
-#[inline]
-fn pow4(x: f64) -> f64 {
-    let x2 = x * x;
-    x2 * x2
 }
