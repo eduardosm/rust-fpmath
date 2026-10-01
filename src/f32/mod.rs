@@ -332,4 +332,24 @@ mod tests {
             assert_eq!(x.to_bits() & f32::MANT_MASK, 0);
         }
     }
+
+    #[test]
+    fn test_normalize_arg() {
+        for sign in [0, 1 << 31] {
+            // zero and all subnormals
+            for m in 0..(1 << 23) {
+                let x = f32::from_bits(sign | m);
+                let (y, edelta) = x.normalize_arg();
+                assert_eq!(y.to_bits(), (x * f32::exp2i_fast(23)).to_bits());
+                assert_eq!(edelta, -23);
+            }
+
+            for x in [f32::MIN_POSITIVE, 1.5, f32::MAX] {
+                let x = f32::from_bits(sign | x.to_bits());
+                let (y, edelta) = x.normalize_arg();
+                assert_eq!(y.to_bits(), x.to_bits());
+                assert_eq!(edelta, 0);
+            }
+        }
+    }
 }

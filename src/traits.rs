@@ -168,8 +168,14 @@ pub(crate) trait Float:
     fn normalize_arg(self) -> (Self, Self::Exp) {
         if self.raw_exp() == Self::RawExp::ZERO {
             // convert possible subnormal to normal
+            //
+            // Equivalent to `self * 2^MANT_BITS`, but avoids arithmetic with
+            // a subnormal operand, which can be very slow on some CPUs.
             let scale = Self::Exp::cast_from(Self::MANT_BITS);
-            (self * Self::exp2i_fast(scale), -scale)
+            let bias = Self::exp2i_fast(Self::MIN_NORMAL_EXP + scale);
+            let y = Self::from_raw(bias.to_raw() | self.raw_mant()) - bias;
+            // `copysign` keeps the sign of zero
+            (y.copysign(self), -scale)
         } else {
             (self, Self::Exp::ZERO)
         }

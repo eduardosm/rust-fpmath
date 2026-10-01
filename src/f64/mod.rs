@@ -346,4 +346,29 @@ mod tests {
             assert_eq!(x.to_bits() & f64::MANT_MASK, 0);
         }
     }
+
+    #[test]
+    fn test_normalize_arg() {
+        fn check(x: f64) {
+            let (y, edelta) = x.normalize_arg();
+            if x.raw_exp() == 0 {
+                assert_eq!(y.to_bits(), (x * f64::exp2i_fast(52)).to_bits());
+                assert_eq!(edelta, -52);
+            } else {
+                assert_eq!(y.to_bits(), x.to_bits());
+                assert_eq!(edelta, 0);
+            }
+        }
+
+        for sign in [0, 1 << 63] {
+            check(f64::from_bits(sign));
+            for i in 0..52 {
+                check(f64::from_bits(sign | (1 << i)));
+                check(f64::from_bits(sign | ((1 << (i + 1)) - 1)));
+            }
+            check(f64::from_bits(sign | 0x000F_EDCB_A987_6543));
+            check(f64::from_bits(sign | f64::MIN_POSITIVE.to_bits()));
+            check(f64::from_bits(sign | 1.5f64.to_bits()));
+        }
+    }
 }
