@@ -32,7 +32,7 @@ pub(crate) use pow::{Pow, pow, powi};
 pub(crate) use reduce_pi_2_large::reduce_pi_2_large;
 pub(crate) use round::{ceil, floor, round, round_fi, trunc};
 pub(crate) use scalbn::{scalbn, scalbn_medium};
-pub(crate) use sqrt::sqrt;
+pub(crate) use sqrt::{Sqrt, rsqrt_sqrt_32, sqrt};
 pub(crate) use trigonometric::{
     Trigonometric, cos, cosd, cospi, reduce_90_deg, reduce_half_revs, sin, sin_cos, sind,
     sind_cosd, sinpi, sinpi_cospi, tan, tand, tanpi,
