@@ -12,8 +12,6 @@ pub(super) struct F64x2 {
 }
 
 impl F64x2 {
-    pub(crate) const ZERO: Self = Self::new1(0.0);
-
     #[inline]
     pub(super) const fn new(hi: f64, lo: f64) -> Self {
         // This constructor is meant to be used in constants,
@@ -47,6 +45,11 @@ impl F64x2 {
     }
 
     #[inline]
+    pub(super) fn lo(self) -> f64 {
+        self.lo
+    }
+
+    #[inline]
     pub(super) fn to_f64(self) -> f64 {
         purify(self.hi + self.lo)
     }
@@ -66,6 +69,13 @@ impl F64x2 {
     #[inline]
     pub(super) fn add11(lhs: f64, rhs: f64) -> Self {
         let (hi, lo) = two_sum(lhs, rhs);
+        Self { hi, lo }
+    }
+
+    /// Assumes `|lhs| >= |rhs|` or `lhs == 0.0`.
+    #[inline]
+    pub(super) fn fast_add11(lhs: f64, rhs: f64) -> Self {
+        let (hi, lo) = fast_two_sum(lhs, rhs);
         Self { hi, lo }
     }
 

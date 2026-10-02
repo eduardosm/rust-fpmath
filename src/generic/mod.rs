@@ -10,7 +10,6 @@ mod inv_hyperbolic;
 mod inv_trigonometric;
 mod log;
 mod pow;
-mod reduce_pi_2_large;
 mod round;
 mod scalbn;
 mod sqrt;
@@ -29,13 +28,12 @@ pub(crate) use inv_trigonometric::{
 };
 pub(crate) use log::{Log, ln, ln_1p, log2, log10};
 pub(crate) use pow::{Pow, pow, powi};
-pub(crate) use reduce_pi_2_large::reduce_pi_2_large;
 pub(crate) use round::{ceil, floor, round, round_fi, trunc};
 pub(crate) use scalbn::{scalbn, scalbn_medium};
 pub(crate) use sqrt::{Sqrt, rsqrt_sqrt_32, sqrt};
 pub(crate) use trigonometric::{
-    Trigonometric, cos, cosd, cospi, reduce_90_deg, reduce_half_revs, sin, sin_cos, sind,
-    sind_cosd, sinpi, sinpi_cospi, tan, tand, tanpi,
+    Trigonometric, cos, cosd, cospi, sin, sin_cos, sind, sind_cosd, sinpi, sinpi_cospi, tan, tand,
+    tanpi,
 };
 
 fn is_int<F: Float>(x: F) -> bool {

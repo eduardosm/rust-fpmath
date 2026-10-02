@@ -6,7 +6,7 @@ mod approx;
 mod arg_utils;
 mod consts;
 mod julia;
-mod reduce_pi_2;
+mod reduce_rad;
 mod sollya;
 
 pub(crate) fn generate(param: &str) -> Result<String, RunError> {
@@ -20,9 +20,8 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
     let r = match cmd {
         "consts" => consts::gen_consts(&args),
 
-        "reduce_pi_2::medium_consts" => reduce_pi_2::gen_medium_consts(&args),
-        "reduce_pi_2::frac_2_pi_large" => reduce_pi_2::gen_frac_2_pi_large(&args),
-        "reduce_pi_2::frac_pi_2_medium" => reduce_pi_2::gen_frac_pi_2_medium(&args),
+        "reduce_rad::split_pi" => reduce_rad::gen_split_pi(&args),
+        "reduce_rad::frac_1_pi_bits" => reduce_rad::gen_frac_1_pi_bits(&args),
 
         "rsqrt_table" => approx::gen_rsqrt_table(&args),
         "cbrt_poly" => approx::gen_cbrt_poly(&args),
@@ -31,6 +30,7 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "ln_1p_poly" => approx::gen_ln_1p_poly(&args),
         "ln_table" => approx::gen_ln_table(&args),
         "ln_lo_scale_table" => approx::gen_ln_lo_scale_table(&args),
+        "sin_pi_table" => approx::gen_sin_pi_table(&args),
         "sin_poly" => approx::gen_sin_poly(&args),
         "cos_poly" => approx::gen_cos_poly(&args),
         "tan_poly" => approx::gen_tan_poly(&args),

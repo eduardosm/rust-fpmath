@@ -1,10 +1,10 @@
 use super::f64x2::F64x2;
 use super::log_core::log_core_f64x2;
-use crate::generic::{reduce_half_revs, round_fi};
+use super::trigonometric::sinpi_f64x2;
+use crate::generic::round_fi;
 use crate::traits::Float as _;
 
-// GENERATE: consts F64x2 PI LN_2 LN_PI
-const PI: F64x2 = F64x2::from_bits(0x400921FB54442D18, 0x3CA1A62633145C07); // 3.141592653589793238462643383280e0
+// GENERATE: consts F64x2 LN_2 LN_PI
 const LN_2: F64x2 = F64x2::from_bits(0x3FE62E42FEFA39EF, 0x3C7ABC9E3B39803F); // 6.931471805599453094172321214582e-1
 const LN_PI: F64x2 = F64x2::from_bits(0x3FF250D048E7A1BD, 0x3C67ABF2AD8D5088); // 1.144729885849400174143427351353e0
 
@@ -172,42 +172,6 @@ impl crate::generic::Gamma for f64 {
             }
         }
 
-        fn sin(x: F64x2) -> F64x2 {
-            // GENERATE: sin_poly F64x2 9
-            const K3: F64x2 = F64x2::from_bits(0xBFC5555555555555, 0xBC65555552CA81AF); // -1.666666666666666666666666009500e-1
-            const K5: F64x2 = F64x2::from_bits(0x3F81111111111111, 0x3C0110E7CB9CA23D); // 8.333333333333333333329065980117e-3
-            const K7: F64x2 = F64x2::from_bits(0xBF2A01A01A01A01A, 0xBB572C66C6063195); // -1.984126984126984126029916072419e-4
-            const K9: F64x2 = F64x2::from_bits(0x3EC71DE3A556C731, 0x3B475F97DC1DE3C8); // 2.755731922398588019213703214996e-6
-            const K11: F64x2 = F64x2::from_bits(0xBE5AE64567F53D3B, 0xBAE00414E69D7B82); // -2.505210838543523223314376036023e-8
-            const K13: F64x2 = F64x2::from_bits(0x3DE61246139A1624, 0x3A819409726D3F63); // 1.605904383439241982126200763062e-10
-            const K15: F64x2 = F64x2::from_bits(0xBD6AE7F3C61EDD83, 0xB9FE33789227A734); // -7.647163171398073276859390202776e-13
-            const K17: F64x2 = F64x2::from_bits(0x3CE9529972C79725, 0xB98E162BB6739F98); // 2.811379344450285307153501050905e-15
-            const K19: F64x2 = F64x2::from_bits(0xBC62D1434218BDB5, 0xB8F94EABF8C41E64); // -8.160760491214478515701493028147e-18
-
-            let x2 = x * x;
-            let x3 = x2 * x;
-
-            x + horner!(x3, x2, [K3, K5, K7, K9, K11, K13, K15, K17, K19])
-        }
-
-        fn cos(x: F64x2) -> F64x2 {
-            // GENERATE: cos_poly F64x2 8
-            const K4: F64x2 = F64x2::from_bits(0x3FA5555555555555, 0x3C4555424437931C); // 4.166666666666666666663512319225e-2
-            const K6: F64x2 = F64x2::from_bits(0xBF56C16C16C16C17, 0x3BEFF162A57E0BE3); // -1.388888888888888887780931530771e-3
-            const K8: F64x2 = F64x2::from_bits(0x3EFA01A01A01A016, 0xBB9B2646754AC2E7); // 2.480158730158728657597925339703e-5
-            const K10: F64x2 = F64x2::from_bits(0xBE927E4FB7789792, 0xBB29D6F71F4B35F6); // -2.755731922397533319638598669759e-7
-            const K12: F64x2 = F64x2::from_bits(0x3E21EED8EFE8FA9C, 0xBA9AA526C2C48394); // 2.087675698356730672524610350407e-9
-            const K14: F64x2 = F64x2::from_bits(0xBDA9397481DD9560, 0x3A432D3A3990DD4A); // -1.147074454371334149048113104850e-11
-            const K16: F64x2 = F64x2::from_bits(0x3D2AE7BB51F3606E, 0xB9CD962E42784608); // 4.779323963823227459005447965865e-14
-            const K18: F64x2 = F64x2::from_bits(0xBCA6556752093B7B, 0xB94DA7E65CAE91BA); // -1.549705349810074051809391126314e-16
-
-            let x2 = x * x;
-            let x4 = x2 * x2;
-
-            let t = horner!(x4, x2, [K4, K6, K8, K10, K12, K14, K16, K18]);
-            (t - x2 * 0.5) + 1.0
-        }
-
         let (y, sign) = if x.abs() <= 45.0 {
             // Split x = k + f + i, such as:
             //  * k is some constant
@@ -369,15 +333,7 @@ impl crate::generic::Gamma for f64 {
             let lg_nx = (ln_nx - 1.0) * nx - ln_nx.halve() + ln(p);
 
             if reflect {
-                let (n, z) = reduce_half_revs(x);
-                let z_rad = PI * z;
-                let sinpix = match n {
-                    0 => sin(z_rad),
-                    1 => cos(z_rad),
-                    2 => -sin(z_rad),
-                    3 => -cos(z_rad),
-                    _ => unreachable!(),
-                };
+                let sinpix = sinpi_f64x2(x);
 
                 // ln(abs(Γ(x))) = ln(π) - ln(abs(sin(πx))) - ln(Γ(1-x))
                 let lgx = LN_PI - ln(sinpix.abs()) - lg_nx;
