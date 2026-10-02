@@ -2,6 +2,36 @@ use std::fmt::Write as _;
 
 use super::{FloatKind, arg_utils, julia, render_const_dec_value, render_const_value, sollya};
 
+pub(super) fn gen_rsqrt_table(args: &[&str]) -> Result<String, String> {
+    arg_utils::expect_0_args(args)?;
+
+    let mut out = String::new();
+
+    let prec = 128;
+
+    writeln!(
+        out,
+        "// RSQRT_TBL[i] ~= 1 / sqrt(m) (0.16 fixed point), minimizing the maximum"
+    )
+    .unwrap();
+    writeln!(out, "// relative error for m in [a, b], with").unwrap();
+    writeln!(out, "// * a = 2^(i >> 6) * (1 + (i & 63) / 64)").unwrap();
+    writeln!(out, "// * b = 2^(i >> 6) * (1 + ((i & 63) + 1) / 64)").unwrap();
+    writeln!(out, "static RSQRT_TBL: [u16; 128] = [").unwrap();
+    for i in 0..128u32 {
+        let a = rug::Float::with_val(prec, 64 + (i & 63)) << (i >> 6);
+        let b = rug::Float::with_val(prec, 65 + (i & 63)) << (i >> 6);
+        // r = 2 / (sqrt(a) + sqrt(b)) minimizes max(|r * sqrt(m) - 1|) for m in [a, b]
+        // (a and b are scaled by 64, so sqrt(64) = 8 is compensated)
+        let r = rug::Float::with_val(prec, a.sqrt() + b.sqrt()).recip() * 16u8;
+        let v = (r << 16u32).to_integer().unwrap().to_u16().unwrap();
+        writeln!(out, "    0x{v:04X},").unwrap();
+    }
+    writeln!(out, "];").unwrap();
+
+    Ok(out)
+}
+
 pub(super) fn gen_cbrt_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
 
