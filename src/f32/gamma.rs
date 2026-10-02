@@ -1,9 +1,9 @@
 use super::log_core::log_core_f64;
-use crate::generic::{reduce_half_revs, round_fi};
+use super::trigonometric::sinpi_f64;
+use crate::generic::round_fi;
 use crate::traits::Float as _;
 
-// GENERATE: consts f64 PI LN_2 LN_PI
-const PI: f64 = f64::from_bits(0x400921FB54442D18); // 3.141592653589793e0
+// GENERATE: consts f64 LN_2 LN_PI
 const LN_2: f64 = f64::from_bits(0x3FE62E42FEFA39EF); // 6.931471805599453e-1
 const LN_PI: f64 = f64::from_bits(0x3FF250D048E7A1BD); // 1.1447298858494002e0
 
@@ -117,35 +117,6 @@ impl crate::generic::Gamma for f32 {
                 // ln(x) = ln(2^k * m) = k * ln(2) + ln(m)
                 LN_2 * k + (ln_hi + ln_lo)
             }
-        }
-
-        fn sin(x: f64) -> f64 {
-            // GENERATE: sin_poly f64 5
-            const K3: f64 = f64::from_bits(0xBFC55555555523A3); // -1.6666666666631355e-1
-            const K5: f64 = f64::from_bits(0x3F81111110C9C505); // 8.333333325227796e-3
-            const K7: f64 = f64::from_bits(0xBF2A019F951E65D9); // -1.9841263798241088e-4
-            const K9: f64 = f64::from_bits(0x3EC71D77844D2238); // 2.7555352367962157e-6
-            const K11: f64 = f64::from_bits(0xBE5A96524A73E8A7); // -2.476125318411175e-8
-
-            let x2 = x * x;
-            let x3 = x2 * x;
-
-            x + horner!(x3, x2, [K3, K5, K7, K9, K11])
-        }
-
-        fn cos(x: f64) -> f64 {
-            // GENERATE: cos_poly f64 5
-            const K4: f64 = f64::from_bits(0x3FA55555555530CC); // 4.1666666666601765e-2
-            const K6: f64 = f64::from_bits(0xBF56C16C1676455D); // -1.388888887820925e-3
-            const K8: f64 = f64::from_bits(0x3EFA019FAA234A38); // 2.4801580942599414e-5
-            const K10: f64 = f64::from_bits(0xBE927E026C5AAA26); // -2.755556177495311e-7
-            const K12: f64 = f64::from_bits(0x3E21BC68A677E1B1); // 2.0647388692416302e-9
-
-            let x2 = x * x;
-            let x4 = x2 * x2;
-
-            let t = horner!(x4, x2, [K4, K6, K8, K10, K12]);
-            (t - x2 * 0.5) + 1.0
         }
 
         let (y, sign) = if x.abs() <= 45.0 {
@@ -264,15 +235,7 @@ impl crate::generic::Gamma for f32 {
             let lg_nx = (nx - 0.5) * ln(nx) - nx + ln(p);
 
             if reflect {
-                let (n, z) = reduce_half_revs(x);
-                let z_rad = PI * f64::from(z);
-                let sinpix = match n {
-                    0 => sin(z_rad),
-                    1 => cos(z_rad),
-                    2 => -sin(z_rad),
-                    3 => -cos(z_rad),
-                    _ => unreachable!(),
-                };
+                let sinpix = sinpi_f64(x);
 
                 // ln(abs(Γ(x))) = ln(π) - ln(abs(sin(πx))) - ln(Γ(1-x))
                 let lgx = LN_PI - ln(sinpix.abs()) - lg_nx;

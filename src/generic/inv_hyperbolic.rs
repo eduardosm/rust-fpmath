@@ -49,6 +49,9 @@ pub(crate) fn atanh<F: InvHyperbolic>(x: F) -> F {
     } else if absx > F::ONE {
         // |x| > 1, return NaN
         F::NAN
+    } else if x.is_nan() {
+        // Propagate NaN
+        x
     } else {
         F::atanh_finite(x)
     }

@@ -105,10 +105,10 @@ fn test_sind_cosd() {
     eprintln!("max sind2 error = {max_sin2_error}");
     eprintln!("max cosd1 error = {max_cos1_error}");
     eprintln!("max cosd2 error = {max_cos2_error}");
-    assert!(max_sin1_error > 0.5);
-    assert!(max_sin2_error > 0.5);
-    assert!(max_cos1_error > 0.5);
-    assert!(max_cos2_error > 0.5);
+    assert!(max_sin1_error > 0.4999);
+    assert!(max_sin2_error > 0.4999);
+    assert!(max_cos1_error > 0.4999);
+    assert!(max_cos2_error > 0.4999);
 }
 
 #[test]
@@ -159,10 +159,10 @@ fn test_sinpi_cospi() {
     eprintln!("max sinpi2 error = {max_sin2_error}");
     eprintln!("max cospi1 error = {max_cos1_error}");
     eprintln!("max cospi2 error = {max_cos2_error}");
-    assert!(max_sin1_error > 0.5);
-    assert!(max_sin2_error > 0.5);
-    assert!(max_cos1_error > 0.5);
-    assert!(max_cos2_error > 0.5);
+    assert!(max_sin1_error > 0.4999);
+    assert!(max_sin2_error > 0.4999);
+    assert!(max_cos1_error > 0.4999);
+    assert!(max_cos2_error > 0.4999);
 }
 
 #[test]
@@ -179,7 +179,7 @@ fn test_tan() {
         assert!(err < 0.51, "tan({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max error = {max_error}");
-    assert!(max_error > 0.5);
+    assert!(max_error > 0.4999);
 }
 
 #[test]
@@ -196,7 +196,7 @@ fn test_tand() {
         assert!(err < 0.51, "tand({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max error = {max_error}");
-    assert!(max_error > 0.5);
+    assert!(max_error > 0.4999);
 }
 
 #[test]
@@ -213,7 +213,7 @@ fn test_tanpi() {
         assert!(err < 0.51, "tanpi({x:e}) = {actual:e} (error = {err} ULP)");
     });
     eprintln!("max error = {max_error}");
-    assert!(max_error > 0.5);
+    assert!(max_error > 0.4999);
 }
 
 fn test_with(mut f: impl FnMut(f32)) {

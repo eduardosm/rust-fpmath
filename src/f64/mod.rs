@@ -12,6 +12,8 @@ mod pow;
 mod sqrt;
 mod trigonometric;
 
+pub(crate) use trigonometric::{FRAC_64_PI, reduce_rad_large_sum, round_i, sin_cos_pi_64};
+
 impl crate::traits::Float for f64 {
     type Raw = u64;
 

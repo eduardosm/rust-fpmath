@@ -145,14 +145,17 @@ pub(super) fn gen_ln_lo_scale_table(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Approximation of `sin(x) / x - 1` in `[-range, range]` with the even
+/// powers `x^2, x^4, ...` (coefficients named `K3, K5, ...`).
+///
+/// Arguments: `fkind num_coeffs range`
 pub(super) fn gen_sin_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
+    let (fkind, num_coeffs, range0): (_, i32, f64) = arg_utils::parse_3_args(args)?;
 
     let mut out = String::new();
 
     let func = "sin(x) / x - 1";
     let poly_i = (1..=num_coeffs).map(|i| i * 2).collect::<Vec<_>>();
-    let range0 = 0.786; // ~= π/4
     let range = (-range0, range0);
 
     sollya::run_and_render_remez(fkind, func, range, &poly_i, 1, "K", &mut out);
@@ -160,14 +163,17 @@ pub(super) fn gen_sin_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Approximation of `cos(x) - (1 - x^2 / 2)` in `[-range, range]` with the
+/// even powers `x^4, x^6, ...` (coefficients named `K4, K6, ...`).
+///
+/// Arguments: `fkind num_coeffs range`
 pub(super) fn gen_cos_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
+    let (fkind, num_coeffs, range0): (_, i32, f64) = arg_utils::parse_3_args(args)?;
 
     let mut out = String::new();
 
     let func = "cos(x) - (1 - 0.5 * x^2)";
     let poly_i = (1..=num_coeffs).map(|i| i * 2 + 2).collect::<Vec<_>>();
-    let range0 = 0.786; // ~= π/4
     let range = (-range0, range0);
 
     sollya::run_and_render_remez(fkind, func, range, &poly_i, 0, "K", &mut out);
@@ -175,14 +181,65 @@ pub(super) fn gen_cos_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Table of `sin(i * π / n)` for `i` in `0..(2 * n)` (a full period).
+///
+/// The values are computed from the first quadrant, so the table is exactly
+/// symmetric: `SIN_PI_TBL[2n - i] == -SIN_PI_TBL[i]` and
+/// `SIN_PI_TBL[n/2 - i] == SIN_PI_TBL[n/2 + i]`.
+pub(super) fn gen_sin_pi_table(args: &[&str]) -> Result<String, String> {
+    let (fkind, n): (FloatKind, u32) = arg_utils::parse_2_args(args)?;
+    if n == 0 || n % 2 != 0 {
+        return Err(format!("n must be even and non-zero, found {n}"));
+    }
+
+    let mut out = String::new();
+
+    let ftype = fkind.name();
+    let prec = fkind.rug_aux_prec();
+    let len = 2 * n;
+
+    writeln!(out, "// SIN_PI_TBL[i] = sin(i * π / {n})").unwrap();
+    writeln!(out, "static SIN_PI_TBL: [{ftype}; {len}] = [").unwrap();
+    for i in 0..len {
+        // sin(i * π / n) = sign * sin(k * π / n), with 0 <= k <= n / 2
+        let negative = i >= n;
+        let mut k = i % n;
+        if k > n / 2 {
+            k = n - k;
+        }
+
+        let v = if k == 0 {
+            rug::Float::with_val(prec, 0)
+        } else if k == n / 2 {
+            rug::Float::with_val(prec, 1)
+        } else {
+            let angle = rug::Float::with_val(prec, rug::float::Constant::Pi) * k / n;
+            angle.sin()
+        };
+        let v = if negative && k != 0 { -v } else { v };
+
+        out.push_str("    ");
+        render_const_value(fkind, &v, &mut out);
+        out.push_str(", // ");
+        render_const_dec_value(fkind, &v, &mut out);
+        out.push('\n');
+    }
+    writeln!(out, "];").unwrap();
+
+    Ok(out)
+}
+
+/// Approximation of `tan(x) / x - 1` in `[-range, range]` with the even
+/// powers `x^2, x^4, ...` (coefficients named `K3, K5, ...`).
+///
+/// Arguments: `fkind num_coeffs range`
 pub(super) fn gen_tan_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
+    let (fkind, num_coeffs, range0): (_, i32, f64) = arg_utils::parse_3_args(args)?;
 
     let mut out = String::new();
 
     let func = "tan(x) / x - 1";
     let poly_i = (1..=num_coeffs).map(|i| i * 2).collect::<Vec<_>>();
-    let range0 = 0.393; // ~= π/8
     let range = (-range0, range0);
 
     sollya::run_and_render_remez(fkind, func, range, &poly_i, 1, "K", &mut out);

@@ -76,7 +76,7 @@ impl crate::traits::Float for f32 {
 
     #[inline]
     fn raw_exp_to_exp(e: Self::RawExp) -> Self::Exp {
-        i16::from(e.wrapping_sub(Self::EXP_OFFSET) as i8)
+        i16::from(e) - i16::from(Self::EXP_OFFSET)
     }
 
     #[inline]
