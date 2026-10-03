@@ -1,4 +1,4 @@
-use super::{RUG_PREC, calc_error_ulp, mk_normal, mk_subnormal, purify};
+use super::{RUG_PREC, check_result, mk_normal, mk_subnormal, purify};
 use crate::create_prng;
 
 #[test]
@@ -8,10 +8,7 @@ fn test_gamma() {
         let expected = rug::Float::with_val(RUG_PREC, x).gamma();
         let actual = fpmath::gamma(x);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "gamma({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error >= 0.5);
@@ -29,14 +26,8 @@ fn test_ln_gamma() {
         };
         let (actual, actual_sign) = fpmath::ln_gamma(x);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
         assert_eq!(expected_sign, actual_sign);
-        assert!(
-            err < 0.51,
-            "ln_gamma({x:e}) = {actual:e} (error = {err} ULP)",
-        );
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);

@@ -1,4 +1,4 @@
-use super::{RUG_PREC, calc_error_ulp, mk_normal, mk_subnormal};
+use super::{RUG_PREC, check_result, mk_normal, mk_subnormal};
 use crate::create_prng;
 
 #[test]
@@ -11,13 +11,7 @@ fn test_hypot() {
         assert_total_eq!(fpmath::hypot(x, -y), actual);
         assert_total_eq!(fpmath::hypot(-x, -y), actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(
-            err < 0.51,
-            "hypot({x:e}, {y:e}) = {actual:e} (error = {err} ULP)",
-        );
+        check_result((x, y), actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.4999);

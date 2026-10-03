@@ -33,6 +33,27 @@ fn mk_subnormal(m: u64, s: bool) -> f64 {
 
 const RUG_PREC: u32 = 53 + 20;
 
+fn check_result(
+    input: impl std::fmt::Debug,
+    actual: f64,
+    expected: rug::Float,
+    error_limit: f64,
+    max_error: &mut f64,
+) {
+    let expected_is_neg = expected.is_sign_negative();
+    let err = calc_error_ulp(actual, expected);
+    *max_error = max_error.max(err);
+
+    assert!(err < error_limit, "input = {input:?}, error = {err} ULP");
+    if !actual.is_nan() {
+        assert_eq!(
+            actual.is_sign_negative(),
+            expected_is_neg,
+            "input = {input:?}, sign mismatch",
+        );
+    }
+}
+
 fn calc_error_ulp(actual: f64, expected: rug::Float) -> f64 {
     let actual = purify(actual);
 

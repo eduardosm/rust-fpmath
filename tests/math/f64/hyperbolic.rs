@@ -1,4 +1,4 @@
-use super::{RUG_PREC, calc_error_ulp, mk_normal};
+use super::{RUG_PREC, check_result, mk_normal};
 use crate::create_prng;
 
 #[test]
@@ -18,33 +18,22 @@ fn test_sinh_cosh() {
         assert_total_eq!(fpmath::cosh(-x), actual_cos1);
         assert_total_eq!(fpmath::sinh_cosh(-x), (-actual_sin2, actual_cos2));
 
-        let sin1_err = calc_error_ulp(actual_sin1, expected_sin.clone());
-        let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
-        let cos1_err = calc_error_ulp(actual_cos1, expected_cos.clone());
-        let cos2_err = calc_error_ulp(actual_cos2, expected_cos);
-
-        max_sin1_error = max_sin1_error.max(sin1_err);
-        max_sin2_error = max_sin2_error.max(sin2_err);
-        max_cos1_error = max_cos1_error.max(cos1_err);
-        max_cos2_error = max_cos2_error.max(cos2_err);
-
-        assert!(
-            sin1_err < 0.51,
-            "sinh({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
+        check_result(
+            x,
+            actual_sin1,
+            expected_sin.clone(),
+            0.51,
+            &mut max_sin1_error,
         );
-        assert!(
-            sin2_err < 0.51,
-            "sinh({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
+        check_result(x, actual_sin2, expected_sin, 0.51, &mut max_sin2_error);
+        check_result(
+            x,
+            actual_cos1,
+            expected_cos.clone(),
+            0.51,
+            &mut max_cos1_error,
         );
-
-        assert!(
-            cos1_err < 0.51,
-            "cosh({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
-        );
-        assert!(
-            cos2_err < 0.51,
-            "cosh({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
-        );
+        check_result(x, actual_cos2, expected_cos, 0.51, &mut max_cos2_error);
     });
     eprintln!("max sinh1 error = {max_sin1_error}");
     eprintln!("max sinh2 error = {max_sin2_error}");
@@ -64,10 +53,7 @@ fn test_tanh() {
         let actual = fpmath::tanh(x);
         assert_total_eq!(fpmath::tanh(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "tanh({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error >= 0.4999);

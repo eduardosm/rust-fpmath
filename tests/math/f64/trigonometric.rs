@@ -1,4 +1,4 @@
-use super::{RUG_PREC, calc_error_ulp, mk_normal, mk_subnormal, purify};
+use super::{RUG_PREC, check_result, mk_normal, mk_subnormal, purify};
 use crate::create_prng;
 
 #[test]
@@ -18,33 +18,22 @@ fn test_sin_cos() {
         assert_total_eq!(fpmath::cos(-x), actual_cos1);
         assert_total_eq!(fpmath::sin_cos(-x), (-actual_sin2, actual_cos2));
 
-        let sin1_err = calc_error_ulp(actual_sin1, expected_sin.clone());
-        let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
-        let cos1_err = calc_error_ulp(actual_cos1, expected_cos.clone());
-        let cos2_err = calc_error_ulp(actual_cos2, expected_cos);
-
-        max_sin1_error = max_sin1_error.max(sin1_err);
-        max_sin2_error = max_sin2_error.max(sin2_err);
-        max_cos1_error = max_cos1_error.max(cos1_err);
-        max_cos2_error = max_cos2_error.max(cos2_err);
-
-        assert!(
-            sin1_err < 0.51,
-            "sin({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
+        check_result(
+            x,
+            actual_sin1,
+            expected_sin.clone(),
+            0.51,
+            &mut max_sin1_error,
         );
-        assert!(
-            sin2_err < 0.51,
-            "sin({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
+        check_result(x, actual_sin2, expected_sin, 0.51, &mut max_sin2_error);
+        check_result(
+            x,
+            actual_cos1,
+            expected_cos.clone(),
+            0.51,
+            &mut max_cos1_error,
         );
-
-        assert!(
-            cos1_err < 0.51,
-            "cos({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
-        );
-        assert!(
-            cos2_err < 0.51,
-            "cos({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
-        );
+        check_result(x, actual_cos2, expected_cos, 0.51, &mut max_cos2_error);
     });
     eprintln!("max sin1 error = {max_sin1_error}");
     eprintln!("max sin2 error = {max_sin2_error}");
@@ -73,33 +62,22 @@ fn test_sind_cosd() {
         assert_total_eq!(fpmath::cosd(-x), actual_cos1);
         assert_total_eq!(fpmath::sind_cosd(-x), (-actual_sin2, actual_cos2));
 
-        let sin1_err = calc_error_ulp(actual_sin1, expected_sin.clone());
-        let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
-        let cos1_err = calc_error_ulp(actual_cos1, expected_cos.clone());
-        let cos2_err = calc_error_ulp(actual_cos2, expected_cos);
-
-        max_sin1_error = max_sin1_error.max(sin1_err);
-        max_sin2_error = max_sin2_error.max(sin2_err);
-        max_cos1_error = max_cos1_error.max(cos1_err);
-        max_cos2_error = max_cos2_error.max(cos2_err);
-
-        assert!(
-            sin1_err < 0.51,
-            "sind({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
+        check_result(
+            x,
+            actual_sin1,
+            expected_sin.clone(),
+            0.51,
+            &mut max_sin1_error,
         );
-        assert!(
-            sin2_err < 0.51,
-            "sind({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
+        check_result(x, actual_sin2, expected_sin, 0.51, &mut max_sin2_error);
+        check_result(
+            x,
+            actual_cos1,
+            expected_cos.clone(),
+            0.51,
+            &mut max_cos1_error,
         );
-
-        assert!(
-            cos1_err < 0.51,
-            "cosd({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
-        );
-        assert!(
-            cos2_err < 0.51,
-            "cosd({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
-        );
+        check_result(x, actual_cos2, expected_cos, 0.51, &mut max_cos2_error);
     });
     eprintln!("max sind1 error = {max_sin1_error}");
     eprintln!("max sind2 error = {max_sin2_error}");
@@ -128,33 +106,22 @@ fn test_sinpi_cospi() {
         assert_total_eq!(fpmath::cospi(-x), actual_cos1);
         assert_total_eq!(fpmath::sinpi_cospi(-x), (-actual_sin2, actual_cos2));
 
-        let sin1_err = calc_error_ulp(actual_sin1, expected_sin.clone());
-        let sin2_err = calc_error_ulp(actual_sin2, expected_sin);
-        let cos1_err = calc_error_ulp(actual_cos1, expected_cos.clone());
-        let cos2_err = calc_error_ulp(actual_cos2, expected_cos);
-
-        max_sin1_error = max_sin1_error.max(sin1_err);
-        max_sin2_error = max_sin2_error.max(sin2_err);
-        max_cos1_error = max_cos1_error.max(cos1_err);
-        max_cos2_error = max_cos2_error.max(cos2_err);
-
-        assert!(
-            sin1_err < 0.51,
-            "sinpi({x:e}) = {actual_sin1:e} (error = {sin1_err} ULP)",
+        check_result(
+            x,
+            actual_sin1,
+            expected_sin.clone(),
+            0.51,
+            &mut max_sin1_error,
         );
-        assert!(
-            sin2_err < 0.51,
-            "sinpi({x:e}) = {actual_sin2:e} (error = {sin2_err} ULP)",
+        check_result(x, actual_sin2, expected_sin, 0.51, &mut max_sin2_error);
+        check_result(
+            x,
+            actual_cos1,
+            expected_cos.clone(),
+            0.51,
+            &mut max_cos1_error,
         );
-
-        assert!(
-            cos1_err < 0.51,
-            "cospi({x:e}) = {actual_cos1:e} (error = {cos1_err} ULP)",
-        );
-        assert!(
-            cos2_err < 0.51,
-            "cospi({x:e}) = {actual_cos2:e} (error = {cos2_err} ULP)",
-        );
+        check_result(x, actual_cos2, expected_cos, 0.51, &mut max_cos2_error);
     });
     eprintln!("max sinpi1 error = {max_sin1_error}");
     eprintln!("max sinpi2 error = {max_sin2_error}");
@@ -174,10 +141,7 @@ fn test_tan() {
         let actual = fpmath::tan(x);
         assert_total_eq!(fpmath::tan(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "tan({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -191,10 +155,7 @@ fn test_tand() {
         let actual = fpmath::tand(x);
         assert_total_eq!(fpmath::tand(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "tand({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -208,10 +169,7 @@ fn test_tanpi() {
         let actual = fpmath::tanpi(x);
         assert_total_eq!(fpmath::tanpi(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "tanpi({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);

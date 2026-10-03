@@ -30,6 +30,26 @@ fn mk_subnormal(m: u32, s: bool) -> f32 {
     f32::from_bits(m | s)
 }
 
+fn check_result(
+    input: impl std::fmt::Debug,
+    actual: f32,
+    expected: f64,
+    error_limit: f32,
+    max_error: &mut f32,
+) {
+    let err = calc_error_ulp(actual, expected);
+    *max_error = max_error.max(err);
+
+    assert!(err < error_limit, "input = {input:?}, error = {err} ULP");
+    if !actual.is_nan() {
+        assert_eq!(
+            actual.is_sign_negative(),
+            expected.is_sign_negative(),
+            "input = {input:?}, sign mismatch",
+        );
+    }
+}
+
 fn calc_error_ulp(actual: f32, expected: f64) -> f32 {
     let actual = purify(actual);
 
