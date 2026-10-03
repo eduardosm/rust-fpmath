@@ -1,4 +1,4 @@
-use super::{RUG_PREC, calc_error_ulp, mk_normal, purify};
+use super::{RUG_PREC, check_result, mk_normal, purify};
 use crate::create_prng;
 
 #[test]
@@ -9,10 +9,7 @@ fn test_asin() {
         let actual = fpmath::asin(x);
         assert_total_eq!(fpmath::asin(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "asin({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -25,10 +22,7 @@ fn test_acos() {
         let expected = rug::Float::with_val(RUG_PREC, x).acos();
         let actual = fpmath::acos(x);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "acos({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -42,10 +36,7 @@ fn test_asind() {
         let actual = fpmath::asind(x);
         assert_total_eq!(fpmath::asind(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "asind({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -58,10 +49,7 @@ fn test_acosd() {
         let expected = rug::Float::with_val(RUG_PREC, x).acos_u(360);
         let actual = fpmath::acosd(x);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "acosd({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.4999);
@@ -75,10 +63,7 @@ fn test_asinpi() {
         let actual = fpmath::asinpi(x);
         assert_total_eq!(fpmath::asinpi(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "asinpi({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -91,10 +76,7 @@ fn test_acospi() {
         let expected = rug::Float::with_val(RUG_PREC, x).acos_pi();
         let actual = fpmath::acospi(x);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "acospi({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error >= 0.5);
@@ -150,10 +132,7 @@ fn test_atan() {
         let actual = fpmath::atan(x);
         assert_total_eq!(fpmath::atan(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "atan({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -167,10 +146,7 @@ fn test_atand() {
         let actual = fpmath::atand(x);
         assert_total_eq!(fpmath::atand(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "atand({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -184,10 +160,7 @@ fn test_atanpi() {
         let actual = fpmath::atanpi(x);
         assert_total_eq!(fpmath::atanpi(-x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "atanpi({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -215,13 +188,7 @@ fn test_atan2() {
         let actual = fpmath::atan2(y, x);
         assert_total_eq!(fpmath::atan2(-y, x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(
-            err < 0.51,
-            "atan2({y:e}, {x:e}) = {actual:e} (error = {err} ULP)",
-        );
+        check_result((y, x), actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -236,13 +203,7 @@ fn test_atan2d() {
         let actual = fpmath::atan2d(y, x);
         assert_total_eq!(fpmath::atan2d(-y, x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(
-            err < 0.51,
-            "atan2d({y:e}, {x:e}) = {actual:e} (error = {err} ULP)",
-        );
+        check_result((y, x), actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -257,13 +218,7 @@ fn test_atan2pi() {
         let actual = fpmath::atan2pi(y, x);
         assert_total_eq!(fpmath::atan2pi(-y, x), -actual);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(
-            err < 0.51,
-            "atan2pi({y:e}, {x:e}) = {actual:e} (error = {err} ULP)",
-        );
+        check_result((y, x), actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);

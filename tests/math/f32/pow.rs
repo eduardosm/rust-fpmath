@@ -1,6 +1,6 @@
 use rand::RngExt as _;
 
-use super::{calc_error_ulp, mk_normal, mk_subnormal, purify};
+use super::{check_result, mk_normal, mk_subnormal, purify};
 use crate::create_prng;
 
 #[test]
@@ -10,13 +10,7 @@ fn test_pow() {
         let expected = fpmath::pow(f64::from(x), f64::from(y));
         let actual = fpmath::pow(x, y);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(
-            err < 0.51,
-            "pow({x:e}, {y:e}) = {actual:e} (error = {err} ULP)",
-        );
+        check_result((x, y), actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -97,13 +91,7 @@ fn test_powi() {
         let expected = fpmath::powi(f64::from(x), y);
         let actual = fpmath::powi(x, y);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(
-            err < 0.51,
-            "powi({x:e}, {y}) = {actual:e} (error = {err} ULP)",
-        );
+        check_result((x, y), actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);

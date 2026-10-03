@@ -1,4 +1,4 @@
-use super::{calc_error_ulp, mk_normal, mk_subnormal};
+use super::{check_result, mk_normal, mk_subnormal};
 use crate::create_prng;
 
 #[test]
@@ -8,10 +8,7 @@ fn test_ln() {
         let expected = fpmath::ln(f64::from(x));
         let actual = fpmath::ln(x);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "ln({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -24,10 +21,7 @@ fn test_ln_1p() {
         let expected = fpmath::ln_1p(f64::from(x));
         let actual = fpmath::ln_1p(x);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "ln_1p({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -40,10 +34,7 @@ fn test_log2() {
         let expected = fpmath::log2(f64::from(x));
         let actual = fpmath::log2(x);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "log2({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
@@ -56,10 +47,7 @@ fn test_log10() {
         let expected = fpmath::log10(f64::from(x));
         let actual = fpmath::log10(x);
 
-        let err = calc_error_ulp(actual, expected);
-        max_error = max_error.max(err);
-
-        assert!(err < 0.51, "log10({x:e}) = {actual:e} (error = {err} ULP)");
+        check_result(x, actual, expected, 0.51, &mut max_error);
     });
     eprintln!("max error = {max_error}");
     assert!(max_error > 0.5);
