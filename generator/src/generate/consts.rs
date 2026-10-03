@@ -1,5 +1,9 @@
 use super::{FloatKind, render_const};
 
+/// Generates the named mathematical constants (e.g., `PI`, `LN_2`) with type
+/// `fkind`.
+///
+/// Arguments: `fkind NAME...`
 pub(super) fn gen_consts(args: &[&str]) -> Result<String, String> {
     let mut args = args.iter().copied();
 
