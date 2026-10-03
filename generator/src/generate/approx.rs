@@ -2,6 +2,13 @@ use std::fmt::Write as _;
 
 use super::{FloatKind, arg_utils, julia, render_const_dec_value, render_const_value, sollya};
 
+/// Generates a table of 128 approximations of `1 / sqrt(m)` for `m` in
+/// `[1, 4)`, in 0.16 fixed point. Entry `i` covers the subinterval
+/// `[a, b]`, with `a = 2^(i >> 6) * (1 + (i & 63) / 64)` and
+/// `b = 2^(i >> 6) * (1 + ((i & 63) + 1) / 64)`, and minimizes the maximum
+/// relative error in it.
+///
+/// Arguments: none
 pub(super) fn gen_rsqrt_table(args: &[&str]) -> Result<String, String> {
     arg_utils::expect_0_args(args)?;
 
@@ -32,6 +39,10 @@ pub(super) fn gen_rsqrt_table(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `x^(1/3)` in `[1 - 0.001, 2 + 0.001]` with
+/// the powers `1, x, x^2, ...`.
+///
+/// Arguments: `fkind num_coeffs`
 pub(super) fn gen_cbrt_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
 
@@ -46,6 +57,10 @@ pub(super) fn gen_cbrt_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `((1 + x)^(1/3) - 1) / x` in
+/// `[range_start, range_end]` with the powers `1, x, x^2, ...`.
+///
+/// Arguments: `fkind num_coeffs range_start range_end`
 pub(super) fn gen_cbrt_1p_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
 
@@ -60,6 +75,10 @@ pub(super) fn gen_cbrt_1p_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `(exp(x) - 1) / x - 1` in
+/// `[range_start, range_end]` with the powers `x, x^2, ...`.
+///
+/// Arguments: `fkind num_coeffs range_start range_end`
 pub(super) fn gen_exp_m1_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
 
@@ -74,6 +93,10 @@ pub(super) fn gen_exp_m1_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `ln(1 + x) / x - 1` in
+/// `[range_start, range_end]` with the powers `x, x^2, ...`.
+///
+/// Arguments: `fkind num_coeffs range_start range_end`
 pub(super) fn gen_ln_1p_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
 
@@ -88,6 +111,14 @@ pub(super) fn gen_ln_1p_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates a table of `-ln(LN_LO_SCALE_TBL[i])` (i.e., approximately
+/// `ln(1 + i / 2^bits)`) for `i` in `0..=2^bits`, with values of type
+/// `fkind`.
+///
+/// `LN_LO_SCALE_TBL[i]` is rounded to `scale_fkind`, so `scale_fkind` and
+/// `bits` must match the arguments of `ln_lo_scale_table`.
+///
+/// Arguments: `scale_fkind fkind bits`
 pub(super) fn gen_ln_table(args: &[&str]) -> Result<String, String> {
     let (scale_fkind, fkind, bits): (FloatKind, FloatKind, u32) = arg_utils::parse_3_args(args)?;
 
@@ -120,6 +151,9 @@ pub(super) fn gen_ln_table(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates a table of `1 / (1 + i / 2^bits)` for `i` in `0..=2^bits`.
+///
+/// Arguments: `fkind bits`
 pub(super) fn gen_ln_lo_scale_table(args: &[&str]) -> Result<String, String> {
     let (fkind, bits): (FloatKind, u32) = arg_utils::parse_2_args(args)?;
 
@@ -145,8 +179,8 @@ pub(super) fn gen_ln_lo_scale_table(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
-/// Approximation of `sin(x) / x - 1` in `[-range, range]` with the even
-/// powers `x^2, x^4, ...` (coefficients named `K3, K5, ...`).
+/// Generates an approximation of `sin(x) / x - 1` in `[-range, range]` with
+/// the even powers `x^2, x^4, ...`.
 ///
 /// Arguments: `fkind num_coeffs range`
 pub(super) fn gen_sin_poly(args: &[&str]) -> Result<String, String> {
@@ -163,8 +197,8 @@ pub(super) fn gen_sin_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
-/// Approximation of `cos(x) - (1 - x^2 / 2)` in `[-range, range]` with the
-/// even powers `x^4, x^6, ...` (coefficients named `K4, K6, ...`).
+/// Generates an approximation of `cos(x) - (1 - x^2 / 2)` in `[-range, range]`
+/// with the even powers `x^4, x^6, ...`.
 ///
 /// Arguments: `fkind num_coeffs range`
 pub(super) fn gen_cos_poly(args: &[&str]) -> Result<String, String> {
@@ -181,7 +215,7 @@ pub(super) fn gen_cos_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
-/// Table of `sin(i * π / n)` for `i` in `0..(2 * n)` (a full period).
+/// Generates a table of `sin(i * π / n)` for `i` in `0..(2 * n)` (a full period).
 ///
 /// The values are computed from the first quadrant, so the table is exactly
 /// symmetric: `SIN_PI_TBL[2n - i] == -SIN_PI_TBL[i]` and
@@ -229,8 +263,8 @@ pub(super) fn gen_sin_pi_table(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
-/// Approximation of `tan(x) / x - 1` in `[-range, range]` with the even
-/// powers `x^2, x^4, ...` (coefficients named `K3, K5, ...`).
+/// Generates an approximation of `tan(x) / x - 1` in `[-range, range]` with
+/// the even powers `x^2, x^4, ...`.
 ///
 /// Arguments: `fkind num_coeffs range`
 pub(super) fn gen_tan_poly(args: &[&str]) -> Result<String, String> {
@@ -247,6 +281,10 @@ pub(super) fn gen_tan_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `asin(x) - x` in `[-0.00001, 0.50001]` with
+/// the odd powers `x^3, x^5, ...`.
+///
+/// Arguments: `fkind num_coeffs`
 pub(super) fn gen_asin_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
 
@@ -261,6 +299,10 @@ pub(super) fn gen_asin_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `atan(x) - x` in `[range_start, range_end]`
+/// with the odd powers `x^3, x^5, ...`.
+///
+/// Arguments: `fkind num_coeffs range_start range_end`
 pub(super) fn gen_atan_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
 
@@ -275,6 +317,10 @@ pub(super) fn gen_atan_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `asinh(x) / x - 1` in
+/// `[range_start, range_end]` with the even powers `x^2, x^4, ...`.
+///
+/// Arguments: `fkind num_coeffs range_start range_end`
 pub(super) fn gen_asinh_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
 
@@ -289,6 +335,10 @@ pub(super) fn gen_asinh_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `Γ(x + offset)` in `[range_start, range_end]`
+/// with the powers `1, x, ..., x^poly_deg`, minimizing the relative error.
+///
+/// Arguments: `fkind poly_deg offset range_start range_end`
 pub(super) fn gen_gamma_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, poly_deg, offset, range_start, range_end): (_, i32, f64, f64, f64) =
         arg_utils::parse_5_args(args)?;
@@ -304,6 +354,12 @@ pub(super) fn gen_gamma_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `ln(Γ(x + offset)) / x` in
+/// `[range_start, range_end]` with the powers `1, x, ..., x^(poly_deg - 1)`,
+/// minimizing the relative error (i.e., `ln(Γ(x + offset))` is approximated
+/// with the powers `x, x^2, ..., x^poly_deg`).
+///
+/// Arguments: `fkind poly_deg offset range_start range_end`
 pub(super) fn gen_ln_gamma_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, poly_deg, offset, range_start, range_end): (_, i32, f64, f64, f64) =
         arg_utils::parse_5_args(args)?;
@@ -319,6 +375,14 @@ pub(super) fn gen_ln_gamma_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of
+/// `Γ(1 / x) / ((1 / x + g - 0.5)^(1 / x - 0.5) * exp(-(1 / x + g - 0.5)))`
+/// in `[range_start, range_end]` with the powers `1, x, ..., x^poly_deg`.
+///
+/// This is a Lanczos-like approximation:
+/// `Γ(z) ~= (z + g - 0.5)^(z - 0.5) * exp(-(z + g - 0.5)) * P(1 / z)`.
+///
+/// Arguments: `fkind poly_deg g range_start range_end`
 pub(super) fn gen_gamma_lanczos_poly(args: &[&str]) -> Result<String, String> {
     let (fkind, poly_deg, g, range_start, range_end): (_, i32, f64, f64, f64) =
         arg_utils::parse_5_args(args)?;
