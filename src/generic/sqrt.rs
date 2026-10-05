@@ -87,12 +87,8 @@ mod tests {
     use crate::FloatMath;
     use crate::traits::Float;
 
-    fn test<F: Float + FloatMath>(
-        full_e_mants: impl Clone + Iterator<Item = u64>,
-        extra_e: impl Iterator<Item = i32>,
-        extra_e_mants: impl Clone + Iterator<Item = u64>,
-    ) {
-        use crate::{scalbn, sqrt};
+    fn test<F: Float + FloatMath>() {
+        use crate::sqrt;
 
         assert_is_nan!(sqrt(F::NAN));
         assert_is_nan!(sqrt(F::NEG_INFINITY));
@@ -100,32 +96,15 @@ mod tests {
         assert_total_eq!(sqrt(F::INFINITY), F::INFINITY);
         assert_total_eq!(sqrt(F::ZERO), F::ZERO);
         assert_total_eq!(sqrt(-F::ZERO), -F::ZERO);
-
-        let min_normal_exp: i32 = F::MIN_NORMAL_EXP.into();
-        let e_limit = (-min_normal_exp) / 2;
-        for e in (-e_limit)..e_limit {
-            for m in full_e_mants.clone() {
-                let x = scalbn(F::cast_from(m), e - m.ilog2() as i32);
-                let x2 = x * x;
-                assert_total_eq!(sqrt(x2), x);
-            }
-        }
-        for e in extra_e {
-            for m in extra_e_mants.clone() {
-                let x = scalbn(F::cast_from(m), e - m.ilog2() as i32);
-                let x2 = x * x;
-                assert_total_eq!(sqrt(x2), x);
-            }
-        }
     }
 
     #[test]
     fn test_f32() {
-        test::<f32>(0x800..=0xFFF, core::iter::empty(), core::iter::empty());
+        test::<f32>();
     }
 
     #[test]
     fn test_f64() {
-        test::<f64>(0x800..=0xFFF, [-511, 0, 511].into_iter(), 0x8000..=0xFFFF);
+        test::<f64>();
     }
 }

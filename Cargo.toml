@@ -17,10 +17,6 @@ default = []
 
 [dependencies]
 
-[dev-dependencies]
-rand = { version = "0.10.2", default-features = false }
-rand_pcg = "0.10.2"
-
 [dev-dependencies.rug]
 version = "1.30.0"
 default-features = false

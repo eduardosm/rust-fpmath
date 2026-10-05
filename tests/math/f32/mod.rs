@@ -1,5 +1,6 @@
 mod cbrt;
 mod exp;
+mod frexp;
 mod gamma;
 mod hyperbolic;
 mod hypot;
@@ -8,39 +9,19 @@ mod inv_trigonometric;
 mod log;
 mod pow;
 mod round;
+mod scalbn;
 mod sqrt;
 mod trigonometric;
+mod values;
 
-const MAX_MANTISSA: u32 = (1 << 23) - 1;
+const MIN_MAX_ERROR: f32 = 0.4999;
+const ERROR_LIMIT: f32 = 0.51;
 
-fn gen_mantissa(rng: &mut impl rand::RngExt) -> u32 {
-    rng.random::<u32>() >> (32 - 23)
-}
-
-fn mk_normal(m: u32, e: i16, s: bool) -> f32 {
-    assert!(matches!(e, -126..=127));
-    let e = u32::from((e + 127) as u16) << 23;
-    let s = u32::from(s) << 31;
-    f32::from_bits(m | e | s)
-}
-
-fn mk_subnormal(m: u32, s: bool) -> f32 {
-    assert!(m < (1 << 23));
-    let s = u32::from(s) << 31;
-    f32::from_bits(m | s)
-}
-
-fn check_result(
-    input: impl std::fmt::Debug,
-    actual: f32,
-    expected: f64,
-    error_limit: f32,
-    max_error: &mut f32,
-) {
+fn check_result(input: impl std::fmt::Debug, actual: f32, expected: f64, max_error: &mut f32) {
     let err = calc_error_ulp(actual, expected);
     *max_error = max_error.max(err);
 
-    assert!(err < error_limit, "input = {input:?}, error = {err} ULP");
+    assert!(err < ERROR_LIMIT, "input = {input:?}, error = {err} ULP");
     if !actual.is_nan() {
         assert_eq!(
             actual.is_sign_negative(),
@@ -50,8 +31,8 @@ fn check_result(
     }
 }
 
-/// Calculates the error of `actual` in ULPs with respect to the exact result
-/// `expected`.
+/// Calculates the error of `actual` in ULPs with respect to the reference
+/// result `expected`.
 ///
 /// The distance is measured with the local spacing of the values: each
 /// interval between two consecutive values counts as one ULP, and the
@@ -106,14 +87,14 @@ fn calc_error_ulp(actual: f32, expected: f64) -> f32 {
 
 /// Position of `x` in the ordered sequence of values (`+0` and `-0` are
 /// both mapped to zero).
-pub(crate) fn ordinal(x: f32) -> i32 {
+fn ordinal(x: f32) -> i32 {
     let bits = x.to_bits();
     let mag = (bits & !0x8000_0000) as i32;
     if (bits & 0x8000_0000) != 0 { -mag } else { mag }
 }
 
 /// Inverse of [`ordinal`] (zero is mapped to `+0`).
-pub(crate) fn from_ordinal(ord: i32) -> f32 {
+fn from_ordinal(ord: i32) -> f32 {
     if ord < 0 {
         f32::from_bits(ord.unsigned_abs() | 0x8000_0000)
     } else {
@@ -131,9 +112,14 @@ fn purify(x: f32) -> f32 {
     std::hint::black_box(x)
 }
 
-impl crate::TotalEq for f32 {
-    fn total_eq(&self, other: &Self) -> bool {
-        self.to_bits() == other.to_bits()
+impl crate::ResultEq for f32 {
+    fn result_eq(&self, other: &Self) -> bool {
+        if self.is_nan() && other.is_nan() {
+            // NaNs with different payloads or signs are considered equal.
+            true
+        } else {
+            self.to_bits() == other.to_bits()
+        }
     }
 }
 
@@ -174,4 +160,27 @@ fn test_calc_error_ulp() {
         calc_error_ulp(f32::MIN_POSITIVE, f64::from(pred(f32::MIN_POSITIVE))),
         1.0
     );
+
+    // Exact ties, zeros and NaN
+    assert_eq!(calc_error_ulp(1.5, near(1.5, 0.5)), 0.5);
+    assert_eq!(calc_error_ulp(succ(1.5), near(1.5, 0.5)), 0.5);
+    assert_eq!(calc_error_ulp(0.0, -0.0), 0.0);
+    assert_eq!(calc_error_ulp(-0.0, 0.0), 0.0);
+    assert_eq!(calc_error_ulp(f32::NAN, f64::NAN), 0.0);
+    assert_eq!(calc_error_ulp(1.0, f64::NAN), f32::INFINITY);
+    assert_eq!(calc_error_ulp(f32::NAN, 1.0), f32::INFINITY);
+
+    // `expected` rounded to `f32` above the exact result, where the interval
+    // below it must be used (the algorithm corrects `lo`): to infinity in
+    // `[MAX + ulp/2, 2^128)`, and towards zero to a power of two when
+    // negative.
+    assert_eq!(calc_error_ulp(f32::MAX, near(f32::MAX, 0.75)), 0.75);
+    assert_eq!(calc_error_ulp(f32::INFINITY, near(f32::MAX, 0.75)), 0.25);
+    assert_eq!(calc_error_ulp(-1.0, near(-1.0, -0.25)), 0.25);
+    assert_eq!(calc_error_ulp(-succ(1.0), near(-1.0, -0.25)), 0.75);
+    assert_eq!(calc_error_ulp(-f32::MAX, near(-f32::MAX, -0.25)), 0.25);
+    // Tiny negative results, rounded to `-0` (whose ordinal is zero, like
+    // `+0`).
+    assert_eq!(calc_error_ulp(-0.0, -f64::from(min) / 4.0), 0.25);
+    assert_eq!(calc_error_ulp(-min, -f64::from(min) / 4.0), 0.75);
 }

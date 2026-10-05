@@ -1,145 +1,340 @@
-use super::{RUG_PREC, check_result, mk_normal, mk_subnormal};
-use crate::create_prng;
+use super::{MIN_MAX_ERROR, RUG_PREC, check_result, exponent, purify, values};
 
 #[test]
 fn test_ln() {
     let mut max_error: f64 = 0.0;
-    test_log_with(|x| {
+    test_log_with(Func::Ln, |x| {
         let expected = rug::Float::with_val(RUG_PREC, x).ln();
         let actual = fpmath::ln(x);
 
-        check_result(x, actual, expected, 0.51, &mut max_error);
+        check_result(x, actual, expected, &mut max_error);
     });
     eprintln!("max error = {max_error}");
-    assert!(max_error >= 0.5);
+    assert!(max_error > MIN_MAX_ERROR);
 }
 
 #[test]
 fn test_ln_1p() {
     let mut max_error: f64 = 0.0;
-    test_log1p_with(|x| {
+    test_ln_1p_with(|x| {
         let expected = rug::Float::with_val(RUG_PREC, x).ln_1p();
         let actual = fpmath::ln_1p(x);
 
-        check_result(x, actual, expected, 0.51, &mut max_error);
+        check_result(x, actual, expected, &mut max_error);
     });
     eprintln!("max error = {max_error}");
-    assert!(max_error >= 0.5);
+    assert!(max_error > MIN_MAX_ERROR);
 }
 
 #[test]
 fn test_log2() {
     let mut max_error: f64 = 0.0;
-    test_log_with(|x| {
+    test_log_with(Func::Log2, |x| {
         let expected = rug::Float::with_val(RUG_PREC, x).log2();
         let actual = fpmath::log2(x);
 
-        check_result(x, actual, expected, 0.51, &mut max_error);
+        check_result(x, actual, expected, &mut max_error);
     });
     eprintln!("max error = {max_error}");
-    assert!(max_error >= 0.5);
+    assert!(max_error > MIN_MAX_ERROR);
 }
 
 #[test]
 fn test_log10() {
     let mut max_error: f64 = 0.0;
-    test_log_with(|x| {
+    test_log_with(Func::Log10, |x| {
         let expected = rug::Float::with_val(RUG_PREC, x).log10();
         let actual = fpmath::log10(x);
 
-        check_result(x, actual, expected, 0.51, &mut max_error);
+        check_result(x, actual, expected, &mut max_error);
     });
     eprintln!("max error = {max_error}");
-    assert!(max_error >= 0.5);
+    assert!(max_error > MIN_MAX_ERROR);
 }
 
-fn test_log_with(mut f: impl FnMut(f64)) {
-    let mut rng = create_prng();
+/// A function of the `log` family.
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Func {
+    Ln,
+    Ln1p,
+    Log2,
+    Log10,
+}
 
-    for e in -1..=0 {
-        for _ in 0..100000 {
-            let m = super::gen_mantissa(&mut rng);
-            f(mk_normal(m, e, false));
+/// Precision used to calculate the test values.
+const EXT_PREC: u32 = 256;
+
+impl Func {
+    /// Calculates the function with high precision.
+    fn eval(self, x: &rug::Float) -> rug::Float {
+        let x = rug::Float::with_val(EXT_PREC, x);
+        match self {
+            Self::Ln => x.ln(),
+            Self::Ln1p => x.ln_1p(),
+            Self::Log2 => x.log2(),
+            Self::Log10 => x.log10(),
         }
     }
-    for e in -100..=100 {
-        for _ in 0..9000 {
-            let m = super::gen_mantissa(&mut rng);
-            f(mk_normal(m, e, false));
+
+    /// Calculates the inverse of the function with high precision.
+    fn inverse(self, y: &rug::Float) -> rug::Float {
+        let y = rug::Float::with_val(EXT_PREC, y);
+        match self {
+            Self::Ln => y.exp(),
+            Self::Ln1p => y.exp_m1(),
+            Self::Log2 => y.exp2(),
+            Self::Log10 => y.exp10(),
         }
-    }
-    for e in -1022..=1023 {
-        f(mk_normal(0, e, false));
-        f(mk_normal(super::MAX_MANTISSA, e, false));
-
-        for _ in 0..1000 {
-            let m = super::gen_mantissa(&mut rng);
-            f(mk_normal(m, e, false));
-        }
-    }
-
-    for arg in 1..=10000 {
-        f(arg as f64);
-    }
-
-    f(f64::MIN_POSITIVE);
-    f(f64::MAX);
-
-    // subnormals
-    for i in 0..52 {
-        f(f64::from_bits(1 << i));
-        f(f64::from_bits((1 << (i + 1)) - 1));
     }
 }
 
-fn test_log1p_with(mut f: impl FnMut(f64)) {
-    let mut rng = create_prng();
+fn test_log_with(func: Func, mut f: impl FnMut(f64)) {
+    // Test special values
+    for x in values::specials() {
+        f(x);
+        f(-x);
+    }
 
-    for e in -1..=0 {
-        for _ in 0..100000 {
-            let m = super::gen_mantissa(&mut rng);
-            f(mk_normal(m, e, false));
+    // Test a set of subnormal values
+    for x in values::subnormals(100_000) {
+        f(x);
+    }
+
+    // Test a set of normal values at each binade
+    for x in values::binades(-1022..=1023, 500) {
+        f(x);
+    }
+
+    // Test the mantissa patterns of negative values (whose results are NaN)
+    for x in values::subnormals(0).chain(values::binades(-1022..=1023, 0)) {
+        f(-x);
+    }
+
+    // Test more values at the binades around one
+    for x in values::binades(-1..=0, 100_000) {
+        f(x);
+    }
+
+    // Test all the values within 2^16 ULPs of one, whose results are close to
+    // zero
+    for x in values::around(1.0, 1 << 16) {
+        f(x);
+    }
+
+    // Test values close to one at larger distances (`1 + v` and `1 - v` with
+    // `v` at each binade below one)
+    for v in values::binades(-36..=-1, 10_000) {
+        f(purify(1.0 + v));
+        f(purify(1.0 - v));
+    }
+
+    // Test the arguments around the centers and boundaries of the
+    // subintervals of the table used by the implementation, at many binades
+    for x in table_points((-1022..=1023).filter(|e: &i32| e % 4 == 0 || e.abs() <= 1)) {
+        f(x);
+    }
+
+    // Test the arguments around integer powers of the base, whose results are
+    // close to integers (exact with powers of two for `log2` and with small
+    // powers of ten for `log10`)
+    for x in base_powers(func) {
+        f(x);
+    }
+
+    // Test results that are very close to a midpoint between two consecutive
+    // values, which are the hardest to round
+    for x in near_midpoints(func) {
+        f(x);
+    }
+
+    // Test integers
+    for i in 1..=10000 {
+        f(i as f64);
+    }
+}
+
+fn test_ln_1p_with(mut f: impl FnMut(f64)) {
+    // Test special values
+    for x in values::specials() {
+        f(x);
+        f(-x);
+    }
+
+    // Test a set of subnormal values, whose results are trivial (`x`)
+    for x in values::subnormals(1000) {
+        f(x);
+        f(-x);
+    }
+
+    // Test a set of normal values at each binade, positive and in (-1, 0)
+    for x in values::binades(-1022..=1023, 500) {
+        f(x);
+    }
+    for x in values::binades(-1022..=-1, 500) {
+        f(-x);
+    }
+
+    // Test more values with small magnitudes, whose results are close to `x`
+    for x in values::binades(-60..=-1, 10_000) {
+        f(x);
+        f(-x);
+    }
+
+    // Test more values at the binades around one
+    for x in values::binades(-1..=0, 100_000) {
+        f(x);
+    }
+
+    // Test all the values within 2^16 ULPs above -1, whose results are large
+    // and negative
+    for x in values::around(-1.0, 1 << 16).filter(|&x| x >= -1.0) {
+        f(x);
+    }
+
+    // Test the mantissa patterns of the values from -1 down: -1, whose result
+    // is -inf, and the values below it, whose results are NaN (including the
+    // closest ones)
+    for x in values::binades(0..=1023, 0) {
+        f(-x);
+    }
+
+    // Test values close to -1 at larger distances (`v - 1` with `v` at each
+    // binade below 1/2)
+    for v in values::binades(-37..=-2, 10_000) {
+        f(purify(v - 1.0));
+    }
+
+    // Test the arguments around the centers and boundaries of the
+    // subintervals of the table used by the implementation (for `1 + x`), at
+    // each binade
+    for y in table_points((-1..=1023).filter(|e| e % 4 == 0 || *e <= 1)) {
+        f(purify(y - 1.0));
+    }
+
+    // Test the arguments around `e^n - 1` for integers `n`, whose results are
+    // close to integers
+    for x in base_powers(Func::Ln1p) {
+        f(x);
+    }
+
+    // Test results that are very close to a midpoint between two consecutive
+    // values, which are the hardest to round
+    for x in near_midpoints(Func::Ln1p) {
+        f(x);
+    }
+
+    // Test integers
+    for i in 1..=10000 {
+        f(i as f64);
+    }
+}
+
+/// Returns the arguments around the centers (where the reduced argument is
+/// zero) and the boundaries (where it is the largest) of the subintervals of
+/// the table used by the implementation, which splits each binade in 64
+/// subintervals, at the binades with exponents in `e`.
+fn table_points(e: impl IntoIterator<Item = i32>) -> impl Iterator<Item = f64> {
+    e.into_iter().flat_map(|e| {
+        (0..128).flat_map(move |i| values::around(fpmath::scalbn(1.0 + f64::from(i) / 128.0, e), 1))
+    })
+}
+
+/// Returns the arguments around the integer powers of the base (`b^n`, or
+/// `e^n - 1` for `ln_1p`) in the range of finite values.
+fn base_powers(func: Func) -> impl Iterator<Item = f64> {
+    let lowest = match func {
+        // The smallest value above -1 is `-1 + 2^-53`
+        Func::Ln1p => (rug::Float::with_val(EXT_PREC, 1) << -53) - 1,
+        _ => rug::Float::with_val(EXT_PREC, 1) << -1074,
+    };
+    let n_lo = func.eval(&lowest).to_f64().ceil() as i32;
+    let n_hi = func
+        .eval(&rug::Float::with_val(EXT_PREC, f64::MAX))
+        .to_f64()
+        .floor() as i32;
+    (n_lo..=n_hi).flat_map(move |n| {
+        values::around(func.inverse(&rug::Float::with_val(EXT_PREC, n)).to_f64(), 1)
+    })
+}
+
+/// Returns arguments whose results are very close to a midpoint between two
+/// consecutive values.
+///
+/// With large results, the functions are flat (their results change much
+/// less than an ULP between consecutive arguments), so the arguments closest
+/// to the inverse of a midpoint have such results (see
+/// `values::midpoint_inverse`), and they are closer for larger results.
+///
+/// With small arguments, `ln_1p(x) = x + g(x)` is not flat, but `g` is (see
+/// `values::offset_midpoint`). For `ln` close to one, see [`ln_near_one`].
+fn near_midpoints(func: Func) -> Vec<f64> {
+    let eval = |x: &rug::Float| func.eval(x);
+    let inverse = |y: &rug::Float| func.inverse(y);
+
+    let mut xs = Vec::new();
+
+    // Arguments at every other binade far from one (with exponents of at least
+    // 64 in magnitude), whose results are large
+    let large = (-1022..=1023).filter(|e: &i16| {
+        e.abs() >= 64 && e % 2 == 0 && (e.is_positive() || !matches!(func, Func::Ln1p))
+    });
+    for x0 in values::binades(large, 20) {
+        xs.extend(values::around(
+            values::midpoint_inverse(x0, eval, inverse),
+            1,
+        ));
+    }
+
+    match func {
+        Func::Ln => xs.extend(ln_near_one()),
+        Func::Ln1p => {
+            for x0 in values::binades(-53..=-2, 500).flat_map(|x| [x, -x]) {
+                // g(x) = ln_1p(x) - x, g'(x) = 1 / (1 + x) - 1 = -x / (1 + x)
+                let dg = |x: &rug::Float| -> rug::Float {
+                    let r: rug::Float = rug::Float::with_val(EXT_PREC, x) / (x.clone() + 1);
+                    -r
+                };
+                if let Some(x) = values::offset_midpoint(x0, eval, dg) {
+                    xs.extend(values::around(x, 1));
+                }
+            }
+        }
+        Func::Log2 | Func::Log10 => {}
+    }
+
+    // Close arguments can give the same midpoint
+    xs.sort_by(f64::total_cmp);
+    xs.dedup();
+    xs
+}
+
+/// Returns arguments close to one whose results with `ln` are very close to a
+/// midpoint between two consecutive values.
+///
+/// With `x = 1 + d`, `ln(x) = d - d^2/2 + d^3/3 - ...`. When `d = j * 2^-52`
+/// with `j = 2^b * o` and an odd `o` in `[2^b, 2^(b+1))`, `d` is in the binade
+/// with exponent `2b - 52`, and `d^2/2` is an odd multiple of half an ULP of
+/// `d`. So, when the result is in that binade too, `d - d^2/2` is a midpoint,
+/// which the result misses by about `d^3/3`, less than 2^-10 ULPs with
+/// `b <= 10`. Below one, the same happens with `x = 1 - d`, `d = j * 2^-53`
+/// and an odd `o` in `[2^(b-1), 2^b)`.
+fn ln_near_one() -> Vec<f64> {
+    let mut xs = Vec::new();
+    for b in 0..=10 {
+        for o in ((1 << b)..(2 << b)).filter(|o| o % 2 == 1) {
+            xs.push(1.0 + fpmath::scalbn(f64::from(o << b), -52));
+        }
+        if b >= 1 {
+            for o in ((1 << (b - 1))..(1 << b)).filter(|o| o % 2 == 1) {
+                xs.push(1.0 - fpmath::scalbn(f64::from(o << b), -53));
+            }
         }
     }
-    for e in -100..=100 {
-        for _ in 0..9000 {
-            let m = super::gen_mantissa(&mut rng);
-            f(mk_normal(m, e, false));
-        }
-    }
-    for e in -1022..=1023 {
-        f(mk_normal(0, e, false));
-        f(mk_normal(super::MAX_MANTISSA, e, false));
 
-        for _ in 0..1000 {
-            let m = super::gen_mantissa(&mut rng);
-            f(mk_normal(m, e, false));
-        }
-    }
-
-    for arg in 1..=10000 {
-        f(arg as f64);
-    }
-
-    f(f64::MIN_POSITIVE);
-    f(f64::MAX);
-
-    // 1 < x < 0
-    for e in -1022..=-1 {
-        f(mk_normal(0, e, true));
-        f(mk_normal(super::MAX_MANTISSA, e, true));
-
-        for _ in 0..10000 {
-            let m = super::gen_mantissa(&mut rng);
-            f(mk_normal(m, e, true));
-        }
-    }
-
-    // subnormals
-    for i in 0..52 {
-        f(mk_subnormal(1 << i, false));
-        f(mk_subnormal(1 << i, true));
-        f(mk_subnormal((1 << (i + 1)) - 1, false));
-        f(mk_subnormal((1 << (i + 1)) - 1, true));
-    }
+    // Keep the ones whose results are in the binade of `d`
+    xs.retain(|&x| {
+        let y = Func::Ln.eval(&rug::Float::with_val(EXT_PREC, x)).to_f64();
+        exponent(y) == exponent(x - 1.0)
+    });
+    xs
 }
