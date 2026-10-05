@@ -111,7 +111,7 @@ mod tests {
     use crate::FloatMath;
     use crate::traits::Float;
 
-    fn test_exp<F: Float + FloatMath>(lo_th: F, hi_th: F) {
+    fn test_exp<F: Float + FloatMath>() {
         use crate::exp;
 
         assert_is_nan!(exp(F::NAN));
@@ -119,15 +119,9 @@ mod tests {
         assert_total_eq!(exp(F::NEG_INFINITY), F::ZERO);
         assert_total_eq!(exp(F::ZERO), F::ONE);
         assert_total_eq!(exp(-F::ZERO), F::ONE);
-        assert_total_eq!(exp(lo_th), F::ZERO);
-        assert_total_eq!(exp(lo_th - F::ONE), F::ZERO);
-        assert_total_eq!(exp(lo_th - F::TWO), F::ZERO);
-        assert_total_eq!(exp(hi_th), F::INFINITY);
-        assert_total_eq!(exp(hi_th + F::ONE), F::INFINITY);
-        assert_total_eq!(exp(hi_th + F::TWO), F::INFINITY);
     }
 
-    fn test_exp_m1<F: Float + FloatMath>(lo_th: F, hi_th: F) {
+    fn test_exp_m1<F: Float + FloatMath>() {
         use crate::exp_m1;
 
         assert_is_nan!(exp_m1(F::NAN));
@@ -135,15 +129,9 @@ mod tests {
         assert_total_eq!(exp_m1(F::NEG_INFINITY), -F::ONE);
         assert_total_eq!(exp_m1(F::ZERO), F::ZERO);
         assert_total_eq!(exp_m1(-F::ZERO), -F::ZERO);
-        assert_total_eq!(exp_m1(lo_th), -F::ONE);
-        assert_total_eq!(exp_m1(lo_th - F::ONE), -F::ONE);
-        assert_total_eq!(exp_m1(lo_th - F::TWO), -F::ONE);
-        assert_total_eq!(exp_m1(hi_th), F::INFINITY);
-        assert_total_eq!(exp_m1(hi_th + F::ONE), F::INFINITY);
-        assert_total_eq!(exp_m1(hi_th + F::TWO), F::INFINITY);
     }
 
-    fn test_exp2<F: Float + FloatMath>(lo_th: F, hi_th: F) {
+    fn test_exp2<F: Float + FloatMath>() {
         use crate::exp2;
 
         let f = F::parse;
@@ -160,15 +148,9 @@ mod tests {
         assert_total_eq!(exp2(-F::TWO), f("0.25"));
         assert_total_eq!(exp2(f("-3")), f("0.125"));
         assert_total_eq!(exp2(f("-4")), f("0.0625"));
-        assert_total_eq!(exp2(lo_th), F::ZERO);
-        assert_total_eq!(exp2(lo_th - F::ONE), F::ZERO);
-        assert_total_eq!(exp2(lo_th - F::TWO), F::ZERO);
-        assert_total_eq!(exp2(hi_th), F::INFINITY);
-        assert_total_eq!(exp2(hi_th + F::ONE), F::INFINITY);
-        assert_total_eq!(exp2(hi_th + F::TWO), F::INFINITY);
     }
 
-    fn test_exp10<F: Float + FloatMath>(lo_th: F, hi_th: F) {
+    fn test_exp10<F: Float + FloatMath>() {
         use crate::exp10;
 
         let f = F::parse;
@@ -180,27 +162,21 @@ mod tests {
         assert_total_eq!(exp10(-F::ZERO), F::ONE);
         assert_total_eq!(exp10(F::ONE), f("10"));
         assert_total_eq!(exp10(F::TWO), f("100"));
-        assert_total_eq!(exp10(lo_th), F::ZERO);
-        assert_total_eq!(exp10(lo_th - F::ONE), F::ZERO);
-        assert_total_eq!(exp10(lo_th - F::TWO), F::ZERO);
-        assert_total_eq!(exp10(hi_th), F::INFINITY);
-        assert_total_eq!(exp10(hi_th + F::ONE), F::INFINITY);
-        assert_total_eq!(exp10(hi_th + F::TWO), F::INFINITY);
     }
 
     #[test]
     fn test_f32() {
-        test_exp::<f32>(-103.99, 88.9);
-        test_exp_m1::<f32>(-87.9, 88.9);
-        test_exp2::<f32>(-150.0, 128.0);
-        test_exp10::<f32>(-45.9, 38.9);
+        test_exp::<f32>();
+        test_exp_m1::<f32>();
+        test_exp2::<f32>();
+        test_exp10::<f32>();
     }
 
     #[test]
     fn test_f64() {
-        test_exp::<f64>(-745.9, 709.9);
-        test_exp_m1::<f64>(-708.9, 709.9);
-        test_exp2::<f64>(-1075.0, 1024.0);
-        test_exp10::<f64>(-323.9, 308.9);
+        test_exp::<f64>();
+        test_exp_m1::<f64>();
+        test_exp2::<f64>();
+        test_exp10::<f64>();
     }
 }

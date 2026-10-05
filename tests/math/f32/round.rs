@@ -1,85 +1,66 @@
-use super::{mk_normal, purify};
-use crate::create_prng;
+use super::values;
 
 #[test]
 fn test_round() {
     test_with(|arg| {
-        let expected = fpmath::round(f64::from(arg));
+        let expected = fpmath::round(f64::from(arg)) as f32;
         let actual = fpmath::round(arg);
-
-        assert!(expected == f64::from(actual), "round({arg:e}) = {actual:e}");
+        assert_result_eq!(expected, actual);
     });
 }
 
 #[test]
 fn test_floor() {
     test_with(|arg| {
-        let expected = fpmath::floor(f64::from(arg));
+        let expected = fpmath::floor(f64::from(arg)) as f32;
         let actual = fpmath::floor(arg);
-
-        assert!(expected == f64::from(actual), "floor({arg:e}) = {actual:e}");
+        assert_result_eq!(expected, actual);
     });
 }
 
 #[test]
 fn test_ceil() {
     test_with(|arg| {
-        let expected = fpmath::ceil(f64::from(arg));
+        let expected = fpmath::ceil(f64::from(arg)) as f32;
         let actual = fpmath::ceil(arg);
-
-        assert!(expected == f64::from(actual), "ceil({arg:e}) = {actual:e}");
+        assert_result_eq!(expected, actual);
     });
 }
 
 #[test]
 fn test_trunc() {
     test_with(|arg| {
-        let expected = fpmath::trunc(f64::from(arg));
+        let expected = fpmath::trunc(f64::from(arg)) as f32;
         let actual = fpmath::trunc(arg);
-
-        assert!(expected == f64::from(actual), "trunc({arg:e}) = {actual:e}");
+        assert_result_eq!(expected, actual);
     });
 }
 
-fn test_with(test_f: fn(f32)) {
-    let mut rng = create_prng();
-
-    for e in -126..=127 {
-        test_f(mk_normal(0, e, false));
-        test_f(mk_normal(0, e, true));
-        test_f(mk_normal(super::MAX_MANTISSA, e, false));
-        test_f(mk_normal(super::MAX_MANTISSA, e, true));
-
-        for _ in 0..10_000 {
-            let m = super::gen_mantissa(&mut rng);
-            test_f(mk_normal(m, e, true));
-            test_f(mk_normal(m, e, false));
-        }
+fn test_with(f: fn(f32)) {
+    // Test special values
+    for x in values::specials() {
+        f(x);
+        f(-x);
     }
 
-    for arg in 1..=100_000 {
-        let arg = arg as f32;
-        test_f(purify(arg));
-        test_f(purify(-arg));
-        test_f(purify(arg + 0.25));
-        test_f(purify(-arg + 0.25));
-        test_f(purify(arg + 0.5));
-        test_f(purify(-arg + 0.5));
-        test_f(purify(arg + 0.75));
-        test_f(purify(-arg + 0.75));
+    // Exhaustive test of all subnormal numbers, whose results are zero or
+    // one (with the sign of the argument)
+    for x in values::subnormals_full() {
+        f(x);
+        f(-x);
     }
 
-    for e in 0..23 {
-        for delta in -1000..=1000 {
-            let arg = mk_normal(0, e, false) + delta as f32;
-            test_f(purify(arg));
-            test_f(purify(-arg));
-            test_f(purify(arg + 0.25));
-            test_f(purify(-arg + 0.25));
-            test_f(purify(arg + 0.5));
-            test_f(purify(-arg + 0.5));
-            test_f(purify(arg + 0.75));
-            test_f(purify(-arg + 0.75));
-        }
+    // Test across a wide range of normal numbers
+    for x in values::binades(-126..=127, 10_000) {
+        f(x);
+        f(-x);
+    }
+
+    // Exhaustive test of all the values from 1/2 to 2^23, whose results
+    // depend on their fractional parts (smaller values are rounded to zero or
+    // one, and larger values are integers)
+    for x in values::binades_full(-1..=22) {
+        f(x);
+        f(-x);
     }
 }

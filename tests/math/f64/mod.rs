@@ -1,5 +1,6 @@
 mod cbrt;
 mod exp;
+mod frexp;
 mod gamma;
 mod hyperbolic;
 mod hypot;
@@ -8,28 +9,13 @@ mod inv_trigonometric;
 mod log;
 mod pow;
 mod round;
+mod scalbn;
 mod sqrt;
 mod trigonometric;
+mod values;
 
-const MAX_MANTISSA: u64 = (1 << 52) - 1;
-
-fn gen_mantissa(rng: &mut impl rand::RngExt) -> u64 {
-    rng.random::<u64>() >> (64 - 52)
-}
-
-fn mk_normal(m: u64, e: i16, s: bool) -> f64 {
-    assert!(m < (1 << 52));
-    assert!(matches!(e, -1022..=1023));
-    let e = u64::from((e + 1023) as u16) << 52;
-    let s = u64::from(s) << 63;
-    f64::from_bits(m | e | s)
-}
-
-fn mk_subnormal(m: u64, s: bool) -> f64 {
-    assert!(m < (1 << 52));
-    let s = u64::from(s) << 63;
-    f64::from_bits(m | s)
-}
+const MIN_MAX_ERROR: f64 = 0.4999;
+const ERROR_LIMIT: f64 = 0.51;
 
 const RUG_PREC: u32 = 53 + 20;
 
@@ -37,14 +23,13 @@ fn check_result(
     input: impl std::fmt::Debug,
     actual: f64,
     expected: rug::Float,
-    error_limit: f64,
     max_error: &mut f64,
 ) {
     let expected_is_neg = expected.is_sign_negative();
     let err = calc_error_ulp(actual, expected);
     *max_error = max_error.max(err);
 
-    assert!(err < error_limit, "input = {input:?}, error = {err} ULP");
+    assert!(err < ERROR_LIMIT, "input = {input:?}, error = {err} ULP");
     if !actual.is_nan() {
         assert_eq!(
             actual.is_sign_negative(),
@@ -54,8 +39,8 @@ fn check_result(
     }
 }
 
-/// Calculates the error of `actual` in ULPs with respect to the exact result
-/// `expected`.
+/// Calculates the error of `actual` in ULPs with respect to the reference
+/// result `expected`.
 ///
 /// The distance is measured with the local spacing of the values: each
 /// interval between two consecutive values counts as one ULP, and the
@@ -107,7 +92,7 @@ fn calc_error_ulp(actual: f64, expected: rug::Float) -> f64 {
 
 /// Position of `x` in the ordered sequence of values (`+0` and `-0` are
 /// both mapped to zero).
-pub(crate) fn ordinal(x: f64) -> i64 {
+fn ordinal(x: f64) -> i64 {
     let bits = x.to_bits();
     let mag = (bits & !0x8000_0000_0000_0000) as i64;
     if (bits & 0x8000_0000_0000_0000) != 0 {
@@ -118,7 +103,7 @@ pub(crate) fn ordinal(x: f64) -> i64 {
 }
 
 /// Inverse of [`ordinal`] (zero is mapped to `+0`).
-pub(crate) fn from_ordinal(ord: i64) -> f64 {
+fn from_ordinal(ord: i64) -> f64 {
     if ord < 0 {
         f64::from_bits(ord.unsigned_abs() | 0x8000_0000_0000_0000)
     } else {
@@ -136,9 +121,14 @@ fn purify(x: f64) -> f64 {
     std::hint::black_box(x)
 }
 
-impl crate::TotalEq for f64 {
-    fn total_eq(&self, other: &Self) -> bool {
-        self.to_bits() == other.to_bits()
+impl crate::ResultEq for f64 {
+    fn result_eq(&self, other: &Self) -> bool {
+        if self.is_nan() && other.is_nan() {
+            // NaNs with different payloads or signs are considered equal.
+            true
+        } else {
+            self.to_bits() == other.to_bits()
+        }
     }
 }
 
@@ -180,4 +170,25 @@ fn test_calc_error_ulp() {
         calc_error_ulp(f64::MIN_POSITIVE, exact(pred(f64::MIN_POSITIVE))),
         1.0
     );
+
+    // Exact ties, zeros and NaN
+    assert_eq!(calc_error_ulp(1.5, near(1.5, 0.5)), 0.5);
+    assert_eq!(calc_error_ulp(succ(1.5), near(1.5, 0.5)), 0.5);
+    assert_eq!(calc_error_ulp(0.0, exact(-0.0)), 0.0);
+    assert_eq!(calc_error_ulp(-0.0, exact(0.0)), 0.0);
+    assert_eq!(calc_error_ulp(f64::NAN, exact(f64::NAN)), 0.0);
+    assert_eq!(calc_error_ulp(1.0, exact(f64::NAN)), f64::INFINITY);
+    assert_eq!(calc_error_ulp(f64::NAN, exact(1.0)), f64::INFINITY);
+
+    // In `[MAX + ulp/2, 2^1024)`, negative next to a power of two, and tiny
+    // and negative (see the `f32` version, which rounds `expected` to
+    // nearest instead of down).
+    assert_eq!(calc_error_ulp(f64::MAX, near(f64::MAX, 0.75)), 0.75);
+    assert_eq!(calc_error_ulp(f64::INFINITY, near(f64::MAX, 0.75)), 0.25);
+    assert_eq!(calc_error_ulp(-1.0, near(-1.0, -0.25)), 0.25);
+    assert_eq!(calc_error_ulp(-succ(1.0), near(-1.0, -0.25)), 0.75);
+    assert_eq!(calc_error_ulp(-f64::MAX, near(-f64::MAX, -0.25)), 0.25);
+    let tiny_neg: rug::Float = rug::Float::with_val(53, -min) / 4;
+    assert_eq!(calc_error_ulp(-0.0, tiny_neg.clone()), 0.25);
+    assert_eq!(calc_error_ulp(-min, tiny_neg), 0.75);
 }
