@@ -82,9 +82,7 @@ impl Func {
         }
     }
 
-    /// Returns `log_b(2)`, where `b` is the base of the exponential. The
-    /// arguments are reduced to `k * log_b(2) + r`, with an integer `k` and
-    /// `|r| <= log_b(2) / 2`.
+    /// Returns `log_b(2)`, where `b` is the base of the exponential.
     fn log_b_2(self) -> f64 {
         match self {
             Self::Exp | Self::ExpM1 => std::f64::consts::LN_2,
@@ -200,15 +198,25 @@ fn test_with(func: Func, mut f: impl FnMut(f32)) {
     }
 }
 
+/// Number of parts in which the argument reduction splits each power of two:
+/// the arguments are reduced to `m * log_b(2) / N + r`, with an integer `m`
+/// and `|r| <= log_b(2) / (2 * N)`.
+const REDUCTION_N: i32 = 128;
+
 /// Returns the arguments `k * log_b(2)` (with results close to powers of two)
-/// and `(k + 1/2) * log_b(2)` (where `k` changes in the argument reduction)
-/// for all `k` in the range of non-trivial results.
+/// and `(m + 1/2) * log_b(2) / N` (where `m` changes in the argument reduction)
+/// for all `k` and `m` in the range of non-trivial results.
 fn reduction_boundaries(func: Func) -> impl Iterator<Item = f32> {
     let c = func.log_b_2();
+    let n = f64::from(REDUCTION_N);
     let (lo, hi) = func.range();
-    let k_lo = (f64::from(lo) / c).floor() as i32;
-    let k_hi = (f64::from(hi) / c).ceil() as i32;
-    (2 * k_lo..=2 * k_hi).map(move |k2| (f64::from(k2) * c / 2.0) as f32)
+    let m_lo = (f64::from(lo) / c * n).floor() as i32;
+    let m_hi = (f64::from(hi) / c * n).ceil() as i32;
+    (m_lo..=m_hi).flat_map(move |m| {
+        let power_of_two = (m % REDUCTION_N == 0).then(|| (f64::from(m / REDUCTION_N) * c) as f32);
+        let boundary = (f64::from(2 * m + 1) * c / (2.0 * n)) as f32;
+        power_of_two.into_iter().chain([boundary])
+    })
 }
 
 /// Returns arguments whose results are very close to a midpoint between two

@@ -25,7 +25,7 @@
 //! right signs of zero) when `x` is a multiple of a right angle in degrees or
 //! half revolutions.
 
-use crate::f64::{FRAC_64_PI, reduce_rad_large_sum, round_i, sin_cos_pi_64};
+use crate::f64::{FRAC_64_PI, reduce_rad_large_sum, round_u8, sin_cos_pi_64};
 use crate::traits::Float;
 
 // GENERATE: consts f64 FRAC_PI_180 PI
@@ -129,7 +129,7 @@ fn with_sign_of(v: f64, x: f32) -> f32 {
 fn reduce_rad(x: f32) -> (u8, f64) {
     let xa = f64::from(x).abs();
     if x.exponent() < 21 {
-        // GENERATE: reduce_rad::split_pi FRAC_PI_64_F -6 27 53
+        // GENERATE: split_const FRAC_PI_64_F PI -6 27 53
         const FRAC_PI_64_F0: f64 = f64::from_bits(0x3FA921FB54000000); // 4.9087385181337595e-2
         const FRAC_PI_64_F1: f64 = f64::from_bits(0x3DC10B4611A62633); // 3.100292436501689e-11
 
@@ -143,7 +143,7 @@ fn reduce_rad(x: f32) -> (u8, f64) {
         // `n * π/64` is at least 2^-24.8 when |x| >= 2^18, 2^-25.8 when
         // 2^15 <= |x| < 2^18 and 2^-27.8 when |x| < 2^15 (found by
         // exhaustive search), so the relative error of `b` is below 2^-38.8.
-        let (nf, n) = round_i(xa * FRAC_64_PI);
+        let (nf, n) = round_u8(xa * FRAC_64_PI);
         let b = (xa - nf * FRAC_PI_64_F0) - nf * FRAC_PI_64_F1;
         (n, b)
     } else {
@@ -173,7 +173,7 @@ fn reduce_deg(x: f32) -> (u8, f64) {
     // `y - nf * STEP` is exact by Sterbenz lemma when n >= 2 or y >= 2.
     // Otherwise, both operands are multiples of `ulp(y)` and the result is
     // less than 2 in magnitude (or `nf = 0`).
-    let (nf, n) = round_i(y * (1.0 / STEP));
+    let (nf, n) = round_u8(y * (1.0 / STEP));
     (n, y - nf * STEP)
 }
 
@@ -216,7 +216,7 @@ fn reduce_half_revs(x: f32) -> (u8, f64) {
     // 0 <= y < 2^24, so `u = y * 64` is exact and less than 2^30, and so is
     // `u - nf`.
     let u = y * 64.0;
-    let (nf, n) = round_i(u);
+    let (nf, n) = round_u8(u);
     (n, u - nf)
 }
 

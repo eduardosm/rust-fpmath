@@ -78,17 +78,95 @@ pub(super) fn gen_cbrt_1p_poly(args: &[&str]) -> Result<String, String> {
 /// Generates an approximation of `(exp(x) - 1) / x - 1` in
 /// `[range_start, range_end]` with the powers `x, x^2, ...`.
 ///
-/// Arguments: `fkind num_coeffs range_start range_end`
+/// When `num_fixed` (default 1) is greater than 1, the coefficients of
+/// `x^1, ..., x^(num_fixed - 1)` are fixed to those of the Taylor series
+/// (`1/2!, 1/3!, ...`), so it approximates
+/// `(exp(x) - 1) / x - 1 - x / 2! - ... - x^(num_fixed - 1) / num_fixed!` with
+/// the powers `x^num_fixed, x^(num_fixed + 1), ...`.
+///
+/// Arguments: `fkind num_coeffs range_start range_end [num_fixed]`
 pub(super) fn gen_exp_m1_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
+    let (args, num_fixed) = match args {
+        [args @ .., num_fixed] if args.len() == 4 => {
+            let num_fixed: i32 = num_fixed
+                .parse()
+                .map_err(|e| format!("failed to parse fifth argument {num_fixed:?}: {e}"))?;
+            if num_fixed < 1 {
+                return Err(format!("invalid number of fixed terms: {num_fixed}"));
+            }
+            (args, num_fixed)
+        }
+        [_, _, _, _] => (args, 1),
+        _ => return Err(format!("expected 4 or 5 arguments, found {}", args.len())),
+    };
+    let (fkind, num_coeffs, range_start, range_end): (_, i32, _, _) =
+        arg_utils::parse_4_args(args)?;
 
     let mut out = String::new();
 
-    let func = "expm1(x) / x - 1";
-    let poly_i = (1..=num_coeffs).collect::<Vec<_>>();
+    let mut func = String::from("expm1(x) / x - 1");
+    let mut factorial = 1u64;
+    for i in 2..=num_fixed {
+        factorial = factorial.checked_mul(i as u64).unwrap();
+        write!(func, " - x^{} / {factorial}", i - 1).unwrap();
+    }
+    let poly_i = (num_fixed..(num_fixed + num_coeffs)).collect::<Vec<_>>();
     let range = (range_start, range_end);
 
-    sollya::run_and_render_remez(fkind, func, range, &poly_i, 1, "K", &mut out);
+    sollya::run_and_render_remez(fkind, &func, range, &poly_i, 1, "K", &mut out);
+
+    Ok(out)
+}
+
+/// Generates a table of `2^(i / 2^bits)` for `i` in `0..2^bits`. Each entry
+/// is a pair `(T, υ)` (as the bits of `f64` values), where `T` is
+/// `2^(i / 2^bits)` rounded to `f64` and `υ` is `(2^(i / 2^bits) - Th) / T`
+/// rounded to `f64`, with `Th` being `T` truncated to `hi_bits` significant
+/// bits (so `2^(i / 2^bits) ~= Th + T * υ`).
+///
+/// Arguments: `bits hi_bits`
+pub(super) fn gen_exp2_table(args: &[&str]) -> Result<String, String> {
+    let (bits, hi_bits): (u32, u32) = arg_utils::parse_2_args(args)?;
+    if !(1..=10).contains(&bits) {
+        return Err(format!("invalid number of bits: {bits}"));
+    }
+    if !(1..=53).contains(&hi_bits) {
+        return Err(format!("invalid number of high bits: {hi_bits}"));
+    }
+
+    let mut out = String::new();
+
+    let fkind = FloatKind::F64;
+    let prec = fkind.rug_aux_prec();
+    let num = 1u32 << bits;
+
+    writeln!(
+        out,
+        "// EXP2_TBL[i] = (bits(T), bits(υ)), where T is 2^(i / {num}) rounded,"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "// Th is T truncated to {hi_bits} bits and 2^(i / {num}) = Th + T * υ"
+    )
+    .unwrap();
+    writeln!(out, "static EXP2_TBL: [(u64, u64); {num}] = [").unwrap();
+    for i in 0..num {
+        let v = (rug::Float::with_val(prec, i) >> bits).exp2();
+        let t = rug::Float::with_val(fkind.float_prec(), &v);
+        let (th, _) = rug::Float::with_val_round(hi_bits, &t, rug::float::Round::Zero);
+        let upsilon = rug::Float::with_val(prec, &v - &th) / &t;
+        write!(
+            out,
+            "    (0x{:016X}, 0x{:016X}), // ",
+            t.to_f64().to_bits(),
+            upsilon.to_f64().to_bits(),
+        )
+        .unwrap();
+        render_const_dec_value(fkind, &t, &mut out);
+        out.push('\n');
+    }
+    writeln!(out, "];").unwrap();
 
     Ok(out)
 }

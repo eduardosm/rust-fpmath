@@ -19,14 +19,15 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
 
     let r = match cmd {
         "consts" => consts::gen_consts(&args),
+        "split_const" => consts::gen_split_const(&args),
 
-        "reduce_rad::split_pi" => reduce_rad::gen_split_pi(&args),
         "reduce_rad::frac_1_pi_bits" => reduce_rad::gen_frac_1_pi_bits(&args),
 
         "rsqrt_table" => approx::gen_rsqrt_table(&args),
         "cbrt_poly" => approx::gen_cbrt_poly(&args),
         "cbrt_1p_poly" => approx::gen_cbrt_1p_poly(&args),
         "exp_m1_poly" => approx::gen_exp_m1_poly(&args),
+        "exp2_table" => approx::gen_exp2_table(&args),
         "ln_1p_poly" => approx::gen_ln_1p_poly(&args),
         "ln_table" => approx::gen_ln_table(&args),
         "ln_lo_scale_table" => approx::gen_ln_lo_scale_table(&args),

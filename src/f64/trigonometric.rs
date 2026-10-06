@@ -25,6 +25,7 @@
 //! and `tan(|x|)`.
 
 use super::f64x2::F64x2;
+use super::round_u8;
 use crate::traits::Float as _;
 
 // GENERATE: consts F64x2 FRAC_PI_180 PI
@@ -156,21 +157,6 @@ fn with_sign_of(v: f64, x: f64) -> f64 {
     f64::from_bits(v.to_bits() ^ (x.to_bits() & (1 << 63)))
 }
 
-/// Rounds `x` to the nearest integer (ties to even), returning it as
-/// `f64` and its lowest 8 bits (in two's complement).
-///
-/// `|x|` must be less than 2^51.
-#[inline]
-pub(crate) fn round_i(x: f64) -> (f64, u8) {
-    // 1.5 * 2^52, adding it rounds to an integer, keeping the integer in the
-    // lowest bits of the mantissa.
-    const MAGIC: f64 = 6755399441055744.0;
-
-    let t = (x + MAGIC).purify();
-    let r = (t - MAGIC).purify();
-    (r, t.to_bits() as u8)
-}
-
 /// Returns `(sin(n * π/64), cos(n * π/64))`, rounded to `f64`.
 #[inline]
 pub(crate) fn sin_cos_pi_64(n: u8) -> (f64, f64) {
@@ -191,7 +177,7 @@ fn reduce_rad(x: f64) -> (u8, Reduced) {
     let x = x.purify();
     let absx = x.abs();
     if absx < 1.5 {
-        // GENERATE: reduce_rad::split_pi FRAC_PI_64_S -6 48 53
+        // GENERATE: split_const FRAC_PI_64_S PI -6 48 53
         const FRAC_PI_64_S0: f64 = f64::from_bits(0x3FA921FB54442D00); // 4.908738521234035e-2
         const FRAC_PI_64_S1: f64 = f64::from_bits(0x3CA8469898CC5170); // 1.6844696431744122e-16
 
@@ -204,21 +190,21 @@ fn reduce_rad(x: f64) -> (u8, Reduced) {
         //
         // `bl` is not small compared to `bh` (up to ~2^-47.4), but its
         // first and second order terms are taken into account by `sin_a`.
-        let (nf, n) = round_i(x * FRAC_64_PI);
+        let (nf, n) = round_u8(x * FRAC_64_PI);
 
         let bh = (x - nf * FRAC_PI_64_S0).purify();
         let bl = -(nf * FRAC_PI_64_S1);
 
         (n, Reduced { bh, bl })
     } else if absx < 256.0 {
-        // GENERATE: reduce_rad::split_pi FRAC_PI_64_M -6 40 40 53
+        // GENERATE: split_const FRAC_PI_64_M PI -6 40 40 53
         const FRAC_PI_64_M0: f64 = f64::from_bits(0x3FA921FB54442000); // 4.908738521231726e-2
         const FRAC_PI_64_M1: f64 = f64::from_bits(0x3D1A308D31318000); // 2.3261085876500796e-14
         const FRAC_PI_64_M2: f64 = f64::from_bits(0x3A98A2E03707344A); // 1.9900991135971718e-26
 
         // 31 <= |n| < 2^13, so `nf * FRAC_PI_64_M0` and `nf * FRAC_PI_64_M1`
         // are exact, and `x - nf * FRAC_PI_64_M0` is exact by Sterbenz lemma.
-        let (nf, n) = round_i(x * FRAC_64_PI);
+        let (nf, n) = round_u8(x * FRAC_64_PI);
 
         let r0 = (x - nf * FRAC_PI_64_M0).purify();
         let r1 = F64x2::sub11(r0, (nf * FRAC_PI_64_M1).purify());
@@ -233,13 +219,13 @@ fn reduce_rad(x: f64) -> (u8, Reduced) {
 /// Like `reduce_rad`, for `|x| >= 256`, returning `(n, b)`.
 fn reduce_rad_large(x: f64) -> (u8, Reduced) {
     if x.exponent() < 39 {
-        // GENERATE: reduce_rad::split_pi FRAC_PI_64_P -6 53 53 53
+        // GENERATE: split_const FRAC_PI_64_P PI -6 53 53 53
         const FRAC_PI_64_P0: f64 = f64::from_bits(0x3FA921FB54442D18); // 4.908738521234052e-2
         const FRAC_PI_64_P1: f64 = f64::from_bits(0x3C41A62633145C06); // 1.913510623667739e-18
         const FRAC_PI_64_P2: f64 = f64::from_bits(0x38FC1CD129024E09); // 3.3839271060059813e-34
 
         // 2^12 < |n| < 2^44
-        let (nf, n) = round_i(x * FRAC_64_PI);
+        let (nf, n) = round_u8(x * FRAC_64_PI);
 
         // n * π/64 ~= (ph + pl) + (qh + ql) + nf * FRAC_PI_64_P2
         let p = F64x2::mul11(nf, FRAC_PI_64_P0);
@@ -384,7 +370,7 @@ fn reduce_deg_small(y: f64) -> (u8, f64) {
     // less than 2 in magnitude (or `nf = 0`).
     const STEP: f64 = 90.0 / 32.0;
 
-    let (nf, n) = round_i(y * (1.0 / STEP));
+    let (nf, n) = round_u8(y * (1.0 / STEP));
     (n, y - nf * STEP)
 }
 
@@ -440,7 +426,7 @@ fn reduce_half_revs(x: f64) -> (u8, f64) {
 fn reduce_half_revs_small(y: f64) -> (u8, f64) {
     // `u = y * 64` is exact, and so is `u - nf`.
     let u = y * 64.0;
-    let (nf, n) = round_i(u);
+    let (nf, n) = round_u8(u);
     (n, u - nf)
 }
 
