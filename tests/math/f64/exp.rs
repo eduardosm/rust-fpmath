@@ -87,9 +87,7 @@ impl Func {
         }
     }
 
-    /// Returns `log_b(2)`, where `b` is the base of the exponential. The
-    /// arguments are reduced to `k * log_b(2) + r`, with an integer `k` and
-    /// `|r| <= log_b(2) / 2`.
+    /// Returns `log_b(2)`, where `b` is the base of the exponential.
     fn log_b_2(self) -> rug::Float {
         let two = rug::Float::with_val(EXT_PREC, 2);
         match self {
@@ -209,17 +207,27 @@ fn test_with(func: Func, mut f: impl FnMut(f64)) {
     }
 }
 
+/// Number of parts in which the argument reduction splits each power of two:
+/// the arguments are reduced to `m * log_b(2) / N + r`, with an integer `m`
+/// and `|r| <= log_b(2) / (2 * N)`.
+const REDUCTION_N: i32 = 128;
+
 /// Returns the arguments `k * log_b(2)` (with results close to powers of two)
-/// and `(k + 1/2) * log_b(2)` (where `k` changes in the argument reduction)
-/// for all `k` in the range of non-trivial results.
+/// and `(m + 1/2) * log_b(2) / N` (where `m` changes in the argument reduction)
+/// for all `k` and `m` in the range of non-trivial results.
 fn reduction_boundaries(func: Func) -> impl Iterator<Item = f64> {
     let c = func.log_b_2();
     let (lo, hi) = func.range();
-    let k_lo = (lo / c.to_f64()).floor() as i32;
-    let k_hi = (hi / c.to_f64()).ceil() as i32;
-    (2 * k_lo..=2 * k_hi).map(move |k2| {
-        let x: rug::Float = rug::Float::with_val(EXT_PREC, k2) * &c / 2;
-        x.to_f64()
+    let m_lo = (lo / c.to_f64() * f64::from(REDUCTION_N)).floor() as i32;
+    let m_hi = (hi / c.to_f64() * f64::from(REDUCTION_N)).ceil() as i32;
+    (m_lo..=m_hi).flat_map(move |m| {
+        let power_of_two = (m % REDUCTION_N == 0).then(|| {
+            let x: rug::Float = rug::Float::with_val(EXT_PREC, m / REDUCTION_N) * &c;
+            x.to_f64()
+        });
+        let boundary: rug::Float =
+            rug::Float::with_val(EXT_PREC, 2 * m + 1) * &c / (2 * REDUCTION_N);
+        power_of_two.into_iter().chain([boundary.to_f64()])
     })
 }
 

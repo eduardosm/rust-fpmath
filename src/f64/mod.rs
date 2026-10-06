@@ -12,7 +12,10 @@ mod pow;
 mod sqrt;
 mod trigonometric;
 
-pub(crate) use trigonometric::{FRAC_64_PI, reduce_rad_large_sum, round_i, sin_cos_pi_64};
+pub(crate) use exp::{EXP2_TBL_BITS, exp2_tbl};
+pub(crate) use trigonometric::{FRAC_64_PI, reduce_rad_large_sum, sin_cos_pi_64};
+
+use crate::traits::Float as _;
 
 impl crate::traits::Float for f64 {
     type Raw = u64;
@@ -336,8 +339,42 @@ pub(crate) fn fast_sqrt(x: f64) -> (f64, f64) {
     (r * x, r)
 }
 
+/// Rounds `x` to the nearest integer, returning it as `f64` and its lowest
+/// 8 bits (in two's complement).
+///
+/// `|x|` must be less than 2^51.
+#[inline]
+pub(crate) fn round_u8(x: f64) -> (f64, u8) {
+    let (r, bits) = round_to_bits(x);
+    (r, bits as u8)
+}
+
+/// Rounds `x` to the nearest integer, returning it as `f64` and `i32`.
+///
+/// `|x|` must be less than 2^31.
+#[inline]
+pub(crate) fn round_i32(x: f64) -> (f64, i32) {
+    let (r, bits) = round_to_bits(x);
+    (r, bits as i32)
+}
+
+/// Rounds `x` to the nearest integer, returning it as `f64` and a `u64`
+/// whose lowest bits are those of the integer (in two's complement).
+///
+/// `|x|` must be less than 2^51.
+#[inline]
+fn round_to_bits(x: f64) -> (f64, u64) {
+    // 1.5 * 2^52, adding it rounds to an integer, keeping the integer in the
+    // lowest bits of the mantissa.
+    const MAGIC: f64 = (3u64 << 51) as f64;
+
+    let t = (x + MAGIC).purify();
+    ((t - MAGIC).purify(), t.to_bits())
+}
+
 #[cfg(test)]
 mod tests {
+    use super::round_i32;
     use crate::traits::Float as _;
 
     #[test]
@@ -372,6 +409,24 @@ mod tests {
             check(f64::from_bits(sign | 0x000F_EDCB_A987_6543));
             check(f64::from_bits(sign | f64::MIN_POSITIVE.to_bits()));
             check(f64::from_bits(sign | 1.5f64.to_bits()));
+        }
+    }
+
+    #[test]
+    fn test_round_i32() {
+        for i in -300_000..=300_000 {
+            let x = (f64::from(i) * 0.37).purify();
+            let (xf, xi) = round_i32(x);
+            assert_eq!(f64::from(xi), xf);
+            // On x87, double rounding can move the result to the other
+            // neighbouring integer.
+            assert!((x - xf).abs() <= 0.5 + 1.0 / 2048.0, "x = {x:e}");
+
+            // ties to even
+            let x = f64::from(i) + 0.5;
+            let (xf, xi) = round_i32(x);
+            assert_eq!(f64::from(xi), xf);
+            assert_eq!(xi, i + (i & 1));
         }
     }
 }
