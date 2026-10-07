@@ -200,13 +200,19 @@ fn test_ln_1p_with(mut f: impl FnMut(f32)) {
     }
 }
 
+/// Number of subintervals in which the table used by the implementation
+/// splits each binade.
+const TABLE_N: i32 = 128;
+
 /// Returns the arguments around the centers (where the reduced argument is
 /// zero) and the boundaries (where it is the largest) of the subintervals of
-/// the table used by the implementation, which splits each binade in 16
-/// subintervals, at the binades with exponents in `e`.
+/// the table used by the implementation, at the binades with exponents in `e`.
 fn table_points(e: impl IntoIterator<Item = i32>) -> impl Iterator<Item = f32> {
     e.into_iter().flat_map(|e| {
-        (0..32).flat_map(move |i| values::around(fpmath::scalbn(1.0 + i as f32 / 32.0, e), 1))
+        (0..2 * TABLE_N).flat_map(move |i| {
+            let x = 1.0 + i as f32 / (2 * TABLE_N) as f32;
+            values::around(fpmath::scalbn(x, e), 1)
+        })
     })
 }
 

@@ -1,109 +1,81 @@
-use super::log_core::{log_core_f32, log_core_f64};
+//! Logarithmic functions for `f32`.
+//!
+//! They use the tables of the `f64` functions (see `crate::f64::log`), but
+//! the evaluation uses plain `f64` arithmetic. The argument is reduced to
+//! `x = 2^k * (1 + z) / s`, so
+//!
+//! `ln(x) = (k * ln(2) - ln(s)) + ln(1 + z)`
+//!
+//! where `z = m * s - 1` is exact when the mantissa `m` comes from an `f32`
+//! (24 bits * 24 bits), and `ln(1 + z)` is approximated with a polynomial.
+//! `log2` and `log10` multiply the result by `log2(e)` and `log10(e)`.
+
+use crate::f64::{ln_tbl, split_ln_arg};
 use crate::traits::Float as _;
 
-// GENERATE: consts f64 LN_2 LOG2_E LOG10_E LOG10_2
-const LN_2: f64 = f64::from_bits(0x3FE62E42FEFA39EF); // 6.931471805599453e-1
+// GENERATE: consts f64 LOG2_E LOG10_E
 const LOG2_E: f64 = f64::from_bits(0x3FF71547652B82FE); // 1.4426950408889634e0
 const LOG10_E: f64 = f64::from_bits(0x3FDBCB7B1526E50E); // 4.342944819032518e-1
-const LOG10_2: f64 = f64::from_bits(0x3FD34413509F79FF); // 3.010299956639812e-1
 
 impl crate::generic::Log for f32 {
+    #[inline]
     fn ln_finite(x: Self, edelta: i16) -> Self {
-        // GENERATE: ln_1p_poly f64 5 -0.032 0.032
-        const K2: f64 = f64::from_bits(0xBFE000000002A753); // -5.000000000193076e-1
-        const K3: f64 = f64::from_bits(0x3FD555550FF605CD); // 3.333332687253375e-1
-        const K4: f64 = f64::from_bits(0xBFCFFFFED1D81A63); // -2.4999985929771915e-1
-        const K5: f64 = f64::from_bits(0x3FC9A047AFADF4FF); // 2.0020385816670935e-1
-        const K6: f64 = f64::from_bits(0xBFC55D6E20C696D6); // -1.6691376304986844e-1
-
-        // Split x * 2^edelta = 2^k * hi * (1 + lo)
-        let (k, lo, ln_hi) = log_core_f32(x, edelta);
-
-        // ln_lo = ln(1 + lo)
-        let lo2 = lo * lo;
-        let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6]);
-
-        // x * 2^edelta = 2^k * hi * (1 + lo)
-        // ln(x * 2^edelta) = k * ln(2) + ln(hi) + ln(1 + lo)
-        let r = LN_2 * k + (ln_hi + ln_lo);
-        r as f32
+        ln_f64(f64::from(x), edelta) as f32
     }
 
+    #[inline]
     fn ln_1p_finite(x: Self) -> Self {
-        if x.exponent() <= -10 {
-            // GENERATE: ln_1p_poly f64 4 -0.00196 0.00196
-            const K2: f64 = f64::from_bits(0xBFDFFFFFFFFFC9F1); // -4.999999999992318e-1
-            const K3: f64 = f64::from_bits(0x3FD555555554F43F); // 3.3333333333195364e-1
-            const K4: f64 = f64::from_bits(0xBFD000035B35DA72); // -2.5000080020200877e-1
-            const K5: f64 = f64::from_bits(0x3FC999A1376977B1); // 2.0000090795195782e-1
-
-            let x = f64::from(x);
-            let x2 = x * x;
-            let r = x + horner!(x2, x, [K2, K3, K4, K5]);
-            r as f32
+        let x_exp = x.exponent();
+        let x = f64::from(x);
+        if x_exp < -8 {
+            // |x| < 2^-8
+            ln_1p_poly(x) as f32
         } else {
-            // GENERATE: ln_1p_poly f64 5 -0.032 0.032
-            const K2: f64 = f64::from_bits(0xBFE000000002A753); // -5.000000000193076e-1
-            const K3: f64 = f64::from_bits(0x3FD555550FF605CD); // 3.333332687253375e-1
-            const K4: f64 = f64::from_bits(0xBFCFFFFED1D81A63); // -2.4999985929771915e-1
-            const K5: f64 = f64::from_bits(0x3FC9A047AFADF4FF); // 2.0020385816670935e-1
-            const K6: f64 = f64::from_bits(0xBFC55D6E20C696D6); // -1.6691376304986844e-1
-
-            let xp1 = f64::from(x) + 1.0;
-
-            // Split x + 1 = 2^k * hi * (1 + lo)
-            let (k, lo, ln_hi) = log_core_f64(xp1, 0);
-
-            // ln_lo = ln(1 + lo)
-            let lo2 = lo * lo;
-            let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6]);
-
-            // x * 2^edelta = 2^k * hi * (1 + lo)
-            // ln(x * 2^edelta) = k * ln(2) + ln(hi) + ln(1 + lo)
-            let r = LN_2 * k + (ln_hi + ln_lo);
-            r as f32
+            // `1 + x` is exact when |x| < 2^53, otherwise its relative error
+            // is at most 2^-53. `z` is not exact (`m` can have up to 53 bits),
+            // but its absolute error is at most 2^-53, while the result is at
+            // least about 2^-8.
+            ln_f64(1.0 + x, 0) as f32
         }
     }
 
+    #[inline]
     fn log2_finite(x: Self, edelta: i16) -> Self {
-        // GENERATE: ln_1p_poly f64 5 -0.032 0.032
-        const K2: f64 = f64::from_bits(0xBFE000000002A753); // -5.000000000193076e-1
-        const K3: f64 = f64::from_bits(0x3FD555550FF605CD); // 3.333332687253375e-1
-        const K4: f64 = f64::from_bits(0xBFCFFFFED1D81A63); // -2.4999985929771915e-1
-        const K5: f64 = f64::from_bits(0x3FC9A047AFADF4FF); // 2.0020385816670935e-1
-        const K6: f64 = f64::from_bits(0xBFC55D6E20C696D6); // -1.6691376304986844e-1
-
-        // Split x * 2^edelta = 2^k * hi * (1 + lo)
-        let (k, lo, ln_hi) = log_core_f32(x, edelta);
-
-        // ln_lo = ln(1 + lo)
-        let lo2 = lo * lo;
-        let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6]);
-
-        // x * 2^edelta = 2^k * hi * (1 + lo)
-        // ln(x * 2^edelta) = k * ln(2) + ln(hi) + ln(1 + lo)
-        let r = k + LOG2_E * (ln_hi + ln_lo);
-        r as f32
+        (ln_f64(f64::from(x), edelta) * LOG2_E) as f32
     }
 
+    #[inline]
     fn log10_finite(x: Self, edelta: i16) -> Self {
-        // GENERATE: ln_1p_poly f64 5 -0.032 0.032
-        const K2: f64 = f64::from_bits(0xBFE000000002A753); // -5.000000000193076e-1
-        const K3: f64 = f64::from_bits(0x3FD555550FF605CD); // 3.333332687253375e-1
-        const K4: f64 = f64::from_bits(0xBFCFFFFED1D81A63); // -2.4999985929771915e-1
-        const K5: f64 = f64::from_bits(0x3FC9A047AFADF4FF); // 2.0020385816670935e-1
-        const K6: f64 = f64::from_bits(0xBFC55D6E20C696D6); // -1.6691376304986844e-1
-
-        // Split x * 2^edelta = 2^k * hi * (1 + lo)
-        let (k, lo, ln_hi) = log_core_f32(x, edelta);
-
-        // ln_lo = ln(1 + lo)
-        let lo2 = lo * lo;
-        let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6]);
-
-        // x * 2^edelta = 2^k * hi * (1 + lo)
-        // ln(x * 2^edelta) = k * ln(2) + ln(hi) + ln(1 + lo)
-        let r = LOG10_2 * k + LOG10_E * (ln_hi + ln_lo);
-        r as f32
+        (ln_f64(f64::from(x), edelta) * LOG10_E) as f32
     }
+}
+
+/// Returns `ln(x * 2^edelta)`, where `x` is positive and normal.
+///
+/// The relative error is about 2^-36.8 when the mantissa of `x` has at most
+/// 29 bits (so `z` is exact):
+/// * Polynomial: 2^-36.8 (relative to `ln(1 + z)`, whose magnitude is at
+///   most about the one of the result).
+/// * Evaluation: ~2^-52.
+#[inline]
+fn ln_f64(x: f64, edelta: i16) -> f64 {
+    // x * 2^edelta = 2^k * (1 + z) / s
+    let (k, m, i) = split_ln_arg(x, edelta);
+    let (s, t_hi, t_lo) = ln_tbl(k, i);
+    let z = m * s - 1.0;
+    t_hi + (ln_1p_poly(z) + t_lo)
+}
+
+/// Returns `ln(1 + z)`, for `|z| <= 2^-8`, with a relative error of about
+/// 2^-36.8.
+#[inline]
+fn ln_1p_poly(z: f64) -> f64 {
+    // ln(1 + z) ~= z + z^2 * (K2 + K3 * z + K4 * z^2)
+    // GENERATE: ln_1p_poly f64 3 -0.003907 0.003907
+    const K2: f64 = f64::from_bits(0xBFDFFFFFFFFB9408); // -4.9999999998391376e-1
+    const K3: f64 = f64::from_bits(0x3FD5555FF0FDF601); // 3.333358624875871e-1
+    const K4: f64 = f64::from_bits(0xBFD0000F1747F547); // -2.5000359796088784e-1
+
+    let z2 = z * z;
+    z + z2 * ((K2 + z * K3) + z2 * K4)
 }
