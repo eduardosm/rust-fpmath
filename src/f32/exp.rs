@@ -104,7 +104,7 @@ impl crate::generic::Exp for f32 {
 ///
 /// `|z|` must be less than 2^15.
 #[inline]
-fn reduce(z: f64) -> (f64, f64) {
+pub(super) fn reduce(z: f64) -> (f64, f64) {
     let (mf, m) = round_i32(z);
     let (s, _) = exp2_tbl(m);
     // exact
@@ -128,18 +128,38 @@ fn poly(f: f64) -> f64 {
     P1 + f * (P2 + f * P3)
 }
 
-/// Like `poly`, but with a relative error of 2^-43.6.
-#[inline]
-fn poly_m1(f: f64) -> f64 {
+/// `[P1, P2, P3, P4]` such that
+/// `2^(f / N) - 1 ~= f * (P1 + P2 * f + P3 * f^2 + P4 * f^3)`, with a relative
+/// error of 2^-43.6 for `|f| <= ~1/2`.
+const EXP2_M1_POLY: [f64; 4] = {
+    // exp(r) - 1 ~= r + K2 * r^2 + K3 * r^3 + K4 * r^4 for |r| <= 0.002711 (the
+    // range includes a margin for the double rounding of x87 in `round_i32`)
     // GENERATE: exp_m1_poly f64 3 -0.002711 0.002711
     const K2: f64 = f64::from_bits(0x3FDFFFFFFFFFFDD0); // 4.999999999999689e-1
     const K3: f64 = f64::from_bits(0x3FC55555C24AC4A7); // 1.6666671740452907e-1
     const K4: f64 = f64::from_bits(0x3FA55555D1560E5C); // 4.1666681102495245e-2
 
-    const P1: f64 = LN_2_N;
-    const P2: f64 = K2 * (LN_2_N * LN_2_N);
-    const P3: f64 = K3 * (LN_2_N * LN_2_N * LN_2_N);
-    const P4: f64 = K4 * (LN_2_N * LN_2_N * LN_2_N * LN_2_N);
+    // The same polynomial, with `r = f * ln(2) / N`
+    [
+        LN_2_N,
+        K2 * (LN_2_N * LN_2_N),
+        K3 * (LN_2_N * LN_2_N * LN_2_N),
+        K4 * (LN_2_N * LN_2_N * LN_2_N * LN_2_N),
+    ]
+};
 
-    P1 + f * (P2 + f * (P3 + f * P4))
+/// Returns `(2^(f / N) - 1) / f` (see `EXP2_M1_POLY`).
+#[inline]
+fn poly_m1(f: f64) -> f64 {
+    let [p1, p2, p3, p4] = EXP2_M1_POLY;
+    p1 + f * (p2 + f * (p3 + f * p4))
+}
+
+/// Returns `(even, odd)`, the even and odd parts of `2^(f / N) - 1` (see
+/// `EXP2_M1_POLY`), so `2^(±f / N) - 1 ~= even ± odd`.
+#[inline]
+pub(super) fn exp2_m1_parts(f: f64) -> (f64, f64) {
+    let [p1, p2, p3, p4] = EXP2_M1_POLY;
+    let f2 = f * f;
+    (f2 * (p2 + f2 * p4), f * (p1 + f2 * p3))
 }

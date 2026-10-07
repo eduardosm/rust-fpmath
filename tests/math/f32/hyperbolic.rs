@@ -111,10 +111,26 @@ fn limits() -> [f32; 3] {
     ]
 }
 
-/// Returns the arguments `k * ln(2)` and `(k + 1/2) * ln(2)` (where `k`
-/// changes in the argument reduction) up to the overflow limit.
-fn reduction_boundaries() -> impl Iterator<Item = f32> {
-    (0..=2 * 129).map(|k2| (f64::from(k2) * std::f64::consts::LN_2 / 2.0) as f32)
+/// Number of parts in which the argument reduction of `exp` splits each power
+/// of two: the arguments are reduced to `m * ln(2) / N + r`, with an integer
+/// `m` and `|r| <= ln(2) / (2 * N)`.
+const REDUCTION_N: i32 = 128;
+
+/// Returns the arguments `k * ln(2)` (with results close to powers of two) up
+/// to the overflow limit, and the arguments where `m` changes in the argument
+/// reduction of `exp(x)` (`sinh` and `cosh`), `(m + 1/2) * ln(2) / N`, up to
+/// the overflow limit, and of `exp(2 * x)` (`tanh`),
+/// `(m + 1/2) * ln(2) / (2 * N)`, up to the limit where `tanh` is not
+/// calculated (16).
+fn reduction_boundaries() -> Vec<f32> {
+    // i * ln(2) / d
+    let ln_2_mul = |i: i32, d: i32| (f64::from(i) * std::f64::consts::LN_2 / f64::from(d)) as f32;
+
+    let mut xs = Vec::new();
+    xs.extend((0..=129).map(|k| ln_2_mul(k, 1)));
+    xs.extend((0..=129 * REDUCTION_N).map(|m| ln_2_mul(2 * m + 1, 2 * REDUCTION_N)));
+    xs.extend((0..=47 * REDUCTION_N).map(|m| ln_2_mul(2 * m + 1, 4 * REDUCTION_N)));
+    xs
 }
 
 /// Returns arguments whose results are very close to a midpoint between two

@@ -228,46 +228,21 @@ impl crate::generic::Exp for f64 {
 
     #[inline]
     fn exp_m1_finite(x: Self) -> Self {
-        let x_exp = x.exponent();
-        if x_exp >= 10 {
-            if x.is_sign_negative() {
-                return -1.0;
-            } else {
-                return f64::INFINITY;
-            }
-        } else if x_exp < -12 {
-            if x_exp < -53 {
-                // exp(x) - 1 = x + x^2 / 2 + ..., where |x| < 2^-53, so
-                // x^2 / 2 + ... < 2^-54 * |x|, which is at most half the
-                // spacing of `f64` around x, and the result rounds to x
-                return x;
-            }
-            // |x| < 2^-12
-            // exp(x) - 1 = x + x^2 * (1/2 + x * Q(x)), where the second term
-            // has a relative error of about 3 * 2^-53, so its error relative
-            // to the result is at most 2^-64.4
-            return x + (x * x) * (0.5 + x * exp_m1_poly(x));
-        }
-
-        let red = Reduced::exp(x);
-        let k = red.m >> EXP2_TBL_BITS;
-        if k < -54 {
+        if x.exponent() < -53 {
+            // exp(x) - 1 = x + x^2 / 2 + ..., where |x| < 2^-53, so
+            // x^2 / 2 + ... < 2^-54 * |x|, which is at most half the
+            // spacing of `f64` around x, and the result rounds to x
+            x
+        } else if x < -37.5 {
             // exp(x) < 2^-54, so exp(x) - 1 rounds to -1
-            return -1.0;
-        }
-
-        let q = exp_m1_poly(red.r);
-        if k > MAX_SCALE_K {
+            -1.0
+        } else if x > 709.0 {
             // exp(x) - 1 rounds to the same value as exp(x), which overflows
             // or is very close to overflowing
-            red.eval_to_f64(0.5 + red.r * q)
+            Self::exp_finite(x)
         } else {
-            // exp(x) - 1 = 2^(m / N) * exp(r) - 1 ~= (hi - 1) + lo, where
-            // `hi - 1` is calculated exactly as a sum of two `f64` (it is a
-            // single `f64` when `-1 <= k <= 52`)
-            let (hi, lo) = red.eval_precise(q);
-            let d = F64x2::sub11(hi, 1.0);
-            d.hi() + (d.lo() + lo)
+            let (hi, lo) = exp_m1_parts(x);
+            hi + lo
         }
     }
 
@@ -314,49 +289,83 @@ impl crate::generic::Exp for f64 {
 const MIN_SCALE_K: i32 = -960;
 const MAX_SCALE_K: i32 = 1023;
 
-/// Returns `P(r)` such that `exp(r) - 1 - r ~= r^2 * P(r)`, with an absolute
-/// error of about 2^-64.6, for `|r| <= 0.002711`.
-#[inline]
-fn exp_poly(r: f64) -> f64 {
+/// `[K2, K3, K4, K5]` such that `exp(r) - 1 - r ~= r^2 * P(r)`, with
+/// `P(r) = K2 + K3 * r + K4 * r^2 + K5 * r^3` and an absolute error of about
+/// 2^-64.6, for `|r| <= 0.002711`.
+const EXP_POLY: [f64; 4] = {
     // GENERATE: exp_m1_poly f64 4 -0.002711 0.002711
     const K2: f64 = f64::from_bits(0x3FDFFFFFFFFFFE5A); // 4.999999999999766e-1
     const K3: f64 = f64::from_bits(0x3FC5555555555459); // 1.6666666666665966e-1
     const K4: f64 = f64::from_bits(0x3FA55555C2EEE615); // 4.1666679425770216e-2
     const K5: f64 = f64::from_bits(0x3F81111163F6E1CE); // 8.333335745974415e-3
 
+    [K2, K3, K4, K5]
+};
+
+/// Returns `P(r)` (see `EXP_POLY`).
+#[inline]
+pub(super) fn exp_poly(r: f64) -> f64 {
+    let [k2, k3, k4, k5] = EXP_POLY;
     let r2 = r * r;
-    (K2 + r * K3) + r2 * (K4 + r * K5)
+    (k2 + r * k3) + r2 * (k4 + r * k5)
 }
 
-/// Returns `Q(r)` such that `exp(r) - 1 - r - r^2 / 2 ~= r^3 * Q(r)`, with an
-/// absolute error of about 2^-76.7, which is a relative error of about 2^-68.2
-/// in `exp(r) - 1`, for `|r| <= 0.002711`.
-///
-/// It is more accurate than `exp_poly` because `exp(x) - 1` can be much
-/// smaller than `2^(m / N)`.
+/// Returns `(A, B)` such that `P(±r) = A ± r * B` (see `EXP_POLY`).
 #[inline]
-fn exp_m1_poly(r: f64) -> f64 {
+pub(super) fn exp_poly_parts(r: f64) -> (f64, f64) {
+    let [k2, k3, k4, k5] = EXP_POLY;
+    let r2 = r * r;
+    (k2 + r2 * k4, k3 + r2 * k5)
+}
+
+/// `[K3, K4, K5, K6]` such that `exp(r) - 1 - r - r^2 / 2 ~= r^3 * Q(r)`, with
+/// `Q(r) = K3 + K4 * r + K5 * r^2 + K6 * r^3` and an absolute error of about
+/// 2^-76.7, which is a relative error of about 2^-68.2 in `exp(r) - 1`, for
+/// `|r| <= 0.002711`.
+///
+/// It is more accurate than `EXP_POLY` because `exp(x) - 1` can be much
+/// smaller than `2^(m / N)`.
+const EXP_M1_POLY: [f64; 4] = {
     // GENERATE: exp_m1_poly f64 4 -0.002711 0.002711 2
     const K3: f64 = f64::from_bits(0x3FC55555555554AF); // 1.6666666666666205e-1
     const K4: f64 = f64::from_bits(0x3FA55555555554C8); // 4.1666666666665686e-2
     const K5: f64 = f64::from_bits(0x3F81111156D339E7); // 8.333335363571016e-3
     const K6: f64 = f64::from_bits(0x3F56C16C6D8D4F11); // 1.3888892046524696e-3
 
+    [K3, K4, K5, K6]
+};
+
+/// Returns `Q(r)` (see `EXP_M1_POLY`).
+///
+/// It is evaluated with Horner's method, which is not slower in `exp_m1`
+/// (where the evaluation of `r^2 / 2` takes longer), and prevents the SLP
+/// vectorizer from pairing operations of the polynomial with those of
+/// `eval_precise`, which delays the latter.
+#[inline]
+pub(super) fn exp_m1_poly(r: f64) -> f64 {
+    let [k3, k4, k5, k6] = EXP_M1_POLY;
+    k3 + r * (k4 + r * (k5 + r * k6))
+}
+
+/// Returns `(A, B)` such that `Q(±r) = A ± r * B` (see `EXP_M1_POLY`).
+#[inline]
+pub(super) fn exp_m1_poly_parts(r: f64) -> (f64, f64) {
+    let [k3, k4, k5, k6] = EXP_M1_POLY;
     let r2 = r * r;
-    (K3 + r * K4) + r2 * (K5 + r * K6)
+    (k3 + r2 * k5, k4 + r2 * k6)
 }
 
 /// Reduced argument: `x = m * ln(2) / N + r`, or the equivalent for other
 /// bases.
 #[derive(Copy, Clone)]
-struct Reduced {
-    m: i32,
+pub(super) struct Reduced {
+    pub(super) m: i32,
     /// Multiple of 2^-27 close to `r`, with at most 20 significant bits
     a: f64,
     /// `r - a`
     b: f64,
     /// `r` rounded to `f64`
-    r: f64,
+    pub(super) r: f64,
 }
 
 impl Reduced {
@@ -375,7 +384,7 @@ impl Reduced {
     ///
     /// `|x|` must be less than 1024.
     #[inline]
-    fn exp(x: f64) -> Self {
+    pub(super) fn exp(x: f64) -> Self {
         let x = x.purify();
         let (mf, m) = round_i32(x * (LOG2_E * TBL_N));
         // |m| < 2^18, so `mf * LN_2_N0` is exact, and so is the subtraction
@@ -427,16 +436,36 @@ impl Reduced {
         Self::new(m, u, v, (d - p) * LN_10)
     }
 
-    /// Returns `(hi, lo)` such that `hi + lo ~= 2^(m / N) * exp(r)`, where
-    /// `m` replaces `self.m` (only `m mod N` must be the same), with a
+    /// Returns the reduced argument of `-x`.
+    #[inline]
+    pub(super) fn neg(self) -> Self {
+        Self {
+            m: -self.m,
+            a: -self.a,
+            b: -self.b,
+            r: -self.r,
+        }
+    }
+
+    /// Returns the reduced argument of `x + k * ln(2)` (or the equivalent for
+    /// other bases), so the evaluated results are multiplied by `2^k`.
+    #[inline]
+    pub(super) fn mul_exp2(self, k: i32) -> Self {
+        Self {
+            m: self.m + (k << EXP2_TBL_BITS),
+            ..self
+        }
+    }
+
+    /// Returns `(hi, lo)` such that `hi + lo ~= 2^(m / N) * exp(r)`, with a
     /// relative error of about 2^-64.5 when `exp_poly(r) = p`.
     ///
     /// `hi` is exact and `|lo| < 2^-17 * |hi|`.
     ///
     /// `k = m >> EXP2_TBL_BITS` must be in `[MIN_SCALE_K, MAX_SCALE_K]`.
     #[inline]
-    fn eval(&self, m: i32, p: f64) -> (f64, f64) {
-        let (s, sh, u) = split_s(m);
+    pub(super) fn eval(&self, p: f64) -> (f64, f64) {
+        let (s, sh, u) = split_s(self.m);
         // exact: `sh` has 25 bits and `1 + a` has 28 bits
         let hi = sh * (1.0 + self.a);
         let lo = (sh * self.b + (u + u * self.r)) + (s * (self.r * self.r)) * p;
@@ -444,11 +473,11 @@ impl Reduced {
     }
 
     /// Like `eval`, but with an absolute error of about 2^-75 relative to
-    /// `2^(m / N)` (with `m = self.m`), when `exp_m1_poly(r) = q`.
+    /// `2^(m / N)`, when `exp_m1_poly(r) = q`.
     ///
     /// `k = m >> EXP2_TBL_BITS` must be in `[MIN_SCALE_K, MAX_SCALE_K]`.
     #[inline]
-    fn eval_precise(&self, q: f64) -> (f64, f64) {
+    pub(super) fn eval_precise(&self, q: f64) -> (f64, f64) {
         let (s, sh, u) = split_s(self.m);
 
         // r^2 / 2 = a^2 / 2 + b * (a + b / 2) = w + c, where `a^2 / 2` is exact
@@ -471,14 +500,14 @@ impl Reduced {
     /// Returns `2^(m / N) * exp(r)` rounded to `f64`, where `p` is
     /// `exp_poly(r)` or a more accurate approximation.
     #[inline]
-    fn eval_to_f64(&self, p: f64) -> f64 {
+    pub(super) fn eval_to_f64(&self, p: f64) -> f64 {
         let k = self.m >> EXP2_TBL_BITS;
         if (MIN_SCALE_K..=MAX_SCALE_K).contains(&k) {
-            let (hi, lo) = self.eval(self.m, p);
+            let (hi, lo) = self.eval(p);
             hi + lo
         } else {
             // Calculate `2^(j / N) * exp(r)`, in `[0.99, 2)`, and scale it
-            let (hi, lo) = self.eval(self.m & TBL_MASK, p);
+            let (hi, lo) = self.mul_exp2(-k).eval(p);
             if k > -1022 {
                 // The result is normal or overflows, so the scaling is exact
                 // (or overflows to infinity).
@@ -489,6 +518,29 @@ impl Reduced {
                 F64x2::fast_add11(hi, lo).scalbn_to_f64(k)
             }
         }
+    }
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= exp(x) - 1`, with a relative error
+/// of about 2^-64.
+///
+/// `x` must be in `[-665, 709]` and `|x| >= 2^-53`.
+#[inline]
+pub(super) fn exp_m1_parts(x: f64) -> (f64, f64) {
+    if x.exponent() < -12 {
+        // |x| < 2^-12
+        // exp(x) - 1 = x + x^2 * (1/2 + x * Q(x)), where the second term has
+        // a relative error of about 3 * 2^-53, so its error relative to the
+        // result is at most 2^-64.4
+        (x, (x * x) * (0.5 + x * exp_m1_poly(x)))
+    } else {
+        // exp(x) - 1 = 2^(m / N) * exp(r) - 1 ~= (hi - 1) + lo, where `hi - 1`
+        // is calculated exactly as a sum of two `f64` (it is a single `f64`
+        // when `-1 <= k <= 52`)
+        let red = Reduced::exp(x);
+        let (hi, lo) = red.eval_precise(exp_m1_poly(red.r));
+        let d = F64x2::sub11(hi, 1.0);
+        (d.hi(), d.lo() + lo)
     }
 }
 
