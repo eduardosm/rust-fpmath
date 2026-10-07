@@ -57,8 +57,11 @@ impl crate::generic::Log for f32 {
 /// * Polynomial: 2^-36.8 (relative to `ln(1 + z)`, whose magnitude is at
 ///   most about the one of the result).
 /// * Evaluation: ~2^-52.
+///
+/// With wider mantissas, the rounding of `z` adds an absolute error of up to
+/// 2^-53.
 #[inline]
-fn ln_f64(x: f64, edelta: i16) -> f64 {
+pub(super) fn ln_f64(x: f64, edelta: i16) -> f64 {
     // x * 2^edelta = 2^k * (1 + z) / s
     let (k, m, i) = split_ln_arg(x, edelta);
     let (s, t_hi, t_lo) = ln_tbl(k, i);

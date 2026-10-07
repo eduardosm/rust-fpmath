@@ -38,6 +38,8 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "asin_poly" => approx::gen_asin_poly(&args),
         "atan_poly" => approx::gen_atan_poly(&args),
         "asinh_poly" => approx::gen_asinh_poly(&args),
+        "atanh_poly" => approx::gen_atanh_poly(&args),
+        "asinh_acosh_large_poly" => approx::gen_asinh_acosh_large_poly(&args),
         "gamma_poly" => approx::gen_gamma_poly(&args),
         "ln_gamma_poly" => approx::gen_ln_gamma_poly(&args),
         "gamma_lanczos_poly" => approx::gen_gamma_lanczos_poly(&args),

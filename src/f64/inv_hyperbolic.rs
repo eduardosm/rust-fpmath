@@ -1,143 +1,266 @@
+//! Inverse hyperbolic functions for `f64`.
+//!
+//! They use the evaluation of `ln` (see `super::log`) with `|x|` (the sign is
+//! restored at the end):
+//!
+//! * `asinh(x) = ln(x + sqrt(x^2 + 1))`
+//! * `acosh(x) = ln(x + sqrt(x^2 - 1))`
+//! * `atanh(x) = ln((1 + x) / (1 - x)) / 2`
+//!
+//! The arguments of `ln` are calculated as sums of two `f64`, with relative
+//! errors of about 2^-100 for `asinh` and `acosh`, and 2^-75 for `atanh`
+//! (which is less than 2^-70 relative to its result, greater than 2^-6).
+//!
+//! When `x >= 16`, `asinh` and `acosh` avoid the square root:
+//!
+//! * `asinh(x) = ln(2 * x) + ln((1 + sqrt(1 + 1 / x^2)) / 2)`
+//! * `acosh(x) = ln(2 * x) + ln((1 + sqrt(1 - 1 / x^2)) / 2)`
+//!
+//! where the second terms are approximated with polynomials in `1 / x^2`.
+//!
+//! When `|x|` is small (less than 2^-5 for `asinh` and 2^-6 for `atanh`),
+//! `asinh` and `atanh` are approximated with polynomials.
+
 use super::f64x2::F64x2;
-use super::log_core::log_core_f64x2;
+use super::log::{ln_parts, ln_sum_parts};
 use crate::traits::Float as _;
 
-// GENERATE: consts F64x2 LN_2
-const LN_2: F64x2 = F64x2::from_bits(0x3FE62E42FEFA39EF, 0x3C7ABC9E3B39803F); // 6.931471805599453094172321214582e-1
-
 impl crate::generic::InvHyperbolic for f64 {
+    #[inline]
     fn asinh_finite(x: Self) -> Self {
-        #[inline]
-        fn ln(x: F64x2, edelta: i16) -> F64x2 {
-            // GENERATE: ln_1p_poly F64x2 7 -0.0079 0.0079
-            const K2: F64x2 = F64x2::from_bits(0xBFE0000000000000, 0x3BF48AE7307F28E9); // -4.999999999999999999303989972132e-1
-            const K3: F64x2 = F64x2::from_bits(0x3FD55555555555AF, 0xBC785DAF7B868A9F); // 3.333333333333382896991266095150e-1
-            const K4: F64x2 = F64x2::from_bits(0xBFD0000000000108, 0x3C5423562429FB02); // -2.500000000000146505771851914311e-1
-            const K5: F64x2 = F64x2::from_bits(0x3FC999999890A76E, 0x3C6199AB1DC1AA7B); // 1.999999995180660815331568135373e-1
-            const K6: F64x2 = F64x2::from_bits(0xBFC5555553A9951F, 0x3C647B49A8E55C3F); // -1.666666658885924323645098523820e-1
-            const K7: F64x2 = F64x2::from_bits(0x3FC24994511B3AC0, 0xBC32B4480CCE6FB6); // 1.428704639460729442909190302719e-1
-            const K8: F64x2 = F64x2::from_bits(0xBFC0007FC9817223, 0x3C670499BF4D9226); // -1.250152334131523113132157023371e-1
-
-            let (k, lo, ln_hi) = log_core_f64x2(x, edelta);
-            let lo2 = lo.square();
-            let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6, K7, K8]);
-
-            // ln(x) = ln(2^k * m) = k * ln(2) + ln(m)
-            k * LN_2 + (ln_hi + ln_lo)
-        }
-
-        #[inline]
-        fn asinh_small(x: f64) -> F64x2 {
-            // GENERATE: asinh_poly F64x2 4 -0.016 0.016
-            const K3: F64x2 = F64x2::from_bits(0xBFC5555555555555, 0xBC478427F8538666); // -1.666666666666666599644434242178e-1
-            const K5: F64x2 = F64x2::from_bits(0x3FB333333332EB99, 0x3C555B716C6CD57E); // 7.499999999974562200502960908291e-2
-            const K7: F64x2 = F64x2::from_bits(0xBFA6DB6D9D13FA9E, 0xBC17A84064749E00); // -4.464285414177492116037335393196e-2
-            const K9: F64x2 = F64x2::from_bits(0x3F9F18C94F9C2E6F, 0x3C38C488ABB26AFA); // 3.036799000169171157055376753311e-2
-
-            let x2 = F64x2::square1(x);
-            let x3 = x2 * x;
-            x + horner!(x3, x2, [K3, K5, K7, K9])
-        }
-
-        if x.exponent() <= -7 {
-            asinh_small(x).to_f64()
-        } else if x.exponent() > 500 {
-            // x is very large, avoid overflow when squaring x
-            // |x| + sqrt(x^2 + 1) ~= 2 * |x|
-            ln(F64x2::new1(x.abs()), 1).to_f64().copysign(x)
+        let x_exp = x.exponent();
+        if x_exp < -26 {
+            // asinh(x) = x - x^3 / 6 + ..., where |x| < 2^-26, so
+            // x^3 / 6 - ... < 2^-54 * |x|, which is less than half the spacing
+            // of `f64` around x, and the result rounds to x
+            x
+        } else if x_exp < -5 {
+            // |x| < 2^-5
+            asinh_small(x)
         } else {
-            // t1 = |x| + sqrt(x^2 + 1)
-            let t1 = x.abs() + (F64x2::square1(x) + 1.0).sqrt();
-
-            // t2 = |asinh(x)| = ln(|x| + sqrt(x^2 + 1)) = ln(t1)
-            let t2 = ln(t1, 0);
-
-            // asinh(x) = |asinh(x)| * sgn(x)
-            t2.to_f64().copysign(x)
+            // asinh(x) = asinh(|x|) * sgn(x)
+            let (hi, lo) = asinh_parts(x.abs());
+            (hi + lo).copysign(x)
         }
     }
 
+    #[inline]
     fn acosh_finite(x: Self) -> Self {
-        #[inline]
-        fn ln(x: F64x2, edelta: i16) -> F64x2 {
-            // GENERATE: ln_1p_poly F64x2 7 -0.0079 0.0079
-            const K2: F64x2 = F64x2::from_bits(0xBFE0000000000000, 0x3BF48AE7307F28E9); // -4.999999999999999999303989972132e-1
-            const K3: F64x2 = F64x2::from_bits(0x3FD55555555555AF, 0xBC785DAF7B868A9F); // 3.333333333333382896991266095150e-1
-            const K4: F64x2 = F64x2::from_bits(0xBFD0000000000108, 0x3C5423562429FB02); // -2.500000000000146505771851914311e-1
-            const K5: F64x2 = F64x2::from_bits(0x3FC999999890A76E, 0x3C6199AB1DC1AA7B); // 1.999999995180660815331568135373e-1
-            const K6: F64x2 = F64x2::from_bits(0xBFC5555553A9951F, 0x3C647B49A8E55C3F); // -1.666666658885924323645098523820e-1
-            const K7: F64x2 = F64x2::from_bits(0x3FC24994511B3AC0, 0xBC32B4480CCE6FB6); // 1.428704639460729442909190302719e-1
-            const K8: F64x2 = F64x2::from_bits(0xBFC0007FC9817223, 0x3C670499BF4D9226); // -1.250152334131523113132157023371e-1
-
-            let (k, lo, ln_hi) = log_core_f64x2(x, edelta);
-            let lo2 = lo.square();
-            let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6, K7, K8]);
-
-            // ln(x) = ln(2^k * m) = k * ln(2) + ln(m)
-            k * LN_2 + (ln_hi + ln_lo)
-        }
-
-        if x.exponent() > 500 {
-            // x is very large, avoid overflow when squaring x
-            // x + sqrt(x^2 - 1) ~= 2 * x
-            ln(F64x2::new1(x), 1).to_f64()
-        } else {
-            // t1 = x + sqrt(x^2 - 1)
-            let t1 = x + (F64x2::square1(x) - 1.0).sqrt();
-
-            // acosh(x) = ln(x + sqrt(x^2 - 1)) = ln(t1)
-            ln(t1, 0).to_f64()
-        }
+        let (hi, lo) = acosh_parts(x);
+        hi + lo
     }
 
+    #[inline]
     fn atanh_finite(x: Self) -> Self {
-        #[inline]
-        fn ln(x: F64x2) -> F64x2 {
-            // GENERATE: ln_1p_poly F64x2 7 -0.0079 0.0079
-            const K2: F64x2 = F64x2::from_bits(0xBFE0000000000000, 0x3BF48AE7307F28E9); // -4.999999999999999999303989972132e-1
-            const K3: F64x2 = F64x2::from_bits(0x3FD55555555555AF, 0xBC785DAF7B868A9F); // 3.333333333333382896991266095150e-1
-            const K4: F64x2 = F64x2::from_bits(0xBFD0000000000108, 0x3C5423562429FB02); // -2.500000000000146505771851914311e-1
-            const K5: F64x2 = F64x2::from_bits(0x3FC999999890A76E, 0x3C6199AB1DC1AA7B); // 1.999999995180660815331568135373e-1
-            const K6: F64x2 = F64x2::from_bits(0xBFC5555553A9951F, 0x3C647B49A8E55C3F); // -1.666666658885924323645098523820e-1
-            const K7: F64x2 = F64x2::from_bits(0x3FC24994511B3AC0, 0xBC32B4480CCE6FB6); // 1.428704639460729442909190302719e-1
-            const K8: F64x2 = F64x2::from_bits(0xBFC0007FC9817223, 0x3C670499BF4D9226); // -1.250152334131523113132157023371e-1
-
-            let (k, lo, ln_hi) = log_core_f64x2(x, 0);
-            let lo2 = lo.square();
-            let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6, K7, K8]);
-
-            // ln(x) = ln(2^k * m) = k * ln(2) + ln(m)
-            k * LN_2 + (ln_hi + ln_lo)
-        }
-
-        #[inline]
-        fn ln_1p_small(x: F64x2) -> F64x2 {
-            // GENERATE: ln_1p_poly F64x2 4 -0.0002442 0.0002442
-            const K2: F64x2 = F64x2::from_bits(0xBFDFFFFFFFFFFFFD, 0x3C7586BFDDFAC003); // -4.999999999999998147954008087190e-1
-            const K3: F64x2 = F64x2::from_bits(0x3FD555555555554F, 0x3C75FC1B3C3ACA71); // 3.333333333333330008314750331139e-1
-            const K4: F64x2 = F64x2::from_bits(0xBFD000000D56ECCA, 0xBC5E3006F20FB4A1); // -2.500000124234246289223380012117e-1
-            const K5: F64x2 = F64x2::from_bits(0x3FC99999B7DE5145, 0x3C1C03E76F6D5D76); // 2.000000140948349495650749156055e-1
-
-            let x2 = x.square();
-            x + horner!(x2, x, [K2, K3, K4, K5])
-        }
-
-        let absx = F64x2::new1(x.abs());
-
-        if x.exponent() <= -14 {
-            // t1 = (1 + |x|) / (1 - |x|) - 1 = 2 * |x| / (1 - |x|)
-            let t1 = absx.twice() / (1.0 - absx);
-
-            // atanh(x) = 0.5 * ln((1 + |x|) / (1 - |x|)) * sgn(x)
-            //          = 0.5 * ln(t1 + 1) * sgn(x)
-            ln_1p_small(t1).scalbn_to_f64(-1).copysign(x)
+        let x_exp = x.exponent();
+        if x_exp < -27 {
+            // atanh(x) = x + x^3 / 3 + ..., where |x| < 2^-27, so
+            // x^3 / 3 + ... < 2^-54 * |x|, which is less than half the spacing
+            // of `f64` around x, and the result rounds to x
+            x
+        } else if x_exp < -6 {
+            // |x| < 2^-6
+            atanh_small(x)
         } else {
-            // t1 = (1 + |x|) / (1 - |x|)
-            let t1 = (1.0 + absx) / (1.0 - absx);
-
-            // atanh(x) = 0.5 * ln((1 + |x|) / (1 - |x|)) * sgn(x)
-            //          = 0.5 * ln(t1) * sgn(x)
-            ln(t1).halve().to_f64().copysign(x)
+            // atanh(x) = ln((1 + |x|) / (1 - |x|)) / 2 * sgn(x)
+            let (hi, lo) = ln_atanh_parts(x.abs());
+            (0.5 * (hi + lo)).copysign(x)
         }
     }
+}
+
+/// Returns `asinh(x)`, for `2^-26 <= |x| < 2^-5`.
+#[inline]
+fn asinh_small(x: f64) -> f64 {
+    // asinh(x) ~= x + x^3 * (K3 + K5 * x^2 + ... + K11 * x^8)
+    // GENERATE: asinh_poly f64 5 -0.0313 0.0313
+    const K3: f64 = f64::from_bits(0xBFC5555555555555); // -1.6666666666666666e-1
+    const K5: f64 = f64::from_bits(0x3FB33333333331A1); // 7.499999999999442e-2
+    const K7: f64 = f64::from_bits(0xBFA6DB6DB6A1CF5F); // -4.464285711665527e-2
+    const K9: f64 = f64::from_bits(0x3F9F1C6E2BE455B5); // 3.0381890706015564e-2
+    const K11: f64 = f64::from_bits(0xBF96DB9BE588322A); // -2.2322116741678645e-2
+
+    // The terms after `x` are less than 2^-12.5 * |x|, so their rounding
+    // errors are less than about 2^-64 relative to the result.
+    let x2 = x * x;
+    let x4 = x2 * x2;
+    let q = (K3 + x2 * K5) + x4 * ((K7 + x2 * K9) + x4 * K11);
+    x + x * (x2 * q)
+}
+
+/// Returns `atanh(x)`, for `2^-27 <= |x| < 2^-6`.
+#[inline]
+fn atanh_small(x: f64) -> f64 {
+    // atanh(x) ~= x + x^3 * (K3 + K5 * x^2 + K7 * x^4 + K9 * x^6)
+    // GENERATE: atanh_poly f64 4 -0.0157 0.0157
+    const K3: f64 = f64::from_bits(0x3FD5555555555555); // 3.333333333333333e-1
+    const K5: f64 = f64::from_bits(0x3FC99999999A1B97); // 2.0000000000092363e-1
+    const K7: f64 = f64::from_bits(0x3FC2492479FC2D72); // 1.4285713154127283e-1
+    const K9: f64 = f64::from_bits(0x3FBC755BB73FF572); // 1.1116574500916501e-1
+
+    // The terms after `x` are less than 2^-13.5 * |x|, so their rounding
+    // errors are less than about 2^-65 relative to the result.
+    let x2 = x * x;
+    let x4 = x2 * x2;
+    let q = (K3 + x2 * K5) + x4 * (K7 + x2 * K9);
+    x + x * (x2 * q)
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= asinh(x)`, for `x >= 2^-5`.
+#[inline]
+fn asinh_parts(x: f64) -> (f64, f64) {
+    if x.exponent() >= 4 {
+        // x >= 16
+        ln_2x_plus(x, asinh_large_corr)
+    } else {
+        // w = x^2 + 1 = w_hi + w_lo
+        let (p, pe) = square_parts(x);
+        let w = F64x2::add11(1.0, p);
+        // y = sqrt(x^2 + 1) = y_hi + y_lo
+        let (y_hi, y_lo) = sqrt_parts(w.hi(), w.lo() + pe);
+        // t = x + y = t_hi + t_lo, where y > x
+        let t = F64x2::fast_add11(y_hi, x);
+        // asinh(x) = ln(t)
+        ln_sum_parts(t.hi(), t.lo() + y_lo)
+    }
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= acosh(x)`, for `x > 1`.
+#[inline]
+fn acosh_parts(x: f64) -> (f64, f64) {
+    if x.exponent() >= 4 {
+        // x >= 16
+        ln_2x_plus(x, acosh_large_corr)
+    } else {
+        // w = x^2 - 1 = w_hi + w_lo, which must be exact when `x` is close
+        // to one, where `w` is small: `p + pe` is exact when
+        // `x < 1 + 2^-26`, and so are `p - 1` and `w_lo + pe` (when `p <= 2`).
+        // Otherwise, w > 2^-25, so the errors are less than 2^-77 * w.
+        let (p, pe) = square_parts(x);
+        let w = F64x2::fast_add11(p, -1.0);
+        // `w_hi >= 2^-51`, but `|pe|` can be up to 2^-53, so renormalize to
+        // keep `w_lo` much smaller than `w_hi`, as `sqrt_parts` requires
+        let w = F64x2::fast_add11(w.hi(), w.lo() + pe);
+        // y = sqrt(x^2 - 1) = y_hi + y_lo
+        let (y_hi, y_lo) = sqrt_parts(w.hi(), w.lo());
+        // t = x + y = t_hi + t_lo, where y < x
+        let t = F64x2::fast_add11(x, y_hi);
+        // acosh(x) = ln(t), which is greater than 2^-26 (`x >= 1 + 2^-52`),
+        // as `ln_sum_parts` requires
+        ln_sum_parts(t.hi(), t.lo() + y_lo)
+    }
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= 2 * atanh(x)`, for
+/// `2^-6 <= x < 1`.
+#[inline]
+fn ln_atanh_parts(x: f64) -> (f64, f64) {
+    // u = 1 + x = u_hi + u_lo
+    // v = 1 - x = v_hi + v_lo
+    let u = F64x2::fast_add11(1.0, x);
+    let v = F64x2::fast_add11(1.0, -x);
+
+    // t = u / v = q + r / v, where `q ~= u_hi / v_hi` and r = u - q * v
+    //
+    // q = q1 + q2 and v = v1 + v2, where `q1` and `v1` (`v_hi` truncated)
+    // have 26 bits, so `q1 * v1` and `q2 * v1` are exact, and so is
+    // `u_hi - q1 * v1` (by Sterbenz lemma). The remaining terms (including
+    // `v2`) are less than 2^-23 * u_hi, so their rounding errors are less than
+    // about 2^-75 * u_hi, and so relative to `t`.
+    let q = (u.hi() / v.hi()).purify();
+    let q1 = q.split_hi();
+    let q2 = q - q1;
+    let v1 = v.hi().split_hi();
+    let v2 = (v.hi() - v1) + v.lo();
+    let r = (((u.hi() - q1 * v1) - q2 * v1) + u.lo()) - q * v2;
+
+    // 2 * atanh(x) = ln(t)
+    ln_sum_parts(q, r / v.hi())
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= ln(2 * x) + g(1 / x^2)`, for
+/// `x >= 16`, where `g` is `asinh_large_corr` or `acosh_large_corr`.
+#[inline]
+fn ln_2x_plus(x: f64, g: impl FnOnce(f64) -> f64) -> (f64, f64) {
+    let (hi, lo) = ln_parts(x, 1);
+    if x.exponent() >= 32 {
+        // |g(1 / x^2)| < 2^-66, which is less than 2^-70 relative to the
+        // result (greater than 22), so it is negligible
+        (hi, lo)
+    } else {
+        // `|g(u)| < 2^-9.9` and `u` has a relative error of about 2^-52, so
+        // the error is less than about 2^-62, while the result is greater
+        // than 3.4
+        let u = 1.0 / (x * x);
+        (hi, lo + g(u))
+    }
+}
+
+/// Returns `ln((1 + sqrt(1 + u)) / 2)`, for `2^-500 <= u <= 2^-8` (the lower
+/// bound avoids subnormal intermediate values).
+#[inline]
+pub(crate) fn asinh_large_corr(u: f64) -> f64 {
+    // ln((1 + sqrt(1 + u)) / 2) ~= u / 4 + u^2 * (K2 + K3 * u + ... + K6 * u^4)
+    // GENERATE: asinh_acosh_large_poly f64 asinh 5 1e-30 0.00390625
+    const K2: f64 = f64::from_bits(0xBFB7FFFFFFFFFFFE); // -9.374999999999997e-2
+    const K3: f64 = f64::from_bits(0x3FAAAAAAAAA9ECDB); // 5.208333333299616e-2
+    const K4: f64 = f64::from_bits(0xBFA17FFFFA106D8D); // -3.417968680897863e-2
+    const K5: f64 = f64::from_bits(0x3F993311ECEE9C3C); // 2.4608879171548845e-2
+    const K6: f64 = f64::from_bits(0xBF9319E6AC5F41DB); // -1.8653492232091878e-2
+
+    let u2 = u * u;
+    let q = (K2 + u * K3) + u2 * ((K4 + u * K5) + u2 * K6);
+    0.25 * u + u2 * q
+}
+
+/// Returns `ln((1 + sqrt(1 - u)) / 2)`, for `2^-500 <= u <= 2^-8` (the lower
+/// bound avoids subnormal intermediate values).
+#[inline]
+pub(crate) fn acosh_large_corr(u: f64) -> f64 {
+    // ln((1 + sqrt(1 - u)) / 2) ~= -u / 4 + u^2 * (K2 + K3 * u + ... + K6 * u^4)
+    // GENERATE: asinh_acosh_large_poly f64 acosh 5 1e-30 0.00390625
+    const K2: f64 = f64::from_bits(0xBFB8000000000002); // -9.375000000000003e-2
+    const K3: f64 = f64::from_bits(0xBFAAAAAAAAA9E96C); // -5.208333333299006e-2
+    const K4: f64 = f64::from_bits(0xBFA180000608DB55); // -3.417968820251952e-2
+    const K5: f64 = f64::from_bits(0xBF99331170D1079B); // -2.4608871947073046e-2
+    const K6: f64 = f64::from_bits(0xBF93668296B98AE9); // -1.8945732545385594e-2
+
+    let u2 = u * u;
+    let q = (K2 + u * K3) + u2 * ((K4 + u * K5) + u2 * K6);
+    -0.25 * u + u2 * q
+}
+
+/// Returns `(p, e)` such that `p` is `x^2` rounded to `f64` and `p + e ~= x^2`,
+/// with an error less than 2^-104 * x^2, and no error when
+/// `1 <= x < 1 + 2^-26` (as `acosh_parts` requires).
+#[inline]
+fn square_parts(x: f64) -> (f64, f64) {
+    // x = a + b, where `a` has 26 bits and `b` at most 27, so `a^2` and
+    // `2 * a * b` are exact, and so is `a^2 - p` (by Sterbenz lemma). Only
+    // `b^2` (less than 2^-50 * x^2) and the following sums can be rounded.
+    // When `1 <= x < 1 + 2^-26`, `a = 1` and `b` has at most 26 bits, so
+    // `b^2` is exact, and so are the sums, whose results are multiples of
+    // 2^-104 with magnitudes below 2^-50.
+    let a = x.split_hi();
+    let b = x - a;
+    let p = (x * x).purify();
+    let e = ((a * a - p) + 2.0 * a * b) + b * b;
+    (p, e)
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= sqrt(w_hi + w_lo)`, with a
+/// relative error of about 2^-100, where `w_hi` is positive and normal and
+/// `|w_lo| <= 2^-51 * w_hi`.
+#[inline]
+fn sqrt_parts(w_hi: f64, w_lo: f64) -> (f64, f64) {
+    // y ~= sqrt(w_hi) and r ~= 1 / sqrt(w_hi), with relative errors of about
+    // 2^-52
+    let (y, r) = super::fast_sqrt(w_hi);
+    let y = y.purify();
+    // One Newton iteration, with the residual calculated accurately:
+    // sqrt(w) ~= y + (w - y^2) / (2 * y) ~= y + (w - y^2) * r / 2
+    // `w_hi - p` is exact (by Sterbenz lemma).
+    let (p, pe) = square_parts(y);
+    let res = ((w_hi - p) - pe) + w_lo;
+    (y, res * (0.5 * r))
 }

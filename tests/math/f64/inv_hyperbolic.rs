@@ -80,9 +80,9 @@ fn test_asinh_with(mut f: impl FnMut(f64)) {
     }
 
     // Test the arguments around the limits where the implementation changes
-    // the evaluation method (2^-6 and 2^501)
-    for x in [fpmath::scalbn(1.0, -6), fpmath::scalbn(1.0, 501)] {
-        for x in values::around(x, 10_000) {
+    // the evaluation method (2^-26, 2^-5, 16 and 2^32)
+    for e in [-26, -5, 4, 32] {
+        for x in values::around(fpmath::scalbn(1.0, e), 10_000) {
             f(x);
         }
     }
@@ -126,22 +126,32 @@ fn test_acosh_with(mut f: impl FnMut(f64)) {
         f(purify(1.0 + v));
     }
 
-    // Test the arguments around the limit where the implementation changes the
-    // evaluation method (2^501)
-    for x in values::around(fpmath::scalbn(1.0, 501), 10_000) {
-        f(x);
+    // Test the arguments around the limits where the implementation changes
+    // the evaluation method (16 and 2^32)
+    for e in [4, 32] {
+        for x in values::around(fpmath::scalbn(1.0, e), 10_000) {
+            f(x);
+        }
     }
 
     // Test results that are very close to a midpoint between two consecutive
     // values, which are the hardest to round. With large arguments, the
-    // function is flat (its result changes much less than an ULP between
-    // consecutive arguments), so the arguments closest to the inverse of a
-    // midpoint have such results (see `values::midpoint_inverse`).
+    // function is flat (its result changes by about `1 / ln(2 * x)` ULPs
+    // between consecutive arguments), so the arguments closest to the inverse
+    // of a midpoint have such results (see `values::midpoint_inverse`). It is
+    // less flat at the binades below 2^64, so more values are tested there.
     let cosh = |y: &rug::Float| rug::Float::with_val(EXT_PREC, y).cosh();
-    for x0 in values::binades((64..=1023).step_by(2), 20) {
+    let x0s = values::binades(4..=63, 1000).chain(values::binades((64..=1023).step_by(2), 20));
+    for x0 in x0s {
         for x in values::around(values::midpoint_inverse(x0, acosh, cosh), 1) {
             f(x);
         }
+    }
+    // Between 2 and 16, `acosh` is not flat, so search for them among the
+    // arguments close to values spread across each binade (see
+    // `values::midpoint_scan`).
+    for x0 in values::binades(1..=3, 300) {
+        f(values::midpoint_scan(x0, acosh, 1 << 14));
     }
 }
 
@@ -181,10 +191,12 @@ fn test_atanh_with(mut f: impl FnMut(f64)) {
         f(purify(1.0 - v));
     }
 
-    // Test the arguments around the limit where the implementation changes the
-    // evaluation method (2^-13)
-    for x in values::around(fpmath::scalbn(1.0, -13), 10_000) {
-        f(x);
+    // Test the arguments around the limits where the implementation changes
+    // the evaluation method (2^-27 and 2^-6)
+    for e in [-27, -6] {
+        for x in values::around(fpmath::scalbn(1.0, e), 10_000) {
+            f(x);
+        }
     }
 
     // Test results that are very close to a midpoint between two consecutive
@@ -210,9 +222,11 @@ fn test_atanh_with(mut f: impl FnMut(f64)) {
 ///
 /// With small arguments, `asinh(x) = x + g(x)` is not flat, but `g` is (see
 /// `values::offset_midpoint`). With large arguments, `asinh` is flat (its
-/// result changes much less than an ULP between consecutive arguments), so
-/// the arguments closest to the inverse of a midpoint have such results (see
-/// `values::midpoint_inverse`).
+/// result changes by about `1 / ln(2 * x)` ULPs between consecutive
+/// arguments), so the arguments closest to the inverse of a midpoint have such
+/// results (see `values::midpoint_inverse`). It is less flat at the binades
+/// below 2^64, so more values are tested there. In between, they are searched
+/// among the arguments close to other values (see `values::midpoint_scan`).
 fn asinh_near_midpoints() -> Vec<f64> {
     let mut xs = Vec::new();
 
@@ -228,8 +242,16 @@ fn asinh_near_midpoints() -> Vec<f64> {
     }
 
     let sinh = |y: &rug::Float| rug::Float::with_val(EXT_PREC, y).sinh();
-    for x0 in values::binades((64..=1023).step_by(2), 20) {
+    let x0s = values::binades(4..=63, 1000).chain(values::binades((64..=1023).step_by(2), 20));
+    for x0 in x0s {
         xs.extend(values::around(values::midpoint_inverse(x0, asinh, sinh), 1));
+    }
+
+    // Between 0.5 and 16, `asinh` is not flat, so search for them among the
+    // arguments close to values spread across each binade (see
+    // `values::midpoint_scan`).
+    for x0 in values::binades(-1..=3, 300) {
+        xs.push(values::midpoint_scan(x0, asinh, 1 << 14));
     }
 
     // Close arguments can give the same midpoint

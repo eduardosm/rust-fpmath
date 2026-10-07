@@ -177,6 +177,44 @@ pub(super) fn midpoint_inverse(
     inv(&mid).to_f64()
 }
 
+/// Returns the value within `n` positions of `x` whose result with `f` is the
+/// closest to a midpoint between two consecutive values.
+///
+/// This works where `f` is not flat (its result can change by more than an
+/// ULP between consecutive arguments): the positions of the results relative
+/// to the midpoints (in ULPs) are approximated with the first and second
+/// differences of `f` at `x`, so `f` is evaluated only three times. The
+/// approximation fails (and the result is not as close to a midpoint) where
+/// the results cross a power of two.
+pub(super) fn midpoint_scan(x: f64, f: impl Fn(&rug::Float) -> rug::Float, n: u32) -> f64 {
+    let ord = super::ordinal(x);
+    let eval = |o: i64| f(&rug::Float::with_val(EXT_PREC, super::from_ordinal(o)));
+    let (ym, y0, yp) = (eval(ord - 1), eval(ord), eval(ord + 1));
+
+    // In ULPs of `y0`: its position relative to the midpoints, and the first
+    // and second differences
+    let e = super::exponent(y0.to_f64()) - 52;
+    let p0: rug::Float = (rug::Float::with_val(EXT_PREC, &y0) >> e) - 0.5f64;
+    let p0 = (p0.clone() - p0.floor()).to_f64();
+    let d1 = (rug::Float::with_val(EXT_PREC, &yp - &ym) >> (e + 1)).to_f64();
+    let d2 = ((rug::Float::with_val(EXT_PREC, &yp + &ym)
+        - rug::Float::with_val(EXT_PREC, &y0 * 2))
+        >> e)
+        .to_f64();
+
+    let dist = |j: i64| {
+        let j = j as f64;
+        let p = p0 + j * d1 + 0.5 * j * j * d2;
+        let frac = p - p.floor();
+        frac.min(1.0 - frac)
+    };
+    let n = i64::from(n);
+    let best = (-n..=n)
+        .min_by(|&i, &j| dist(i).total_cmp(&dist(j)))
+        .unwrap();
+    super::from_ordinal(ord + best)
+}
+
 /// Returns the value closest to the one in the binade of `x0` where
 /// `g(x) = f(x) - x` is an odd multiple of half an ULP of `x`, if `f` of it is
 /// also in that binade, which makes it very close to a midpoint between two
