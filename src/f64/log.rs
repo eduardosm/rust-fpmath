@@ -255,6 +255,20 @@ pub(super) fn ln_sum_parts(t_hi: f64, t_lo: f64) -> (f64, f64) {
     (hi, lo + t_lo / t_hi)
 }
 
+/// Returns `(hi, lo)` such that `hi + lo ~= ln(x * 2^edelta)`, with a
+/// relative error of about 2^-75.
+///
+/// It is slower than `ln_parts`, and meant for `pow`, which amplifies the
+/// error of the logarithm by up to `|y * ln(x)|` (about 2^9.5).
+///
+/// `x` must be positive and normal.
+#[inline]
+pub(super) fn ln_accurate_parts(x: f64, edelta: i16) -> (f64, f64) {
+    let red = Reduced::new(x, edelta);
+    let (hi, lo) = ln_1p_poly_accurate(red.zh, red.zl);
+    red.add_t(hi, lo)
+}
+
 /// Splits `x * 2^edelta = 2^k * m`, with `1 <= m < 2`, returning `(k, m, i)`,
 /// where `i = round((m - 1) * N)`, so `0 <= i <= N`.
 ///
@@ -346,14 +360,6 @@ impl Reduced {
 /// `|lo| <= 2^-16 * |hi|`.
 #[inline]
 fn ln_1p_poly(zh: f64, zl: f64) -> (f64, f64) {
-    // ln(1 + z) - z + z^2 / 2 ~= z^3 * (K3 + K4 * z + ... + K7 * z^4)
-    // GENERATE: ln_1p_poly f64 5 -0.003907 0.003907 2
-    const K3: f64 = f64::from_bits(0x3FD5555555555557); // 3.333333333333334e-1
-    const K4: f64 = f64::from_bits(0xBFCFFFFFFFF7C18A); // -2.4999999998500427e-1
-    const K5: f64 = f64::from_bits(0x3FC99999998752F7); // 1.999999999667563e-1
-    const K6: f64 = f64::from_bits(0xBFC5556D297ED01A); // -1.6666950727597013e-1
-    const K7: f64 = f64::from_bits(0x3FC24941EDC64E0D); // 1.4286064252938538e-1
-
     // ln(1 + zh + zl) ~= ln(1 + zh) + zl * (1 - zh)
     // ln(1 + zh) ~= zh - zh^2 / 2 + zh^3 * Q(zh)
     //
@@ -364,9 +370,74 @@ fn ln_1p_poly(zh: f64, zl: f64) -> (f64, f64) {
     let s = F64x2::fast_add11(zh, -(0.5 * a) * a);
 
     let zh2 = zh * zh;
-    let q = (K3 + zh * K4) + zh2 * ((K5 + zh * K6) + zh2 * K7);
     let lo = (s.lo() + (zl - zl * zh)) - (0.5 * b) * (zh + a);
-    (s.hi(), lo + (zh2 * zh) * q)
+    (s.hi(), lo + (zh2 * zh) * ln_1p_q(zh))
+}
+
+/// Returns `Q(z)` such that `ln(1 + z) ~= z - z^2 / 2 + z^3 * Q(z)`, for
+/// `|z| <= 2^-8`, with a relative error of 2^-64.2 (in `ln(1 + z)`).
+#[inline]
+pub(crate) fn ln_1p_q(z: f64) -> f64 {
+    // GENERATE: ln_1p_poly f64 5 -0.003907 0.003907 2
+    const K3: f64 = f64::from_bits(0x3FD5555555555557); // 3.333333333333334e-1
+    const K4: f64 = f64::from_bits(0xBFCFFFFFFFF7C18A); // -2.4999999998500427e-1
+    const K5: f64 = f64::from_bits(0x3FC99999998752F7); // 1.999999999667563e-1
+    const K6: f64 = f64::from_bits(0xBFC5556D297ED01A); // -1.6666950727597013e-1
+    const K7: f64 = f64::from_bits(0x3FC24941EDC64E0D); // 1.4286064252938538e-1
+
+    let z2 = z * z;
+    (K3 + z * K4) + z2 * ((K5 + z * K6) + z2 * K7)
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= ln(1 + zh + zl)`, for
+/// `|zh + zl| <= 2^-8` and `|zl| <= 2^-52 * |zh|`, with a relative error of
+/// about 2^-77:
+/// * Polynomial approximation: 2^-82.7.
+/// * Evaluation of the terms after `zh - zh^2 / 2 + zh^3 / 3` (magnitude below
+///   2^-25.9 * |zh|): ~2^-77.
+/// * Neglected `zl` terms: 2^-77.
+///
+/// `|lo| <= 2^-25 * |hi|`.
+#[inline]
+fn ln_1p_poly_accurate(zh: f64, zl: f64) -> (f64, f64) {
+    // ln(1 + z) - z + z^2 / 2 - z^3 / 3 ~= z^4 * (K4 + K5 * z + ... + K9 * z^5)
+    // GENERATE: ln_1p_poly f64 6 -0.003907 0.003907 3
+    const K4: f64 = f64::from_bits(0xBFD0000000000002); // -2.500000000000001e-1
+    const K5: f64 = f64::from_bits(0x3FC999999999999F); // 2.0000000000000015e-1
+    const K6: f64 = f64::from_bits(0xBFC5555555449C4C); // -1.6666666663624807e-1
+    const K7: f64 = f64::from_bits(0x3FC2492492330E38); // 1.4285714281696626e-1
+    const K8: f64 = f64::from_bits(0xBFC0001A3E69B0CA); // -1.2500312850477818e-1
+    const K9: f64 = f64::from_bits(0x3FBC71FF703FF33D); // 1.1111446848367464e-1
+
+    // 1/3 = K3_HI + K3_LO, where `K3_HI` has 11 bits and `K3_LO` has a
+    // relative error of 2^-53 (2^-68.6 relative to 1/3)
+    const K3_HI: f64 = f64::from_bits((1.0f64 / 3.0).to_bits() & (u64::MAX << 42));
+    const K3_LO: f64 = (1.0 - 3.0 * K3_HI) / 3.0;
+
+    // ln(1 + zh + zl) ~= ln(1 + zh) + zl * (1 - zh + zh^2)
+    // ln(1 + zh) ~= zh - zh^2 / 2 + zh^3 / 3 + zh^4 * Q(zh)
+    //
+    // The leading parts of the quadratic and cubic terms are added exactly to
+    // `zh`, so the rounding errors of the remaining terms are small:
+    // * zh = a2 + b2, where `a2` has 26 bits, so `a2^2 / 2` is exact, and
+    //   zh^2 / 2 = a2^2 / 2 + b2 * (zh + a2) / 2
+    // * zh = a3 + b3, where `a3` has 14 bits, so `K3_HI * a3^3` is exact, and
+    //   zh^3 / 3 = K3_HI * a3^3 + K3_HI * b3 * (zh^2 + zh * a3 + a3^2) + K3_LO * zh^3
+    let a2 = zh.split_hi();
+    let b2 = zh - a2;
+    let a3 = f64::from_bits(zh.to_bits() & (u64::MAX << 39));
+    let b3 = zh - a3;
+    let s1 = F64x2::fast_add11(zh, -(0.5 * a2) * a2);
+    let s2 = F64x2::fast_add11(s1.hi(), K3_HI * ((a3 * a3) * a3));
+
+    let zh2 = zh * zh;
+    let zh4 = zh2 * zh2;
+    let q = ((K4 + zh * K5) + zh2 * (K6 + zh * K7)) + zh4 * (K8 + zh * K9);
+    let c2 = (0.5 * b2) * (zh + a2);
+    let c3 = K3_HI * (b3 * ((zh2 + zh * a3) + a3 * a3)) + K3_LO * (zh2 * zh);
+    let cl = zl * ((1.0 - zh) + zh2);
+    let lo = ((((s1.lo() + s2.lo()) - c2) + c3) + cl) + zh4 * q;
+    (s2.hi(), lo)
 }
 
 /// Returns `(c_hi + c_lo) * (u_hi + u_lo)` rounded to `f64`, where `c_hi` has

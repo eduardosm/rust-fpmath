@@ -36,7 +36,16 @@ pub(crate) use trigonometric::{
     tanpi,
 };
 
-fn is_int<F: Float>(x: F) -> bool {
+/// Returns whether `x` is positive, normal and finite.
+#[inline]
+fn is_pos_normal<F: Float>(x: F) -> bool {
+    // sign and exponent
+    let se = x.to_raw() >> F::MANT_BITS;
+    se >= F::Raw::ONE && se < F::Raw::from(F::MAX_RAW_EXP)
+}
+
+/// Returns whether `x` is a non-zero integer, or infinity or NaN.
+pub(crate) fn is_int<F: Float>(x: F) -> bool {
     let e = x.raw_exp();
     if e > F::EXP_OFFSET + F::RawExp::from(F::MANT_BITS) {
         true

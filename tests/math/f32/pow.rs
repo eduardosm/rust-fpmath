@@ -114,6 +114,17 @@ fn test_powi_with(mut f: impl FnMut(f32, i32)) {
         }
     }
 
+    // Test the exponents around the limit where the implementation changes
+    // the evaluation method (1024), and smaller ones, with bases at every
+    // binade (where the results can also be beyond the range limit of that
+    // method, 2^1000)
+    for x in values::binades(-126..=127, 3).chain(values::subnormals(10)) {
+        for y in (4..=40).chain(1000..=1050) {
+            f(x, y);
+            f(x, -y);
+        }
+    }
+
     // Test results spread across the whole range, with bases at every binade,
     // including subnormals and bases close to one (where the exponents can
     // saturate)

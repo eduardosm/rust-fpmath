@@ -37,12 +37,7 @@ impl crate::generic::Exp for f32 {
             }
         }
 
-        // The relative error before the final rounding is about 2^-40.5:
-        // * Polynomial: 2^-40.7 (relative to `exp(r) ~= 1`).
-        // * `x * log2(e) * N` (|x| < 128): 2^-46.
-        // * Table value and evaluation: ~2^-51.
-        let (s, f) = reduce(f64::from(x) * (LOG2_E * TBL_N));
-        (s + (s * f) * poly(f)) as f32
+        exp_f64(f64::from(x)) as f32
     }
 
     #[inline]
@@ -97,6 +92,16 @@ impl crate::generic::Exp for f32 {
         let (s, f) = reduce(f64::from(x) * (LOG2_10 * TBL_N));
         (s + (s * f) * poly(f)) as f32
     }
+}
+
+/// Returns `exp(x)`, for `|x| < 128`, with a relative error of about 2^-40.5:
+/// * Polynomial: 2^-40.7 (relative to `exp(r) ~= 1`).
+/// * `x * log2(e) * N`: 2^-46.
+/// * Table value and evaluation: ~2^-51.
+#[inline]
+pub(super) fn exp_f64(x: f64) -> f64 {
+    let (s, f) = reduce(x * (LOG2_E * TBL_N));
+    s + (s * f) * poly(f)
 }
 
 /// Splits `z = m + f`, where `m` is an integer and `|f| <= ~1/2`, returning

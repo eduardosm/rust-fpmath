@@ -1,91 +1,162 @@
+//! Power functions for `f64`.
+//!
+//! `|x|^y = exp(y * ln(|x|))`, where `ln(|x|)` is calculated with extra
+//! precision (see `super::log::ln_accurate_parts`), because its relative error
+//! is amplified by `|y * ln(|x|)|`, which can be up to about 745 when the
+//! result is finite and non-zero. `y * ln(|x|)` is calculated as a sum of two
+//! `f64`, and its exponential with the evaluation of `exp` (see `super::exp`).
+//!
+//! The relative error before the final rounding is about 2^-63.5:
+//! * Logarithm: 2^-75, amplified by up to 2^9.6.
+//! * Product: 2^-76, also amplified by up to 2^9.6.
+//! * Exponential: 2^-64.5.
+//!
+//! Integer exponents with `|y| <= 64` (in both `pow` and `powi`) use binary
+//! exponentiation with extra precision instead (see `powi_small`), when the
+//! result is far from overflowing or underflowing.
+
+use super::exp::{Reduced, exp_poly};
 use super::f64x2::F64x2;
-use super::log_core::log_core_f64;
-use crate::generic::round_fi;
+use super::log::ln_accurate_parts;
+use crate::generic::is_int;
 use crate::traits::Float as _;
 
-// GENERATE: consts f64 LOG2_E
-const LOG2_E: f64 = f64::from_bits(0x3FF71547652B82FE); // 1.4426950408889634e0
-
-// GENERATE: consts F64x2 LN_2
-const LN_2: F64x2 = F64x2::from_bits(0x3FE62E42FEFA39EF, 0x3C7ABC9E3B39803F); // 6.931471805599453094172321214582e-1
-
 impl crate::generic::Pow for f64 {
+    #[inline]
     fn pow_finite(x: Self, xedelta: Self::Exp, y: Self, sign: bool) -> Self {
-        pow_core(x, xedelta, y, sign)
+        // Small integer exponents are evaluated like in `powi`, which is
+        // faster and gives the same results
+        let absz = if y.abs() <= f64::from(POWI_SMALL_MAX) && is_int(y) {
+            abs_powi(x, xedelta, y as i32)
+        } else {
+            exp_y_ln(x.abs(), xedelta, y)
+        };
+        if sign { -absz } else { absz }
     }
 
+    #[inline]
     fn powi_finite(x: Self, xedelta: Self::Exp, y: i32) -> Self {
-        pow_core(x, xedelta, y.into(), x.is_sign_negative() && (y & 1) != 0)
+        let absz = abs_powi(x, xedelta, y);
+        if x.is_sign_negative() && (y & 1) != 0 {
+            -absz
+        } else {
+            absz
+        }
     }
 }
 
-fn pow_core(x: f64, xedelta: i16, y: f64, sign: bool) -> f64 {
-    #[inline]
-    fn ln(x: f64, edelta: i16) -> F64x2 {
-        // GENERATE: ln_1p_poly F64x2 8 -0.0079 0.0079
-        const K2: F64x2 = F64x2::from_bits(0xBFE0000000000000, 0x3BEF620EAB9F01C8); // -4.999999999999999999468350684492e-1
-        const K3: F64x2 = F64x2::from_bits(0x3FD5555555555555, 0x3C7520A75110AF2D); // 3.333333333333333331548473888204e-1
-        const K4: F64x2 = F64x2::from_bits(0xBFD00000000000CD, 0x3C0D1BE0AFE27FF5); // -2.500000000000113795887528479459e-1
-        const K5: F64x2 = F64x2::from_bits(0x3FC9999999999CC1, 0x3C6F16A00C4DE5CE); // 2.000000000000224233341875565267e-1
-        const K6: F64x2 = F64x2::from_bits(0xBFC5555553EC31BC, 0x3C651D9EA2A5981B); // -1.666666660097585370166927936244e-1
-        const K7: F64x2 = F64x2::from_bits(0x3FC24924904E0DE7, 0x3C61B0F5CC8E733D); // 1.428571419347541636820028854137e-1
-        const K8: F64x2 = F64x2::from_bits(0xBFC00075C6134032, 0x3C5FCD3B2BFB0C68); // -1.250140397228292552397705588219e-1
-        const K9: F64x2 = F64x2::from_bits(0x3FBC72C9FEF9C824, 0xBC523EFFDD8E4C78); // 1.111265418528835607196006034900e-1
-
-        let (k, lo, ln_hi) = log_core_f64(x, edelta);
-        let lo2 = lo.square();
-        let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6, K7, K8, K9]);
-
-        // ln(x) = ln(2^k * m) = k * ln(2) + ln(m)
-        k * LN_2 + (ln_hi + ln_lo)
+/// Returns `|x * 2^xedelta|^y`, where `x` is normal.
+#[inline]
+fn abs_powi(x: f64, xedelta: i16, y: i32) -> f64 {
+    let n = y.unsigned_abs();
+    // |x| = 2^e * m, with 1 <= m < 2, so 2^(n * e) <= |x^n| < 2^(n * (e + 1))
+    let e = i32::from(x.exponent());
+    if xedelta == 0
+        && n <= POWI_SMALL_MAX
+        && (n as i32) * e >= -POWI_SMALL_RANGE
+        && (n as i32) * (e + 1) <= POWI_SMALL_RANGE
+    {
+        powi_small(x.abs(), y)
+    } else {
+        exp_y_ln(x.abs(), xedelta, f64::from(y))
     }
+}
 
-    #[inline]
-    fn exp(x: F64x2) -> f64 {
-        // x = k*ln(2) + r
-        // k is an integer
-        // |r| <= 0.5*ln(2)
-        let (kf, k) = round_fi(x.hi() * LOG2_E);
-        let r = x - kf * LN_2;
+/// Maximum `|y|` for `powi_small`.
+const POWI_SMALL_MAX: u32 = 64;
 
-        // exp(r) = exp(r / s)^s
-        // s = 2^5
+/// `x^y` and its reciprocal must be in `[2^-RANGE, 2^RANGE]` for `powi_small`,
+/// so no intermediate value overflows or is subnormal.
+const POWI_SMALL_RANGE: i32 = 960;
 
-        let rs = r.scalbn_fast(-5);
+/// Returns `x^y`, for `1 <= |y| <= POWI_SMALL_MAX`, with binary
+/// exponentiation, where `x` is positive and normal, and `x^|y|` is in
+/// `[2^-POWI_SMALL_RANGE, 2^POWI_SMALL_RANGE]`.
+///
+/// The powers `x^m` (with `m <= |y|`, so they are between 1 and `x^|y|`)
+/// are calculated as sums of two `f64`, `h + l`, where `h` has 26 bits and
+/// `|l| < 2^-24.9 * h`, so the leading products `h * h` and `h * x1` (where
+/// `x = x1 + x2` and `x1` has 26 bits) are exact. Each squaring or product
+/// has a relative error less than about 2^-75.6, so `x^|y|` has a relative
+/// error less than `(|y| - 1) * 2^-75.6`, which is 2^-69.6 at most.
+#[inline]
+fn powi_small(x: f64, y: i32) -> f64 {
+    let n = y.unsigned_abs();
+    let x1 = x.split_hi();
+    let x2 = x - x1;
 
-        // GENERATE: exp_m1_poly F64x2 6 -0.011 0.011
-        const K2: F64x2 = F64x2::from_bits(0x3FE0000000000000, 0x3C5626A31E1B3BCF); // 5.000000000000000048032165218071e-1
-        const K3: F64x2 = F64x2::from_bits(0x3FC5555555555555, 0x3C68E2B24638DCCF); // 1.666666666666666682071875965350e-1
-        const K4: F64x2 = F64x2::from_bits(0x3FA555555554A281, 0xBC4822E2FBE19B24); // 4.166666666634899917392087166581e-2
-        const K5: F64x2 = F64x2::from_bits(0x3F81111111108755, 0xBC13BCE0AFDAB175); // 8.333333333272166600425042119601e-3
-        const K6: F64x2 = F64x2::from_bits(0x3F56C171BA3E471F, 0x3BD27D6517FDE5F9); // 1.388894140266612252425777542649e-3
-        const K7: F64x2 = F64x2::from_bits(0x3F2A01A6678168B9, 0xBB8DBDB99C80076E); // 1.984134321471647986939491602879e-4
-
-        let rs2 = rs.square();
-        let mut t = rs + horner!(rs2, rs, [K2, K3, K4, K5, K6, K7]);
-
-        // exp(r) - 1 = (t + 1)^s - 1
-        // (t + 1)^2 - 1 = t^2 + 2*t
-        for _ in 0..5 {
-            t = t.square() + t.twice();
+    // From the most significant bit of `n`
+    let (mut h, mut l) = (x1, x2);
+    let mut bit = (1u32 << (31 - n.leading_zeros())) >> 1;
+    while bit != 0 {
+        // (h + l)^2 = h^2 + (2 * h + l) * l
+        (h, l) = renorm(h * h, (2.0 * h + l) * l);
+        if (n & bit) != 0 {
+            // (h + l) * x = h * x1 + (h * x2 + l * x)
+            (h, l) = renorm(h * x1, h * x2 + l * x);
         }
-
-        // exp(x) = exp(r) * 2^k = (t + 1) * 2^k
-        (t + 1.0).scalbn_to_f64(k as i32)
+        bit >>= 1;
     }
 
-    // |z| = |x|^y = exp(y * ln(|x|))
-    let lnx = ln(x.abs(), xedelta);
-    let ylnx = y * lnx.hi();
-    let absz = if ylnx.exponent() >= 10 {
-        if ylnx.is_sign_negative() {
+    if y < 0 {
+        // 1 / (h + l) = q / (1 - r) ~= q + q * r, where `q ~= 1 / (h + l)`
+        // and r = 1 - q * (h + l), with |r| < 2^-51
+        //
+        // q = q1 + q2, where `q1` has 26 bits, so `q1 * h` and `q2 * h` are
+        // exact, and so is `1 - q1 * h` (by Sterbenz lemma). The remaining
+        // terms are less than 2^-24 in magnitude, so the error of `r` is less
+        // than about 2^-76.
+        let q = (1.0 / (h + l)).purify();
+        let q1 = q.split_hi();
+        let q2 = q - q1;
+        let r = ((1.0 - q1 * h) - q2 * h) - q * l;
+        q + q * r
+    } else {
+        h + l
+    }
+}
+
+/// Renormalizes `p + m` to `h + l`, where `h` has 26 bits and
+/// `|l| < 2^-24.9 * |h|`, for `|m| <= 2^-22 * |p|`, with a relative error less
+/// than 2^-77.9.
+#[inline]
+fn renorm(p: f64, m: f64) -> (f64, f64) {
+    // `h` is `p + m` rounded and truncated to 26 bits, so it is a multiple of
+    // the ULP of `p`, and `p - h` is exact (its magnitude is less than
+    // 2^-20 * |p|).
+    let h = (p + m).purify().split_hi();
+    (h, (p - h) + m)
+}
+
+/// Returns `exp(y * ln(x * 2^xedelta))`, where `x` is positive and normal.
+#[inline]
+fn exp_y_ln(x: f64, xedelta: i16, y: f64) -> f64 {
+    // ln(x) = l_hi + l_lo
+    let (l_hi, l_lo) = ln_accurate_parts(x, xedelta);
+
+    // y * ln(x) = p_hi + p_lo
+    //
+    // ln(x) = a + b and y = y1 + y2, where `a` (`l_hi` truncated) and `y1`
+    // have 26 bits, so `y1 * a` and `y2 * a` are exact, and
+    // y * ln(x) = y1 * a + (y2 * a + y * b)
+    // The terms in parentheses are less than 2^-24 * |y * ln(x)|, so their
+    // rounding errors (and the one of `b`) are less than 2^-76 * |y * ln(x)|.
+    let a = l_hi.split_hi();
+    let b = (l_hi - a) + l_lo;
+    let y1 = y.split_hi();
+    let y2 = y - y1;
+    let p = F64x2::fast_add11(y1 * a, y2 * a + y * b);
+
+    if p.hi().exponent() >= 10 {
+        // |y * ln(x)| >= 1024 (or it overflows), so the result overflows or
+        // underflows
+        if p.hi().is_sign_negative() {
             0.0
         } else {
             f64::INFINITY
         }
     } else {
-        exp(y * lnx)
-    };
-
-    absz.set_sign(sign)
+        let red = Reduced::exp_sum(p.hi(), p.lo());
+        red.eval_to_f64(exp_poly(red.r))
+    }
 }
