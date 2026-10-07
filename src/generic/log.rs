@@ -1,3 +1,4 @@
+use super::is_pos_normal;
 use crate::traits::{Float, Int as _};
 
 pub(crate) trait Log: Float {
@@ -56,14 +57,6 @@ pub(crate) fn log10<F: Log>(x: F) -> F {
     } else {
         log_special(x, F::log10_finite)
     }
-}
-
-/// Returns whether `x` is positive, normal and finite.
-#[inline]
-fn is_pos_normal<F: Float>(x: F) -> bool {
-    // sign and exponent
-    let se = x.to_raw() >> F::MANT_BITS;
-    se >= F::Raw::ONE && se < F::Raw::from(F::MAX_RAW_EXP)
 }
 
 /// Calculates `ln`, `log2` or `log10` (with `finite`) of `x` when it is not

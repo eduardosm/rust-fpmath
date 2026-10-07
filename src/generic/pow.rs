@@ -1,4 +1,4 @@
-use super::{int_is_odd, is_int, is_odd_int};
+use super::{int_is_odd, is_int, is_odd_int, is_pos_normal};
 use crate::traits::{Float, Int as _};
 
 pub(crate) trait Pow: Float {
@@ -8,6 +8,13 @@ pub(crate) trait Pow: Float {
 }
 
 pub(crate) fn pow<F: Pow>(x: F, y: F) -> F {
+    let yexp = y.raw_exp();
+    if is_pos_normal(x) && x != F::ONE && yexp != F::RawExp::ZERO && yexp != F::MAX_RAW_EXP {
+        // fast path for the most common case, where `x` is positive and
+        // normal and `y` is normal
+        return F::pow_finite(x, F::Exp::ZERO, y, false);
+    }
+
     let (nx, xedelta) = x.normalize_arg();
     let (ny, _) = y.normalize_arg();
     let xexp = nx.raw_exp();
@@ -110,6 +117,12 @@ pub(crate) fn pow<F: Pow>(x: F, y: F) -> F {
 }
 
 pub(crate) fn powi<F: Pow>(x: F, y: i32) -> F {
+    if is_pos_normal(x) && x != F::ONE && y != 0 {
+        // fast path for the most common case, where `x` is positive and
+        // normal
+        return F::powi_finite(x, F::Exp::ZERO, y);
+    }
+
     let (nx, xedelta) = x.normalize_arg();
     let xexp = nx.raw_exp();
 

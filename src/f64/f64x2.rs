@@ -1,7 +1,5 @@
 #![allow(clippy::suspicious_arithmetic_impl)]
 
-use crate::traits::Float as _;
-
 // Users of this type are responsible for avoiding infinities and NaNs
 // (and operations that produce them).
 
@@ -158,15 +156,6 @@ impl F64x2 {
         let d = self - Self::square1(y);
         let (hi, lo) = fast_two_sum(y, purify(d.to_f64() * hr));
         Self { hi, lo }
-    }
-
-    #[inline]
-    pub(super) fn scalbn_fast(self, y: i16) -> Self {
-        let scale = f64::exp2i_fast(y);
-        Self {
-            hi: self.hi * scale,
-            lo: self.lo * scale,
-        }
     }
 
     #[inline]

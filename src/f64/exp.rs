@@ -380,13 +380,23 @@ impl Reduced {
     /// `|x|` must be less than 1024.
     #[inline]
     pub(super) fn exp(x: f64) -> Self {
-        let x = x.purify();
+        // `-0.0 - p` is `-p` for any `p`, so this is as fast as handling `x`
+        // alone
+        Self::exp_sum(x, -0.0)
+    }
+
+    /// Reduces `x = x_hi + x_lo = m * ln(2) / N + r`.
+    ///
+    /// `|x_hi|` must be less than 1024 and `|x_lo|` at most about 2^-30.
+    #[inline]
+    pub(super) fn exp_sum(x_hi: f64, x_lo: f64) -> Self {
+        let x = x_hi.purify();
         let (mf, m) = round_i32(x * (LOG2_E * TBL_N));
         // |m| < 2^18, so `mf * LN_2_N0` is exact, and so is the subtraction
         // (by Sterbenz lemma, or because `mf = 0`).
         let d = x - mf * LN_2_N0;
-        let p = mf * LN_2_N1;
-        Self::new(m, d, -p, d - p)
+        let v = x_lo - mf * LN_2_N1;
+        Self::new(m, d, v, d + v)
     }
 
     /// Reduces `x = m / N + r / ln(2)`.

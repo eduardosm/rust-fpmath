@@ -142,22 +142,6 @@ static LN_LO_SCALE_TBL: [f64; 65] = [
 ];
 
 #[inline]
-pub(super) fn log_core_f64(x: f64, edelta: i16) -> (f64, F64x2, F64x2) {
-    // Split x * 2^edelta = 2^k * m
-    // m = hi * (1 + lo)
-
-    let m = x.mant();
-    let hi = ((m >> (53 - 7 - 1) & 0x7F).div_ceil(2)) as usize;
-    let ln_hi = LN_TBL[hi];
-    // lo = m / hi - 1
-    let lo = F64x2::mul11(x.set_exp(0), LN_LO_SCALE_TBL[hi]) - 1.0;
-
-    let k = x.exponent() + edelta;
-
-    (f64::from(k), lo, ln_hi)
-}
-
-#[inline]
 pub(super) fn log_core_f64x2(x: F64x2, edelta: i16) -> (f64, F64x2, F64x2) {
     // Split x * 2^edelta = 2^k * m
     // m = hi * (1 + lo)

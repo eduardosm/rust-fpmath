@@ -115,6 +115,30 @@ fn test_powi_with(mut f: impl FnMut(f64, i32)) {
         }
     }
 
+    // Test the exponents up to beyond the limit where the implementation
+    // changes the evaluation method (64), with bases at the binades around one
+    // and spread across the range, where the results can also be beyond the
+    // range limit of that method (2^960)
+    let bases = values::binades(-20..=20, 2).chain(values::binades((-1022..=1023).step_by(31), 2));
+    for x in bases {
+        for y in 1..=70 {
+            f(x, y);
+            f(x, -y);
+        }
+    }
+
+    // Test the bases at both sides of the binades where that method stops
+    // being used for each exponent: with `x` at the binade `e`,
+    // 2^(y * e) <= x^y < 2^(y * (e + 1)), which must be within [2^-960, 2^960]
+    for y in 1..=70 {
+        let k = 960 / y;
+        let es = [k - 1, k, k + 1, -k - 1, -k, -k + 1].map(|e| e as i16);
+        for x in values::binades(es, 2) {
+            f(x, y);
+            f(x, -y);
+        }
+    }
+
     // Test results spread across the whole range, with bases at every binade,
     // including subnormals and bases close to one (where the exponents can
     // saturate)
