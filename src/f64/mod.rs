@@ -13,6 +13,7 @@ mod sqrt;
 mod trigonometric;
 
 pub(crate) use exp::{EXP2_TBL_BITS, exp2_tbl};
+pub(crate) use log::{ln_tbl, split_ln_arg};
 pub(crate) use trigonometric::{FRAC_64_PI, reduce_rad_large_sum, sin_cos_pi_64};
 
 use crate::traits::Float as _;

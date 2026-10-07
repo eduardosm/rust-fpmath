@@ -336,11 +336,6 @@ const EXP_M1_POLY: [f64; 4] = {
 };
 
 /// Returns `Q(r)` (see `EXP_M1_POLY`).
-///
-/// It is evaluated with Horner's method, which is not slower in `exp_m1`
-/// (where the evaluation of `r^2 / 2` takes longer), and prevents the SLP
-/// vectorizer from pairing operations of the polynomial with those of
-/// `eval_precise`, which delays the latter.
 #[inline]
 pub(super) fn exp_m1_poly(r: f64) -> f64 {
     let [k3, k4, k5, k6] = EXP_M1_POLY;

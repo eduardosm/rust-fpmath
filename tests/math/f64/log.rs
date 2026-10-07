@@ -211,6 +211,12 @@ fn test_ln_1p_with(mut f: impl FnMut(f64)) {
         f(purify(y - 1.0));
     }
 
+    // Test arguments where `1 + x` is not exact and its reduced argument is
+    // very close to zero
+    for x in table_reciprocals() {
+        f(x);
+    }
+
     // Test the arguments around `e^n - 1` for integers `n`, whose results are
     // close to integers
     for x in base_powers(Func::Ln1p) {
@@ -229,13 +235,36 @@ fn test_ln_1p_with(mut f: impl FnMut(f64)) {
     }
 }
 
+/// Number of subintervals in which the table used by the implementation
+/// splits each binade.
+const TABLE_N: i32 = 128;
+
 /// Returns the arguments around the centers (where the reduced argument is
 /// zero) and the boundaries (where it is the largest) of the subintervals of
-/// the table used by the implementation, which splits each binade in 64
-/// subintervals, at the binades with exponents in `e`.
+/// the table used by the implementation, at the binades with exponents in `e`.
 fn table_points(e: impl IntoIterator<Item = i32>) -> impl Iterator<Item = f64> {
     e.into_iter().flat_map(|e| {
-        (0..128).flat_map(move |i| values::around(fpmath::scalbn(1.0 + f64::from(i) / 128.0, e), 1))
+        (0..2 * TABLE_N).flat_map(move |i| {
+            let x = 1.0 + f64::from(i) / f64::from(2 * TABLE_N);
+            values::around(fpmath::scalbn(x, e), 1)
+        })
+    })
+}
+
+/// Returns the arguments `x` around `2^k / s - 1`, where `s` is a scale factor
+/// of the table used by the implementation (`1 / (1 + i / N)` rounded to 24
+/// bits), at the binades where `1 + x` can be not exact.
+///
+/// The reduced argument of `1 + x` is very close to zero, and it can be
+/// smaller than the error of `1 + x` (scaled by `2^-k * s`).
+fn table_reciprocals() -> impl Iterator<Item = f64> {
+    (1..TABLE_N).flat_map(|i| {
+        let s = rug::Float::with_val(24, TABLE_N) / (TABLE_N + i);
+        let r = rug::Float::with_val(EXT_PREC, 1) / s;
+        (-1..=7).chain(53..=63).flat_map(move |k: i32| {
+            let y = rug::Float::with_val(EXT_PREC, &r << k).to_f64();
+            values::around(purify(y - 1.0), 16)
+        })
     })
 }
 

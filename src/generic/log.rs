@@ -11,25 +11,20 @@ pub(crate) trait Log: Float {
 }
 
 pub(crate) fn ln<F: Log>(x: F) -> F {
-    let (y, edelta) = x.normalize_arg();
-    let yexp = y.raw_exp();
-    if yexp == F::RawExp::ZERO {
-        // ln(±0) = -inf
-        F::NEG_INFINITY
-    } else if y.is_sign_negative() {
-        // x < 0, ln(x) = NaN
-        F::NAN
-    } else if yexp == F::MAX_RAW_EXP {
-        // propagate infinity or NaN
-        y
+    if is_pos_normal(x) {
+        // fast path for the most common case
+        F::ln_finite(x, F::Exp::ZERO)
     } else {
-        F::ln_finite(y, edelta)
+        log_special(x, F::ln_finite)
     }
 }
 
 pub(crate) fn ln_1p<F: Log>(x: F) -> F {
     let e = x.raw_exp();
-    if e == F::RawExp::ZERO {
+    if x > -F::ONE && e != F::RawExp::ZERO && e != F::MAX_RAW_EXP {
+        // fast path for the most common case (also excludes NaN)
+        F::ln_1p_finite(x)
+    } else if e == F::RawExp::ZERO {
         // subnormal or zero, log(1 + x) ~= x
         // also handles log(1 + (-0)) = -0
         x
@@ -39,55 +34,56 @@ pub(crate) fn ln_1p<F: Log>(x: F) -> F {
     } else if x < -F::ONE {
         // x < -1, log(1 + x) = NaN
         F::NAN
-    } else if e == F::MAX_RAW_EXP {
+    } else {
         // propagate infinity or NaN
         x
-    } else {
-        F::ln_1p_finite(x)
     }
 }
 
 pub(crate) fn log2<F: Log>(x: F) -> F {
-    let (y, edelta) = x.normalize_arg();
-    let yexp = y.raw_exp();
-    if yexp == F::RawExp::ZERO {
-        // log2(±0) = -inf
-        F::NEG_INFINITY
-    } else if y.is_sign_negative() {
-        // x < 0, log2(x) = NaN
-        F::NAN
-    } else if yexp == F::MAX_RAW_EXP {
-        if y.raw_mant() == F::Raw::ZERO {
-            // log2(inf) = inf
-            F::INFINITY
-        } else {
-            // NaN, propagate
-            y
-        }
+    if is_pos_normal(x) {
+        // fast path for the most common case
+        F::log2_finite(x, F::Exp::ZERO)
     } else {
-        F::log2_finite(y, edelta)
+        log_special(x, F::log2_finite)
     }
 }
 
 pub(crate) fn log10<F: Log>(x: F) -> F {
+    if is_pos_normal(x) {
+        // fast path for the most common case
+        F::log10_finite(x, F::Exp::ZERO)
+    } else {
+        log_special(x, F::log10_finite)
+    }
+}
+
+/// Returns whether `x` is positive, normal and finite.
+#[inline]
+fn is_pos_normal<F: Float>(x: F) -> bool {
+    // sign and exponent
+    let se = x.to_raw() >> F::MANT_BITS;
+    se >= F::Raw::ONE && se < F::Raw::from(F::MAX_RAW_EXP)
+}
+
+/// Calculates `ln`, `log2` or `log10` (with `finite`) of `x` when it is not
+/// positive and normal.
+#[inline]
+fn log_special<F: Float>(x: F, finite: impl FnOnce(F, F::Exp) -> F) -> F {
     let (y, edelta) = x.normalize_arg();
     let yexp = y.raw_exp();
     if yexp == F::RawExp::ZERO {
-        // log10(±0) = -inf
+        // log(±0) = -inf
         F::NEG_INFINITY
     } else if y.is_sign_negative() {
-        // x < 0, log10(x) = NaN
+        // x < 0, log(x) = NaN
         F::NAN
     } else if yexp == F::MAX_RAW_EXP {
-        if y.raw_mant() == F::Raw::ZERO {
-            // log10(inf) = inf
-            F::INFINITY
-        } else {
-            // NaN, propagate
-            y
-        }
+        // propagate infinity or NaN
+        y
     } else {
-        F::log10_finite(y, edelta)
+        // positive subnormal
+        finite(y, edelta)
     }
 }
 

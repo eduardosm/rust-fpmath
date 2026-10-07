@@ -86,19 +86,7 @@ pub(super) fn gen_cbrt_1p_poly(args: &[&str]) -> Result<String, String> {
 ///
 /// Arguments: `fkind num_coeffs range_start range_end [num_fixed]`
 pub(super) fn gen_exp_m1_poly(args: &[&str]) -> Result<String, String> {
-    let (args, num_fixed) = match args {
-        [args @ .., num_fixed] if args.len() == 4 => {
-            let num_fixed: i32 = num_fixed
-                .parse()
-                .map_err(|e| format!("failed to parse fifth argument {num_fixed:?}: {e}"))?;
-            if num_fixed < 1 {
-                return Err(format!("invalid number of fixed terms: {num_fixed}"));
-            }
-            (args, num_fixed)
-        }
-        [_, _, _, _] => (args, 1),
-        _ => return Err(format!("expected 4 or 5 arguments, found {}", args.len())),
-    };
+    let (args, num_fixed) = split_num_fixed(args)?;
     let (fkind, num_coeffs, range_start, range_end): (_, i32, _, _) =
         arg_utils::parse_4_args(args)?;
 
@@ -116,6 +104,25 @@ pub(super) fn gen_exp_m1_poly(args: &[&str]) -> Result<String, String> {
     sollya::run_and_render_remez(fkind, &func, range, &poly_i, 1, "K", &mut out);
 
     Ok(out)
+}
+
+/// Splits the optional last argument `num_fixed` (number of fixed leading
+/// coefficients of a series, at least 1, and 1 when not present) from the
+/// four arguments `fkind num_coeffs range_start range_end`.
+fn split_num_fixed<'a, 'b>(args: &'a [&'b str]) -> Result<(&'a [&'b str], i32), String> {
+    match args {
+        [args @ .., num_fixed] if args.len() == 4 => {
+            let num_fixed: i32 = num_fixed
+                .parse()
+                .map_err(|e| format!("failed to parse fifth argument {num_fixed:?}: {e}"))?;
+            if num_fixed < 1 {
+                return Err(format!("invalid number of fixed terms: {num_fixed}"));
+            }
+            Ok((args, num_fixed))
+        }
+        [_, _, _, _] => Ok((args, 1)),
+        _ => Err(format!("expected 4 or 5 arguments, found {}", args.len())),
+    }
 }
 
 /// Generates a table of `2^(i / 2^bits)` for `i` in `0..2^bits`. Each entry
@@ -174,17 +181,29 @@ pub(super) fn gen_exp2_table(args: &[&str]) -> Result<String, String> {
 /// Generates an approximation of `ln(1 + x) / x - 1` in
 /// `[range_start, range_end]` with the powers `x, x^2, ...`.
 ///
-/// Arguments: `fkind num_coeffs range_start range_end`
+/// When `num_fixed` (default 1) is greater than 1, the coefficients of
+/// `x^1, ..., x^(num_fixed - 1)` are fixed to those of the Taylor series
+/// (`-1/2, 1/3, ...`), so it approximates
+/// `ln(1 + x) / x - 1 + x / 2 - ... + (-1)^num_fixed * x^(num_fixed - 1) / num_fixed`
+/// with the powers `x^num_fixed, x^(num_fixed + 1), ...`.
+///
+/// Arguments: `fkind num_coeffs range_start range_end [num_fixed]`
 pub(super) fn gen_ln_1p_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
+    let (args, num_fixed) = split_num_fixed(args)?;
+    let (fkind, num_coeffs, range_start, range_end): (_, i32, _, _) =
+        arg_utils::parse_4_args(args)?;
 
     let mut out = String::new();
 
-    let func = "log1p(x) / x - 1";
-    let poly_i = (1..=num_coeffs).collect::<Vec<_>>();
+    let mut func = String::from("log1p(x) / x - 1");
+    for i in 2..=num_fixed {
+        let sign = if i % 2 == 0 { '+' } else { '-' };
+        write!(func, " {sign} x^{} / {i}", i - 1).unwrap();
+    }
+    let poly_i = (num_fixed..(num_fixed + num_coeffs)).collect::<Vec<_>>();
     let range = (range_start, range_end);
 
-    sollya::run_and_render_remez(fkind, func, range, &poly_i, 1, "K", &mut out);
+    sollya::run_and_render_remez(fkind, &func, range, &poly_i, 1, "K", &mut out);
 
     Ok(out)
 }
@@ -196,9 +215,27 @@ pub(super) fn gen_ln_1p_poly(args: &[&str]) -> Result<String, String> {
 /// `LN_LO_SCALE_TBL[i]` is rounded to `scale_fkind`, so `scale_fkind` and
 /// `bits` must match the arguments of `ln_lo_scale_table`.
 ///
-/// Arguments: `scale_fkind fkind bits`
+/// When `hi_exp` is given, `fkind` must be `F64x2` and each entry is a triple
+/// `(s, hi, lo)` of raw `f64` bits, where `s` is the value of
+/// `LN_LO_SCALE_TBL[i]` (so `ln_lo_scale_table` is not needed) and
+/// `hi + lo = -ln(s)`, with `hi` rounded to a multiple of `2^-hi_exp` and `lo`
+/// being the remainder rounded to `f64`.
+///
+/// Arguments: `scale_fkind fkind bits [hi_exp]`
 pub(super) fn gen_ln_table(args: &[&str]) -> Result<String, String> {
+    let (args, hi_exp) = match args {
+        [args @ .., hi_exp] if args.len() == 3 => {
+            let hi_exp: u32 = hi_exp
+                .parse()
+                .map_err(|e| format!("failed to parse fourth argument {hi_exp:?}: {e}"))?;
+            (args, Some(hi_exp))
+        }
+        _ => (args, None),
+    };
     let (scale_fkind, fkind, bits): (FloatKind, FloatKind, u32) = arg_utils::parse_3_args(args)?;
+    if hi_exp.is_some() && fkind != FloatKind::F64x2 {
+        return Err("a split table must have kind F64x2".into());
+    }
 
     let mut out = String::new();
 
@@ -211,15 +248,46 @@ pub(super) fn gen_ln_table(args: &[&str]) -> Result<String, String> {
     // rounded reciprocals, not the exact ones. Otherwise, the mismatch
     // between `ln(1 + i / num)` and `-ln(LN_LO_SCALE_TBL[i])` would introduce
     // additional error.
-    writeln!(out, "// LN_TBL[i] = -ln(LN_LO_SCALE_TBL[i])").unwrap();
-    writeln!(out, "static LN_TBL: [{ftype}; {}] = [", num + 1).unwrap();
+    if let Some(hi_exp) = hi_exp {
+        let scale_ftype = scale_fkind.name();
+        writeln!(
+            out,
+            "// LN_TBL[i] = (bits(s), bits(hi), bits(lo)), where s = 1 / (1 + i / {num}) rounded to {scale_ftype}",
+        )
+        .unwrap();
+        writeln!(
+            out,
+            "// and hi + lo = -ln(s), with hi being a multiple of 2^-{hi_exp}",
+        )
+        .unwrap();
+        writeln!(out, "static LN_TBL: [(u64, u64, u64); {}] = [", num + 1).unwrap();
+    } else {
+        writeln!(out, "// LN_TBL[i] = -ln(LN_LO_SCALE_TBL[i])").unwrap();
+        writeln!(out, "static LN_TBL: [{ftype}; {}] = [", num + 1).unwrap();
+    }
     for x in 0..=num {
         let v = ((rug::Float::with_val(prec, x) >> bits) + 1u8).recip();
         // Round the reciprocal exactly as in `LN_LO_SCALE_TBL`.
         let (v, _) = rug::Float::with_val_round(scale_prec, v, rug::float::Round::Nearest);
-        let ln_v = -rug::Float::with_val(prec, v).ln();
+        let v = rug::Float::with_val(prec, v);
+        let ln_v = -v.clone().ln();
         out.push_str("    ");
-        render_const_value(fkind, &ln_v, &mut out);
+        if let Some(hi_exp) = hi_exp {
+            let hi = rug::Float::with_val(prec, &ln_v << hi_exp).round() >> hi_exp;
+            let hi_f64 = hi.to_f64();
+            assert!(hi == hi_f64, "{hi} is not exactly representable as f64");
+            let lo_f64 = rug::Float::with_val(prec, &ln_v - &hi).to_f64();
+            write!(
+                out,
+                "(0x{:016X}, 0x{:016X}, 0x{:016X})",
+                v.to_f64().to_bits(),
+                hi_f64.to_bits(),
+                lo_f64.to_bits(),
+            )
+            .unwrap();
+        } else {
+            render_const_value(fkind, &ln_v, &mut out);
+        }
         out.push_str(", // ");
         render_const_dec_value(fkind, &ln_v, &mut out);
         out.push('\n');

@@ -19,8 +19,8 @@
 - Maximum error has been brought down to 0.55 ULP from 1 ULP.
 - Poles of `tand` and `tanpi` now have alternating signs.
 - `f32` math functions now use `f64` internally.
-- Performance of `sqrt`, `cbrt`, `hypot`, `exp`, `exp_m1`, `exp2`, `exp10`,
-  `sinh`, `cosh`, `sinh_cosh` and `tanh` has been improved.
+- Performance of `sqrt`, `cbrt`, `hypot`, exp-family functions, log-family
+  functions and hyperbolic functions has been improved.
 
 ## 0.1.1 (2024-10-14)
 

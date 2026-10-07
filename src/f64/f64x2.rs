@@ -72,7 +72,7 @@ impl F64x2 {
         Self { hi, lo }
     }
 
-    /// Assumes `|lhs| >= |rhs|` or `lhs == 0.0`.
+    /// Assumes `|lhs| >= |rhs|` or that `lhs + rhs` is exact.
     #[inline]
     pub(super) fn fast_add11(lhs: f64, rhs: f64) -> Self {
         let (hi, lo) = fast_two_sum(lhs, rhs);
@@ -390,7 +390,7 @@ fn two_sub(a: f64, b: f64) -> (f64, f64) {
     (s, e)
 }
 
-/// Assumes `|lhs| >= |rhs|` or `lhs == 0.0`.
+/// Assumes `|lhs| >= |rhs|` or that `lhs + rhs` is exact.
 #[inline]
 fn fast_two_sum(lhs: f64, rhs: f64) -> (f64, f64) {
     let s = purify(lhs + rhs);
