@@ -64,7 +64,9 @@ fn test_with(mut f: impl FnMut(f64)) {
 
     // Test a set of normal values at each binade, most of them have trivial
     // results (`x`, one or infinity). The tiny ones are slow to calculate with
-    // `rug`, so fewer of them are tested.
+    // `rug`, so fewer of them are tested. The values closest to each power of
+    // two are included, which covers the thresholds where the calculation
+    // changes (such as 2^-9 and 32).
     let tiny = values::binades((-1022..=-31).step_by(4), 10);
     for x in tiny.chain(values::binades(-30..=1023, 100)) {
         f(x);
@@ -120,14 +122,29 @@ fn limits() -> [f64; 3] {
     ]
 }
 
-/// Returns the arguments `k * ln(2)` and `(k + 1/2) * ln(2)` (where `k`
-/// changes in the argument reduction) up to the overflow limit.
-fn reduction_boundaries() -> impl Iterator<Item = f64> {
+/// Number of parts in which the argument reduction of `exp` splits each power
+/// of two: the arguments are reduced to `m * ln(2) / N + r`, with an integer
+/// `m` and `|r| <= ln(2) / (2 * N)`.
+const REDUCTION_N: i32 = 128;
+
+/// Returns the arguments `k * ln(2)` (with results close to powers of two) up
+/// to the overflow limit, and the arguments where `m` changes in the argument
+/// reduction of `exp(x)` (`sinh` and `cosh`), `(m + 1/2) * ln(2) / N`, up to
+/// the overflow limit, and of `exp(-2 * x)` (`tanh`),
+/// `(m + 1/2) * ln(2) / (2 * N)`, up to the limit where `tanh` rounds to one.
+fn reduction_boundaries() -> Vec<f64> {
     let ln_2 = rug::Float::with_val(EXT_PREC, 2).ln();
-    (0..=2 * 1025).map(move |k2| {
-        let x: rug::Float = rug::Float::with_val(EXT_PREC, k2) * &ln_2 / 2;
+    // i * ln(2) / d
+    let ln_2_mul = |i: i32, d: i32| {
+        let x: rug::Float = rug::Float::with_val(EXT_PREC, i) * &ln_2 / d;
         x.to_f64()
-    })
+    };
+
+    let mut xs = Vec::new();
+    xs.extend((0..=1025).map(|k| ln_2_mul(k, 1)));
+    xs.extend((0..=1025 * REDUCTION_N).map(|m| ln_2_mul(2 * m + 1, 2 * REDUCTION_N)));
+    xs.extend((0..=56 * REDUCTION_N).map(|m| ln_2_mul(2 * m + 1, 4 * REDUCTION_N)));
+    xs
 }
 
 /// Returns arguments whose results are very close to a midpoint between two
