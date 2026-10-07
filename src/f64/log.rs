@@ -204,24 +204,13 @@ impl crate::generic::Log for f64 {
         } else if x_exp >= 64 {
             // ln(1 + x) = ln(x) + ln(1 + 1 / x), where ln(1 + 1 / x) < 2^-64
             // is less than 2^-69 relative to ln(x) > 44, so it is negligible
+            // (and calculating it could involve subnormal numbers)
             let (hi, lo) = ln_parts(x, 0);
             hi + lo
         } else {
             // 1 + x = p_hi + p_lo
             let p = F64x2::add11(1.0, x);
-            // p_hi = 2^k * (1 + z) / s
-            // 1 + x = 2^k * (1 + z + p_lo * 2^-k * s) / s
-            let red = Reduced::new(p.hi(), 0);
-            // 2^-k is normal, because |k| <= 64
-            let scale = f64::exp2i_fast(-red.k);
-            // |p_lo * 2^-k * s| <= 2^-53, renormalize to keep `zl` much smaller
-            // than `zh`, as `ln_1p_poly` requires
-            //
-            // `|zh|` can be smaller than the added term (when `zh` is close to
-            // zero), but then the sum is exact, as `fast_add11` allows.
-            let z = F64x2::fast_add11(red.zh, red.zl + p.lo() * (scale * red.s));
-            let (hi, lo) = ln_1p_poly(z.hi(), z.lo());
-            let (hi, lo) = red.add_t(hi, lo);
+            let (hi, lo) = ln_sum_parts(p.hi(), p.lo());
             hi + lo
         }
     }
@@ -244,10 +233,26 @@ impl crate::generic::Log for f64 {
 ///
 /// `x` must be positive and normal.
 #[inline]
-fn ln_parts(x: f64, edelta: i16) -> (f64, f64) {
+pub(super) fn ln_parts(x: f64, edelta: i16) -> (f64, f64) {
     let red = Reduced::new(x, edelta);
     let (hi, lo) = ln_1p_poly(red.zh, red.zl);
     red.add_t(hi, lo)
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= ln(t_hi + t_lo)`, with a relative
+/// error of about 2^-63.5 when `|ln(t_hi + t_lo)| > 2^-37`.
+///
+/// `ln(1 + t_lo / t_hi)` is approximated by `t_lo / t_hi`, with an absolute
+/// error of up to 2^-101, which is not negligible for smaller results (for
+/// example, the result is not zero when `t_hi + t_lo = 1` with `t_lo != 0`).
+///
+/// `t_hi` must be positive and normal, and `|t_lo| <= 2^-50 * t_hi`.
+#[inline]
+pub(super) fn ln_sum_parts(t_hi: f64, t_lo: f64) -> (f64, f64) {
+    // ln(t_hi + t_lo) = ln(t_hi) + ln(1 + d), where d = t_lo / t_hi and
+    // ln(1 + d) = d - d^2 / 2 + ..., with |d^2 / 2| <= 2^-101
+    let (hi, lo) = ln_parts(t_hi, 0);
+    (hi, lo + t_lo / t_hi)
 }
 
 /// Splits `x * 2^edelta = 2^k * m`, with `1 <= m < 2`, returning `(k, m, i)`,
@@ -284,8 +289,6 @@ pub(crate) fn ln_tbl(k: i16, i: usize) -> (f64, f64, f64) {
 
 /// Reduced argument: `x = 2^k * (1 + zh + zl) / s`
 struct Reduced {
-    k: i16,
-    s: f64,
     t_hi: f64,
     t_lo: f64,
     zh: f64,
@@ -315,8 +318,6 @@ impl Reduced {
         let z = F64x2::fast_add11(z1, z2);
 
         Self {
-            k,
-            s,
             t_hi,
             t_lo,
             zh: z.hi(),

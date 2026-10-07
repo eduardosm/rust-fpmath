@@ -255,8 +255,9 @@ fn table_points(e: impl IntoIterator<Item = i32>) -> impl Iterator<Item = f64> {
 /// of the table used by the implementation (`1 / (1 + i / N)` rounded to 24
 /// bits), at the binades where `1 + x` can be not exact.
 ///
-/// The reduced argument of `1 + x` is very close to zero, and it can be
-/// smaller than the error of `1 + x` (scaled by `2^-k * s`).
+/// The rounded `1 + x` is very close to the center of a subinterval of the
+/// table, where its reduced argument is close to zero, so the rounding error
+/// of `1 + x` can be larger than the reduced argument.
 fn table_reciprocals() -> impl Iterator<Item = f64> {
     (1..TABLE_N).flat_map(|i| {
         let s = rug::Float::with_val(24, TABLE_N) / (TABLE_N + i);

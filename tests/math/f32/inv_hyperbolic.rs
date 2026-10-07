@@ -64,10 +64,12 @@ fn test_asinh_with(mut f: impl FnMut(f32)) {
         f(x);
     }
 
-    // Test the arguments around the limit below which the implementation
-    // returns `x` (2^-20)
-    for x in values::around(fpmath::scalbn(1.0, -20), 100_000) {
-        f(x);
+    // Test the arguments around the limits where the implementation changes
+    // the evaluation method (2^-12, 0.5 and 16)
+    for e in [-12, -1, 4] {
+        for x in values::around(fpmath::scalbn(1.0, e), 100_000) {
+            f(x);
+        }
     }
 
     // Test results that are very close to a midpoint between two consecutive
@@ -104,12 +106,19 @@ fn test_acosh_with(mut f: impl FnMut(f32)) {
         f(x);
     }
 
+    // Test the arguments around the limit where the implementation changes the
+    // evaluation method (16)
+    for x in values::around(16.0, 100_000) {
+        f(x);
+    }
+
     // Test results that are very close to a midpoint between two consecutive
     // values, which are the hardest to round. With large arguments, the
-    // function is flat (its result changes much less than an ULP between
-    // consecutive arguments), so the arguments closest to the inverse of a
-    // midpoint have such results (see `values::midpoint_inverse`).
-    for x0 in values::binades(16..=127, 1000) {
+    // function is flat (its result changes by about `1 / ln(2 * x)` ULPs
+    // between consecutive arguments), so the arguments closest to the inverse
+    // of a midpoint have such results (see `values::midpoint_inverse`). It is
+    // less flat at the binades below 2^16, so more values are tested there.
+    for x0 in values::binades(4..=15, 20_000).chain(values::binades(16..=127, 1000)) {
         let x = values::midpoint_inverse(x0, fpmath::acosh, fpmath::cosh);
         for x in values::around(x, 1) {
             f(x);
@@ -147,10 +156,12 @@ fn test_atanh_with(mut f: impl FnMut(f32)) {
         f(x);
     }
 
-    // Test the arguments around the limit below which the implementation
-    // returns `x` (2^-20)
-    for x in values::around(fpmath::scalbn(1.0, -20), 100_000) {
-        f(x);
+    // Test the arguments around the limits where the implementation changes
+    // the evaluation method (2^-12 and 2^-5)
+    for e in [-12, -5] {
+        for x in values::around(fpmath::scalbn(1.0, e), 100_000) {
+            f(x);
+        }
     }
 
     // Test results that are very close to a midpoint between two consecutive
@@ -173,9 +184,10 @@ fn test_atanh_with(mut f: impl FnMut(f32)) {
 ///
 /// With small arguments, `asinh(x) = x + g(x)` is not flat, but `g` is (see
 /// `values::offset_midpoint`). With large arguments, `asinh` is flat (its
-/// result changes much less than an ULP between consecutive arguments), so
-/// the arguments closest to the inverse of a midpoint have such results (see
-/// `values::midpoint_inverse`).
+/// result changes by about `1 / ln(2 * x)` ULPs between consecutive
+/// arguments), so the arguments closest to the inverse of a midpoint have such
+/// results (see `values::midpoint_inverse`). It is less flat at the binades
+/// below 2^16, so more values are tested there.
 fn asinh_near_midpoints() -> Vec<f32> {
     let mut xs = Vec::new();
 
@@ -187,7 +199,7 @@ fn asinh_near_midpoints() -> Vec<f32> {
         }
     }
 
-    for x0 in values::binades(16..=127, 1000) {
+    for x0 in values::binades(4..=15, 20_000).chain(values::binades(16..=127, 1000)) {
         xs.extend(values::around(
             values::midpoint_inverse(x0, fpmath::asinh, fpmath::sinh),
             1,

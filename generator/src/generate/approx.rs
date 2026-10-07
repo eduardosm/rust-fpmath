@@ -481,6 +481,57 @@ pub(super) fn gen_asinh_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates an approximation of `atanh(x) / x - 1` in
+/// `[range_start, range_end]` with the even powers `x^2, x^4, ...`.
+///
+/// Arguments: `fkind num_coeffs range_start range_end`
+pub(super) fn gen_atanh_poly(args: &[&str]) -> Result<String, String> {
+    let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
+
+    let mut out = String::new();
+
+    let func = "atanh(x) / x - 1";
+    let poly_i = (1..=num_coeffs).map(|i| i * 2).collect::<Vec<_>>();
+    let range = (range_start, range_end);
+
+    sollya::run_and_render_remez(fkind, func, range, &poly_i, 1, "K", &mut out);
+
+    Ok(out)
+}
+
+/// Generates an approximation of `(g(x) - s * x / 4) / x^2` in
+/// `[range_start, range_end]` with the powers `1, x, x^2, ...`, where
+/// `g(x) = ln((1 + sqrt(1 + s * x)) / 2)`, with `s = 1` for `asinh` and
+/// `s = -1` for `acosh`. The coefficients are named after the powers of
+/// `g(x) = s * x / 4 + K2 * x^2 + K3 * x^3 + ...`.
+///
+/// For large `y`, `asinh(y) = ln(2 * y) + g(1 / y^2)` (with `s = 1`) and
+/// `acosh(y) = ln(2 * y) + g(1 / y^2)` (with `s = -1`).
+///
+/// The approximated expression is not defined at 0, so `range_start` must be
+/// positive (a tiny value, such as `1e-30`, is equivalent to 0).
+///
+/// Arguments: `fkind (asinh|acosh) num_coeffs range_start range_end`
+pub(super) fn gen_asinh_acosh_large_poly(args: &[&str]) -> Result<String, String> {
+    let (fkind, func, num_coeffs, range_start, range_end): (_, String, i32, _, _) =
+        arg_utils::parse_5_args(args)?;
+
+    let func = match func.as_str() {
+        "asinh" => "(log((1 + sqrt(1 + x)) / 2) - x / 4) / x^2",
+        "acosh" => "(log((1 + sqrt(1 - x)) / 2) + x / 4) / x^2",
+        _ => return Err(format!("invalid function: {func:?}")),
+    };
+
+    let mut out = String::new();
+
+    let poly_i = (0..num_coeffs).collect::<Vec<_>>();
+    let range = (range_start, range_end);
+
+    sollya::run_and_render_remez(fkind, func, range, &poly_i, 2, "K", &mut out);
+
+    Ok(out)
+}
+
 /// Generates an approximation of `Γ(x + offset)` in `[range_start, range_end]`
 /// with the powers `1, x, ..., x^poly_deg`, minimizing the relative error.
 ///
