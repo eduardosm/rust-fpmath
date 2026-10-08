@@ -20,8 +20,8 @@
 - Poles of `tand` and `tanpi` now have alternating signs.
 - `f32` math functions now use `f64` internally.
 - Performance of `sqrt`, `cbrt`, `hypot`, exp-family functions, log-family
-  functions, hyperbolic functions, inverse hyperbolic functions, `pow` and
-  `powi` has been improved.
+  functions, hyperbolic functions, inverse hyperbolic functions, `pow`,
+  `powi`, `gamma` and `ln_gamma` has been improved.
 
 ## 0.1.1 (2024-10-14)
 

@@ -1,4 +1,4 @@
-use crate::traits::{CastFrom as _, Float, Int as _};
+use crate::traits::{Float, Int as _};
 
 pub(crate) fn round<F: Float>(x: F) -> F {
     let e = x.raw_exp();
@@ -24,42 +24,6 @@ pub(crate) fn round<F: Float>(x: F) -> F {
         } else {
             F::from_raw(ipart)
         }
-    }
-}
-
-/// Returns `x` rounded to the nearest integer as both float and integer.
-///
-/// `x` must be finite and `abs(x) < 2^MANT_BITS`
-pub(crate) fn round_fi<F: Float>(x: F) -> (F, F::SRaw) {
-    let e = x.raw_exp();
-    if e < (F::EXP_OFFSET - F::RawExp::ONE) {
-        // abs(x) < 0.5
-        (F::ZERO, F::SRaw::ZERO)
-    } else if e < F::EXP_OFFSET {
-        // 0.5 <= abs(x) < 1
-        (
-            F::ONE.copysign(x),
-            F::SRaw::ONE - (F::SRaw::from(x.is_sign_negative()) << 1),
-        )
-    } else {
-        // 1 <= abs(x) < 2^MANT_BITS
-        let shift = F::RawExp::from(F::MANT_BITS) - (e - F::EXP_OFFSET);
-        let imask = F::Raw::MAX << shift;
-        let fmask = !imask;
-        let xraw = x.to_raw();
-        let fpart = xraw & fmask;
-        let mut ipart_raw = xraw & !fmask;
-        let mut ipart_i = F::SRaw::cast_from(x.mant() >> shift);
-        if fpart > (fmask / F::Raw::TWO) {
-            // frac >= 0.5
-            ipart_raw += fmask + F::Raw::ONE;
-            ipart_i += F::SRaw::ONE;
-        }
-        let ipart_f = F::from_raw(ipart_raw);
-        if x.is_sign_negative() {
-            ipart_i = -ipart_i;
-        }
-        (ipart_f, ipart_i)
     }
 }
 
@@ -143,7 +107,7 @@ pub(crate) fn ceil<F: Float>(x: F) -> F {
 #[cfg(test)]
 mod tests {
     use crate::FloatMath;
-    use crate::traits::{CastInto as _, Float};
+    use crate::traits::Float;
 
     fn test_round<F: Float + FloatMath>() {
         use crate::round;
@@ -168,26 +132,6 @@ mod tests {
             assert_total_eq!(round(-(x + pt_5)), -(x + one));
             assert_total_eq!(round(x + pt_9), x + one);
             assert_total_eq!(round(-(x + pt_9)), -(x + one));
-        }
-    }
-
-    fn test_round_fi<F: Float>() {
-        let test = |x: F| {
-            let (ipart_f, ipart_i) = super::round_fi(x);
-            let fpart = x - ipart_f;
-            assert!(fpart.abs() <= F::HALF);
-            assert_eq!(ipart_f, ipart_i.cast_into());
-            assert_eq!(fpart + ipart_f, x);
-        };
-
-        let one_eight = F::parse("0.125");
-
-        for i in 0..=1000u32 {
-            for f in 0..8u32 {
-                let x = F::cast_from(i) + F::cast_from(f) * one_eight;
-                test(x);
-                test(-x);
-            }
         }
     }
 
@@ -271,7 +215,6 @@ mod tests {
     #[test]
     fn test_f32() {
         test_round::<f32>();
-        test_round_fi::<f32>();
         test_trunc::<f32>();
         test_floor::<f32>();
         test_ceil::<f32>();
@@ -280,7 +223,6 @@ mod tests {
     #[test]
     fn test_f64() {
         test_round::<f64>();
-        test_round_fi::<f64>();
         test_trunc::<f64>();
         test_floor::<f64>();
         test_ceil::<f64>();

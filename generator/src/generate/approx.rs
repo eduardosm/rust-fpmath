@@ -1,6 +1,9 @@
 use std::fmt::Write as _;
 
-use super::{FloatKind, arg_utils, julia, render_const_dec_value, render_const_value, sollya};
+use super::{
+    CoeffKinds, FloatKind, arg_utils, julia, render_const, render_const_dec_value,
+    render_const_value, sollya,
+};
 
 /// Generates a table of 128 approximations of `1 / sqrt(m)` for `m` in
 /// `[1, 4)`, in 0.16 fixed point. Entry `i` covers the subinterval
@@ -208,116 +211,54 @@ pub(super) fn gen_ln_1p_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
-/// Generates a table of `-ln(LN_LO_SCALE_TBL[i])` (i.e., approximately
-/// `ln(1 + i / 2^bits)`) for `i` in `0..=2^bits`, with values of type
-/// `fkind`.
+/// Generates a table of triples `(s, hi, lo)` of raw `f64` bits, for `i` in
+/// `0..=2^bits`, where `s` is `1 / (1 + i / 2^bits)` rounded to
+/// `scale_fkind`, and `hi + lo = -ln(s)` (approximately `ln(1 + i / 2^bits)`),
+/// with `hi` rounded to a multiple of `2^-hi_exp` and `lo` being the
+/// remainder rounded to `f64`.
 ///
-/// `LN_LO_SCALE_TBL[i]` is rounded to `scale_fkind`, so `scale_fkind` and
-/// `bits` must match the arguments of `ln_lo_scale_table`.
-///
-/// When `hi_exp` is given, `fkind` must be `F64x2` and each entry is a triple
-/// `(s, hi, lo)` of raw `f64` bits, where `s` is the value of
-/// `LN_LO_SCALE_TBL[i]` (so `ln_lo_scale_table` is not needed) and
-/// `hi + lo = -ln(s)`, with `hi` rounded to a multiple of `2^-hi_exp` and `lo`
-/// being the remainder rounded to `f64`.
-///
-/// Arguments: `scale_fkind fkind bits [hi_exp]`
+/// Arguments: `scale_fkind bits hi_exp`
 pub(super) fn gen_ln_table(args: &[&str]) -> Result<String, String> {
-    let (args, hi_exp) = match args {
-        [args @ .., hi_exp] if args.len() == 3 => {
-            let hi_exp: u32 = hi_exp
-                .parse()
-                .map_err(|e| format!("failed to parse fourth argument {hi_exp:?}: {e}"))?;
-            (args, Some(hi_exp))
-        }
-        _ => (args, None),
-    };
-    let (scale_fkind, fkind, bits): (FloatKind, FloatKind, u32) = arg_utils::parse_3_args(args)?;
-    if hi_exp.is_some() && fkind != FloatKind::F64x2 {
-        return Err("a split table must have kind F64x2".into());
-    }
+    let (scale_fkind, bits, hi_exp): (FloatKind, u32, u32) = arg_utils::parse_3_args(args)?;
 
     let mut out = String::new();
 
-    let ftype = fkind.name();
-    let prec = fkind.rug_aux_prec();
+    let prec = FloatKind::F64x2.rug_aux_prec();
     let scale_prec = scale_fkind.float_prec();
+    let scale_ftype = scale_fkind.name();
     let num = 1 << bits;
 
-    // The table must be consistent with `LN_LO_SCALE_TBL`, which holds the
-    // rounded reciprocals, not the exact ones. Otherwise, the mismatch
-    // between `ln(1 + i / num)` and `-ln(LN_LO_SCALE_TBL[i])` would introduce
-    // additional error.
-    if let Some(hi_exp) = hi_exp {
-        let scale_ftype = scale_fkind.name();
-        writeln!(
-            out,
-            "// LN_TBL[i] = (bits(s), bits(hi), bits(lo)), where s = 1 / (1 + i / {num}) rounded to {scale_ftype}",
-        )
-        .unwrap();
-        writeln!(
-            out,
-            "// and hi + lo = -ln(s), with hi being a multiple of 2^-{hi_exp}",
-        )
-        .unwrap();
-        writeln!(out, "static LN_TBL: [(u64, u64, u64); {}] = [", num + 1).unwrap();
-    } else {
-        writeln!(out, "// LN_TBL[i] = -ln(LN_LO_SCALE_TBL[i])").unwrap();
-        writeln!(out, "static LN_TBL: [{ftype}; {}] = [", num + 1).unwrap();
-    }
+    writeln!(
+        out,
+        "// LN_TBL[i] = (bits(s), bits(hi), bits(lo)), where s = 1 / (1 + i / {num}) rounded to {scale_ftype}",
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "// and hi + lo = -ln(s), with hi being a multiple of 2^-{hi_exp}",
+    )
+    .unwrap();
+    writeln!(out, "static LN_TBL: [(u64, u64, u64); {}] = [", num + 1).unwrap();
     for x in 0..=num {
         let v = ((rug::Float::with_val(prec, x) >> bits) + 1u8).recip();
-        // Round the reciprocal exactly as in `LN_LO_SCALE_TBL`.
+        // The logarithm is calculated from the rounded reciprocal, which is
+        // the one used in the reduction.
         let (v, _) = rug::Float::with_val_round(scale_prec, v, rug::float::Round::Nearest);
         let v = rug::Float::with_val(prec, v);
         let ln_v = -v.clone().ln();
-        out.push_str("    ");
-        if let Some(hi_exp) = hi_exp {
-            let hi = rug::Float::with_val(prec, &ln_v << hi_exp).round() >> hi_exp;
-            let hi_f64 = hi.to_f64();
-            assert!(hi == hi_f64, "{hi} is not exactly representable as f64");
-            let lo_f64 = rug::Float::with_val(prec, &ln_v - &hi).to_f64();
-            write!(
-                out,
-                "(0x{:016X}, 0x{:016X}, 0x{:016X})",
-                v.to_f64().to_bits(),
-                hi_f64.to_bits(),
-                lo_f64.to_bits(),
-            )
-            .unwrap();
-        } else {
-            render_const_value(fkind, &ln_v, &mut out);
-        }
-        out.push_str(", // ");
-        render_const_dec_value(fkind, &ln_v, &mut out);
-        out.push('\n');
-    }
-    writeln!(out, "];").unwrap();
-
-    Ok(out)
-}
-
-/// Generates a table of `1 / (1 + i / 2^bits)` for `i` in `0..=2^bits`.
-///
-/// Arguments: `fkind bits`
-pub(super) fn gen_ln_lo_scale_table(args: &[&str]) -> Result<String, String> {
-    let (fkind, bits): (FloatKind, u32) = arg_utils::parse_2_args(args)?;
-
-    let mut out = String::new();
-
-    let ftype = fkind.name();
-    let prec = fkind.rug_aux_prec();
-    let num = 1 << bits;
-
-    writeln!(out, "// LN_LO_SCALE_TBL[i] = 1 / (1 + i / {num})").unwrap();
-    writeln!(out, "static LN_LO_SCALE_TBL: [{ftype}; {}] = [", num + 1).unwrap();
-    for x in 0..=num {
-        let v = (rug::Float::with_val(prec, x) >> bits) + 1u8;
-        let v = v.recip();
-        out.push_str("    ");
-        render_const_value(fkind, &v, &mut out);
-        out.push_str(", // ");
-        render_const_dec_value(fkind, &v, &mut out);
+        let hi = rug::Float::with_val(prec, &ln_v << hi_exp).round() >> hi_exp;
+        let hi_f64 = hi.to_f64();
+        assert!(hi == hi_f64, "{hi} is not exactly representable as f64");
+        let lo_f64 = rug::Float::with_val(prec, &ln_v - &hi).to_f64();
+        write!(
+            out,
+            "    (0x{:016X}, 0x{:016X}, 0x{:016X}), // ",
+            v.to_f64().to_bits(),
+            hi_f64.to_bits(),
+            lo_f64.to_bits(),
+        )
+        .unwrap();
+        render_const_dec_value(FloatKind::F64x2, &ln_v, &mut out);
         out.push('\n');
     }
     writeln!(out, "];").unwrap();
@@ -537,7 +478,7 @@ pub(super) fn gen_asinh_acosh_large_poly(args: &[&str]) -> Result<String, String
 ///
 /// Arguments: `fkind poly_deg offset range_start range_end`
 pub(super) fn gen_gamma_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, poly_deg, offset, range_start, range_end): (_, i32, f64, f64, f64) =
+    let (fkinds, poly_deg, offset, range_start, range_end): (CoeffKinds, i32, f64, f64, f64) =
         arg_utils::parse_5_args(args)?;
 
     let mut out = String::new();
@@ -546,7 +487,7 @@ pub(super) fn gen_gamma_poly(args: &[&str]) -> Result<String, String> {
     let wfunc = "1 / fx";
     let range = (range_start, range_end);
 
-    julia::run_and_render_remez(fkind, &func, wfunc, range, poly_deg, 0, "K", &mut out);
+    julia::run_and_render_remez(&fkinds, &func, wfunc, range, poly_deg, 0, "K", &mut out);
 
     Ok(out)
 }
@@ -558,7 +499,7 @@ pub(super) fn gen_gamma_poly(args: &[&str]) -> Result<String, String> {
 ///
 /// Arguments: `fkind poly_deg offset range_start range_end`
 pub(super) fn gen_ln_gamma_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, poly_deg, offset, range_start, range_end): (_, i32, f64, f64, f64) =
+    let (fkinds, poly_deg, offset, range_start, range_end): (CoeffKinds, i32, f64, f64, f64) =
         arg_utils::parse_5_args(args)?;
 
     let mut out = String::new();
@@ -567,35 +508,150 @@ pub(super) fn gen_ln_gamma_poly(args: &[&str]) -> Result<String, String> {
     let wfunc = "1 / fx";
     let range = (range_start, range_end);
 
-    julia::run_and_render_remez(fkind, &func, wfunc, range, poly_deg - 1, 1, "K", &mut out);
+    julia::run_and_render_remez(&fkinds, &func, wfunc, range, poly_deg - 1, 1, "K", &mut out);
 
     Ok(out)
 }
 
-/// Generates an approximation of
-/// `Γ(1 / x) / ((1 / x + g - 0.5)^(1 / x - 0.5) * exp(-(1 / x + g - 0.5)))`
-/// in `[range_start, range_end]` with the powers `1, x, ..., x^poly_deg`.
+/// Generates an expansion of `ln(|Γ(x)|)` around one of its negative roots
+/// `x0`, as a constant of type `LnGammaRoot`:
 ///
-/// This is a Lanczos-like approximation:
-/// `Γ(z) ~= (z + g - 0.5)^(z - 0.5) * exp(-(z + g - 0.5)) * P(1 / z)`.
+/// `ln(|Γ(x0 + h)|) ~= h * (k0 + h * (k[0] + h * (k[1] + ...)))`
 ///
-/// Arguments: `fkind poly_deg g range_start range_end`
-pub(super) fn gen_gamma_lanczos_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, poly_deg, g, range_start, range_end): (_, i32, f64, f64, f64) =
-        arg_utils::parse_5_args(args)?;
+/// fitted in `[-2^radius_exp, 2^radius_exp]` minimizing the relative error,
+/// with `x0` split in three `f64` (`x0[0] + x0[1] + x0[2]`), `k0` as `F64x2`
+/// and the other coefficients as an array of `num_coeffs - 1` `f64`.
+///
+/// Arguments: `name x0_approx radius_exp num_coeffs`, where `x0_approx` is an
+/// approximation of the root.
+pub(super) fn gen_ln_gamma_root(args: &[&str]) -> Result<String, String> {
+    let (name, x0_approx, radius_exp, num_coeffs): (String, f64, i32, i32) =
+        arg_utils::parse_4_args(args)?;
+    if num_coeffs < 2 {
+        return Err("expected at least 2 coefficients".into());
+    }
+
+    // Refine the root with Newton's method
+    let root_prec = 2048;
+    let mut x0 = rug::Float::with_val(root_prec, x0_approx);
+    for _ in 0..20 {
+        let step = x0.clone().ln_abs_gamma().0 / x0.clone().digamma();
+        x0 -= step;
+    }
+    let ln_gamma_x0 = x0.clone().ln_abs_gamma().0;
+    if !ln_gamma_x0.is_zero() && ln_gamma_x0.get_exp().unwrap() > -(root_prec as i32 - 64) {
+        return Err(format!("root near {x0_approx} did not converge"));
+    }
+    if (x0.clone() - x0_approx).abs() > 1e-12 {
+        return Err(format!("root near {x0_approx} converged to {x0:e}"));
+    }
+
+    // The expansion is used in [x0 - r, x0 + r], which must not contain a pole
+    // and must be within a single binade, so subtracting `x0[0]` is exact.
+    let radius = rug::Float::with_val(64, rug::Float::i_exp(1, radius_exp));
+    let range_start = x0.clone() - &radius;
+    let range_end = x0.clone() + &radius;
+    if range_end >= range_start.clone().ceil() {
+        return Err(format!("range around {x0_approx} contains a pole"));
+    }
+    if range_start.get_exp() != range_end.get_exp() {
+        return Err(format!("range around {x0_approx} spans multiple binades"));
+    }
+
+    // x0 = x0_0 + x0_1 + x0_2
+    let mut x0_parts = Vec::new();
+    let mut rem = x0.clone();
+    for _ in 0..3 {
+        let part = rem.to_f64();
+        x0_parts.push(part);
+        rem -= part;
+    }
+
+    // Fit ln(|Γ(x0 + h)|) / h, minimizing the relative error
+    let x0_digits = 1024 * 3 / 10 + 10;
+    let x0_str = x0.to_string_radix(10, Some(x0_digits));
+    let x0_big = format!("BigFloat(\"{x0_str}\")");
+    let func = format!(
+        "iszero(x) ? SpecialFunctions.digamma({x0_big}) : \
+        SpecialFunctions.logabsgamma({x0_big} + x)[1] / x"
+    );
+    let wfunc = "1 / abs(fx)";
+    let r = radius.to_f64();
+    let coeffs = julia::run_remez(&func, wfunc, (-r, r), num_coeffs - 1);
+
+    let mut out = String::new();
+    let render_value = |fkind: FloatKind, value: &rug::Float, out: &mut String| {
+        render_const_value(fkind, value, out);
+        out.push_str(", // ");
+        render_const_dec_value(fkind, value, out);
+        out.push('\n');
+    };
+
+    writeln!(out, "const {name}: LnGammaRoot = LnGammaRoot {{").unwrap();
+    writeln!(out, "x0: [").unwrap();
+    for part in x0_parts {
+        render_value(FloatKind::F64, &rug::Float::with_val(53, part), &mut out);
+    }
+    writeln!(out, "],").unwrap();
+    out.push_str("radius: ");
+    render_value(FloatKind::F64, &radius, &mut out);
+    out.push_str("k0: ");
+    render_value(FloatKind::F64x2, &coeffs[0], &mut out);
+    writeln!(out, "k: [").unwrap();
+    for coeff in coeffs[1..].iter() {
+        render_value(FloatKind::F64, coeff, &mut out);
+    }
+    writeln!(out, "],").unwrap();
+    writeln!(out, "}};").unwrap();
+
+    Ok(out)
+}
+
+/// Generates the coefficients of the Stirling series of `ln(Γ(x))`, for
+/// `x >= x0`:
+///
+/// `ln(Γ(x)) ~= (x - 0.5) * ln(x) - x + K0 + K1 / x + K3 / x^3 + K5 / x^5 + ...`
+///
+/// where `K0 = ln(2 * π) / 2` and `K1 = 1/12` (as in the series), and
+/// `K3, K5, ...` are fitted to minimize the absolute error.
+///
+/// Arguments: `fkinds num_coeffs x0`, where `num_coeffs` includes `K0` and
+/// `K1`.
+pub(super) fn gen_gamma_stirling_poly(args: &[&str]) -> Result<String, String> {
+    let (fkinds, num_coeffs, x0): (CoeffKinds, i32, f64) = arg_utils::parse_3_args(args)?;
+    if num_coeffs < 3 {
+        return Err("expected at least 3 coefficients".into());
+    }
 
     let mut out = String::new();
 
-    let g = format!("BigFloat({g})");
+    // With t = 1 / x and s = t^2, fit
+    // R(s) = (ln(Γ(1 / t)) - (1 / t - 0.5) * ln(1 / t) + 1 / t - K0 - K1 * t) / t^3
+    // with a polynomial in `s`, minimizing the absolute error of `t^3 * R(s)`.
+    let func = "begin \
+        t = sqrt(x); \
+        (SpecialFunctions.loggamma(1 / t) - (1 / t - 0.5) * log(1 / t) + 1 / t \
+        - log(2 * BigFloat(pi)) / 2 - t / 12) / (t * t * t) \
+        end";
+    let wfunc = "x * sqrt(x)";
+    let range = (1e-40, 1.0 / (x0 * x0));
 
-    // SpecialFunctions.gamma(1/x) / ((1/x + g - 0.5)^(1/x - 0.5) * exp(-(1/x + g - 0.5)))
-    let func = format!(
-        "exp(SpecialFunctions.lgamma(1/x) - (1/x - 0.5) * log(1/x + {g} - 0.5) + (1/x + {g} - 0.5))"
-    );
-    let wfunc = "1";
-    let range = (range_start, range_end);
+    let coeffs = julia::run_remez(func, wfunc, range, num_coeffs - 3);
 
-    julia::run_and_render_remez(fkind, &func, wfunc, range, poly_deg, 0, "K", &mut out);
+    let prec = 1024;
+    let pi = rug::Float::with_val(prec, rug::float::Constant::Pi);
+    let k0 = (pi * 2u8).ln() / 2u8;
+    render_const(fkinds.get(0), "K0", k0, &mut out);
+    let k1 = rug::Float::with_val(prec, 1) / 12u8;
+    render_const(fkinds.get(1), "K1", k1, &mut out);
+    for (j, coeff) in coeffs.into_iter().enumerate() {
+        render_const(
+            fkinds.get(j + 2),
+            &format!("K{}", j * 2 + 3),
+            coeff,
+            &mut out,
+        );
+    }
 
     Ok(out)
 }

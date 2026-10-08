@@ -106,13 +106,6 @@ impl F64x2 {
     }
 
     #[inline]
-    pub(super) fn square(self) -> Self {
-        let (ch, cl) = two_prod(self.hi, self.hi);
-        let (hi, lo) = fast_two_sum(ch, purify(purify(2.0 * self.hi * self.lo) + cl));
-        Self { hi, lo }
-    }
-
-    #[inline]
     pub(super) fn square1(x: f64) -> Self {
         let (hi, lo) = two_prod(x, x);
         Self { hi, lo }
@@ -156,14 +149,6 @@ impl F64x2 {
         let d = self - Self::square1(y);
         let (hi, lo) = fast_two_sum(y, purify(d.to_f64() * hr));
         Self { hi, lo }
-    }
-
-    #[inline]
-    pub(super) fn scalbn_medium(self, y: i32) -> Self {
-        Self {
-            hi: crate::generic::scalbn_medium(self.hi, y),
-            lo: crate::generic::scalbn_medium(self.lo, y),
-        }
     }
 
     /// Like `scalbn(self.to_f64(), y)`, but rounding only once, so

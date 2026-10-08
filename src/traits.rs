@@ -95,8 +95,6 @@ pub(crate) trait Float:
         + core::ops::Shr<Self::RawExp, Output = Self::Raw>
         + core::ops::Shr<Self::Exp, Output = Self::Raw>;
 
-    type SRaw: SInt + CastFrom<Self::Raw> + CastInto<Self>;
-
     type RawExp: UInt + CastFrom<Self::Raw>;
 
     type Exp: SInt + CastInto<Self> + Into<i32>;

@@ -6,8 +6,7 @@
 //!
 //! The relative error of `ln(|x|)` is amplified by `|y * ln(|x|)|`, which can
 //! be up to about 104 when the result is finite and non-zero, so it uses the
-//! polynomial of the `f64` logarithm, which is more accurate than the one of
-//! the `f32` logarithm.
+//! more accurate logarithm `super::log::ln_f64_accurate`.
 //!
 //! The relative error before the final rounding is about 2^-40.5:
 //! * Logarithm: 2^-52, amplified by up to 2^6.7.
@@ -19,7 +18,7 @@
 //! from overflowing or underflowing in `f64`.
 
 use super::exp::exp_f64;
-use crate::f64::{ln_1p_q, ln_tbl, split_ln_arg};
+use super::log::ln_f64_accurate;
 use crate::generic::is_int;
 use crate::traits::Float as _;
 
@@ -101,7 +100,7 @@ fn powi_small(x: f64, y: i32) -> f64 {
 /// Returns `exp(y * ln(x * 2^xedelta))`, where `x` is positive and normal.
 #[inline]
 fn exp_y_ln(x: f32, xedelta: i16, y: f64) -> f32 {
-    let p = y * ln(x, xedelta);
+    let p = y * ln_f64_accurate(f64::from(x), xedelta);
     if p.exponent() >= 7 {
         // |y * ln(x)| >= 128, so the result overflows or underflows
         if p.is_sign_negative() {
@@ -112,17 +111,4 @@ fn exp_y_ln(x: f32, xedelta: i16, y: f64) -> f32 {
     } else {
         exp_f64(p) as f32
     }
-}
-
-/// Returns `ln(x * 2^edelta)`, where `x` is positive and normal, with a
-/// relative error of about 2^-52.
-#[inline]
-fn ln(x: f32, edelta: i16) -> f64 {
-    // x * 2^edelta = 2^k * (1 + z) / s, where `z` is exact (24 bits * 24 bits)
-    let (k, m, i) = split_ln_arg(f64::from(x), edelta);
-    let (s, t_hi, t_lo) = ln_tbl(k, i);
-    let z = m * s - 1.0;
-    // ln(1 + z) ~= z - z^2 / 2 + z^3 * Q(z), where the terms after `z` are
-    // less than 2^-9 * |z|
-    t_hi + ((z + (z * z) * (z * ln_1p_q(z) - 0.5)) + t_lo)
 }

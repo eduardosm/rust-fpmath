@@ -30,7 +30,6 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "exp2_table" => approx::gen_exp2_table(&args),
         "ln_1p_poly" => approx::gen_ln_1p_poly(&args),
         "ln_table" => approx::gen_ln_table(&args),
-        "ln_lo_scale_table" => approx::gen_ln_lo_scale_table(&args),
         "sin_pi_table" => approx::gen_sin_pi_table(&args),
         "sin_poly" => approx::gen_sin_poly(&args),
         "cos_poly" => approx::gen_cos_poly(&args),
@@ -42,7 +41,8 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "asinh_acosh_large_poly" => approx::gen_asinh_acosh_large_poly(&args),
         "gamma_poly" => approx::gen_gamma_poly(&args),
         "ln_gamma_poly" => approx::gen_ln_gamma_poly(&args),
-        "gamma_lanczos_poly" => approx::gen_gamma_lanczos_poly(&args),
+        "ln_gamma_root" => approx::gen_ln_gamma_root(&args),
+        "gamma_stirling_poly" => approx::gen_gamma_stirling_poly(&args),
 
         _ => {
             eprintln!("Invalid generate parameter: {cmd:?}");
@@ -73,6 +73,52 @@ impl std::str::FromStr for FloatKind {
             "F64x2" => Ok(Self::F64x2),
             _ => Err("invalid float kind"),
         }
+    }
+}
+
+/// Float kinds of the coefficients of a polynomial, parsed from a
+/// comma-separated list of `kind:count` items, where the last item can omit the
+/// count to apply to all the remaining coefficients. For example, `F64x2:6,f64`
+/// means that the first 6 coefficients are `F64x2` and the rest are `f64`. A
+/// single `kind` applies to all the coefficients.
+#[derive(Clone, Debug)]
+struct CoeffKinds {
+    parts: Vec<(FloatKind, Option<usize>)>,
+}
+
+impl std::str::FromStr for CoeffKinds {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = Vec::new();
+        let mut items = s.split(',').peekable();
+        while let Some(item) = items.next() {
+            let (kind, count) = match item.split_once(':') {
+                Some((kind, count)) => (
+                    kind,
+                    Some(count.parse().map_err(|_| "invalid coefficient count")?),
+                ),
+                None if items.peek().is_none() => (item, None),
+                None => return Err("only the last float kind can omit the count"),
+            };
+            parts.push((kind.parse()?, count));
+        }
+        Ok(Self { parts })
+    }
+}
+
+impl CoeffKinds {
+    /// Returns the kind of the `i`-th coefficient (counting from zero, in the
+    /// order they are rendered).
+    fn get(&self, i: usize) -> FloatKind {
+        let mut start = 0;
+        for &(kind, count) in self.parts.iter() {
+            match count {
+                Some(count) if i >= start + count => start += count,
+                _ => return kind,
+            }
+        }
+        panic!("no float kind specified for coefficient {i}");
     }
 }
 

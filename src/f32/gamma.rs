@@ -1,253 +1,252 @@
-use super::log_core::log_core_f64;
+//! Gamma functions for `f32`.
+//!
+//! They use the same formulas as the `f64` functions (see
+//! `crate::f64::gamma`), but evaluated with plain `f64` arithmetic, with
+//! shorter polynomials. The factors of the products of consecutive values are
+//! exact (except `x + 1` and `x + 2`, which can be rounded when `|x| < 2^-28`),
+//! so each multiplication (or rounded factor) adds a relative error of at
+//! most 2^-53.
+//!
+//! `gamma` also uses the Stirling series for large arguments (with the
+//! exponential of `super::exp`) and the reflection formula for very negative
+//! arguments, but evaluated as `π / (sin(π * x) * Γ(1 - x))`.
+//!
+//! `ln_gamma` calculates its results close to zero (around its zeros with
+//! negative arguments) like the `f64` function (see
+//! `crate::f64::ln_gamma_near_zero`).
+
+use super::exp::exp_f64;
+use super::log::ln_f64_accurate;
 use super::trigonometric::sinpi_f64;
-use crate::generic::round_fi;
+use crate::f64::{ln_gamma_near_zero, round_i32};
 use crate::traits::Float as _;
 
-// GENERATE: consts f64 LN_2 LN_PI
-const LN_2: f64 = f64::from_bits(0x3FE62E42FEFA39EF); // 6.931471805599453e-1
+// GENERATE: consts f64 PI LN_PI
+const PI: f64 = f64::from_bits(0x400921FB54442D18); // 3.141592653589793e0
 const LN_PI: f64 = f64::from_bits(0x3FF250D048E7A1BD); // 1.1447298858494002e0
 
+/// `gamma` uses the Stirling series for `x >= GAMMA_STIRLING_MIN`.
+const GAMMA_STIRLING_MIN: f64 = 10.0;
+
+/// `gamma` uses the reflection formula for `x <= GAMMA_REFLECTION`.
+const GAMMA_REFLECTION: f64 = -10.0;
+
+/// `ln_gamma` uses the Stirling series for `x >= LN_GAMMA_STIRLING_MIN`.
+const LN_GAMMA_STIRLING_MIN: f64 = 4.0;
+
+/// `ln_gamma` uses the reflection formula for `x <= LN_GAMMA_REFLECTION`,
+/// where `|ln|Γ(x)|| > 1.2`.
+const LN_GAMMA_REFLECTION: f64 = -10.0;
+
 impl crate::generic::Gamma for f32 {
+    #[inline]
     fn gamma_finite(x: Self) -> Self {
         if x >= 36.0 {
             // Overflow
             return f32::INFINITY;
         } else if x <= -43.0 {
-            // Underflow
+            // Underflow, with the sign of `Γ(x)`, which is negative between
+            // `-2 * k - 1` and `-2 * k` (`x` is not an integer)
             let xi = (-x) as u32;
             return 0.0.set_sign((xi & 1) == 0);
         }
 
-        // Split x = k + f + i, such as:
-        //  * k is some constant
-        //  * i is an integer
-        //  * -0.5 <= f <= 0.5
-        // so, Γ(x) = Γ(k + f + i)
-        //
-        // when i = 0:
-        //   Γ(x) = Γ(k + f)
-        //
-        // when i > 0:
-        //  Γ(x) = Γ(k + f + i) = Γ(k + f) * prod(j = 0 to i - 1, k + f + j)
-        //
-        // when i < 0:
-        //  Γ(k + f) = Γ(k + f + i) * prod(j = 0 to |i| - 1, k + f + i + j)
-        //           = Γ(k + f + i) * prod(j = 0 to |i| - 1, x + j)
-        //  Γ(x) = Γ(k + f + i) = Γ(k + f) / prod(j = 0 to |i| - 1, x + j)
-
-        let x = f64::from(x);
-        let k = 2.875;
-
-        let d = x - k;
-        let (i_f, i) = round_fi(d);
-        let f = d - i_f;
-
-        // gf = Γ(k + f)
-        let gf = {
-            // GENERATE: gamma_poly f64 10 2.875 -0.5 0.5
-            const K0: f64 = f64::from_bits(0x3FFC9A76BE5776DF); // 1.7877108988972663e0
-            const K1: f64 = f64::from_bits(0x3FF8F2754DE034AA); // 1.5591939012549951e0
-            const K2: f64 = f64::from_bits(0x3FF0D11919467E31); // 1.0510493266409748e0
-            const K3: f64 = f64::from_bits(0x3FDE1F42CAE80255); // 4.70658014441175e-1
-            const K4: f64 = f64::from_bits(0x3FC82B358A50087A); // 1.8881863835855822e-1
-            const K5: f64 = f64::from_bits(0x3FAE1F2E230C7F02); // 5.883163621751743e-2
-            const K6: f64 = f64::from_bits(0x3F9240F86283980F); // 1.782596684724785e-2
-            const K7: f64 = f64::from_bits(0x3F715151FAE5937A); // 4.227943644171778e-3
-            const K8: f64 = f64::from_bits(0x3F51FBA622CBD87B); // 1.0975954457399784e-3
-            const K9: f64 = f64::from_bits(0x3F29EF7115EF3777); // 1.9787078323790414e-4
-            const K10: f64 = f64::from_bits(0x3F0C0EEDBA051121); // 5.3516988602927156e-5
-
-            K0 + horner!(f, f, [K1, K2, K3, K4, K5, K6, K7, K8, K9, K10])
-        };
-
-        let y = match i.cmp(&0) {
-            core::cmp::Ordering::Equal => gf,
-            core::cmp::Ordering::Greater => {
-                // gi = prod(j = 0 to i - 1, k + f + j)
-                let mut v = k + f;
-                let mut gi = v;
-                for _ in 1..i {
-                    v += 1.0;
-                    gi *= v;
-                }
-                // Γ(x) = Γ(k + f) * prod(j = 0 to i - 1, k + f + j) = gf * gi
-                gf * gi
-            }
-            core::cmp::Ordering::Less => {
-                // gi = prod(j = 0 to |i| - 1, x + j)
-                let mut v = x;
-                let mut gi = v;
-                for _ in 1..-i {
-                    v += 1.0;
-                    gi *= v;
-                }
-                // Γ(x) = Γ(k + f) / prod(j = 0 to |i| - 1, x + j) = gf / gi
-                gf / gi
-            }
-        };
-
-        y as f32
-    }
-
-    fn ln_gamma_finite(x: Self) -> (Self, i8) {
-        fn ln(x: f64) -> f64 {
-            let xm1 = x - 1.0;
-            if xm1.exponent() <= -10 {
-                // GENERATE: ln_1p_poly f64 4 -0.00196 0.00196
-                const K2: f64 = f64::from_bits(0xBFDFFFFFFFFFC9F1); // -4.999999999992318e-1
-                const K3: f64 = f64::from_bits(0x3FD555555554F43F); // 3.3333333333195364e-1
-                const K4: f64 = f64::from_bits(0xBFD000035B35DA72); // -2.5000080020200877e-1
-                const K5: f64 = f64::from_bits(0x3FC999A1376977B1); // 2.0000090795195782e-1
-
-                let xm1_2 = xm1 * xm1;
-                xm1 + horner!(xm1_2, xm1, [K2, K3, K4, K5])
-            } else {
-                // GENERATE: ln_1p_poly f64 6 -0.032 0.032
-                const K2: f64 = f64::from_bits(0xBFE000000001FF45); // -5.000000000145312e-1
-                const K3: f64 = f64::from_bits(0x3FD55555555FA9F6); // 3.3333333337091575e-1
-                const K4: f64 = f64::from_bits(0xBFCFFFFF0A7CC9E0); // -2.4999988567431242e-1
-                const K5: f64 = f64::from_bits(0x3FC999981E53B5B4); // 1.9999982338724254e-1
-                const K6: f64 = f64::from_bits(0xBFC55CAB5870E137); // -1.6689054315953353e-1
-                const K7: f64 = f64::from_bits(0x3FC25159F6260532); // 1.431076480767302e-1
-
-                let (k, lo, ln_hi) = log_core_f64(x, 0);
-                let lo2 = lo * lo;
-                let ln_lo = lo + horner!(lo2, lo, [K2, K3, K4, K5, K6, K7]);
-
-                // ln(x) = ln(2^k * m) = k * ln(2) + ln(m)
-                LN_2 * k + (ln_hi + ln_lo)
-            }
-        }
-
-        let (y, sign) = if x.abs() <= 45.0 {
-            // Split x = k + f + i, such as:
-            //  * k is some constant
-            //  * i is an integer
-            //  * -0.5 <= f <= 0.5
-            // so, Γ(x) = Γ(k + f + i)
-            //
-            // when i = 0:
-            //   Γ(x) = Γ(k + f)
-            //
-            // when i > 0:
-            //  Γ(x) = Γ(k + f + i) = Γ(k + f) * prod(j = 0 to i - 1, k + f + j)
-            //
-            // when i < 0:
-            //  Γ(k + f) = Γ(k + f + i) * prod(j = 0 to |i| - 1, k + f + i + j)
-            //           = Γ(k + f + i) * prod(j = 0 to |i| - 1, x + j)
-            //  Γ(x) = Γ(k + f + i) = Γ(k + f) / prod(j = 0 to |i| - 1, x + j)
-
-            let x = f64::from(x);
-            let k = 2.0;
-
-            let d = x - k;
-            let (i_f, i) = round_fi(d);
-            let f = d - i_f;
-
-            // lgf = ln(Γ(k + f))
-            let lgf = {
-                // GENERATE: ln_gamma_poly f64 15 2 -0.5 0.50001
-                const K1: f64 = f64::from_bits(0x3FDB0EE6072093EA); // 4.227843350984687e-1
-                const K2: f64 = f64::from_bits(0x3FD4A34CC4A6140B); // 3.2246703342417565e-1
-                const K3: f64 = f64::from_bits(0xBFB13E001A5628EC); // -6.735230105383366e-2
-                const K4: f64 = f64::from_bits(0x3F951322AC53FA8A); // 2.058080841833968e-2
-                const K5: f64 = f64::from_bits(0xBF7E404FBF1E9289); // -7.385550985337227e-3
-                const K6: f64 = f64::from_bits(0x3F67ADD72357BB2D); // 2.890510741728211e-3
-                const K7: f64 = f64::from_bits(0xBF538AC6F8FBF93C); // -1.1927550403352935e-3
-                const K8: f64 = f64::from_bits(0x3F40B35A1FCE1D04); // 5.096616801986424e-4
-                const K9: f64 = f64::from_bits(0xBF2D3F591C7BF9B1); // -2.231403616334677e-4
-                const K10: f64 = f64::from_bits(0x3F1A179B696FF18D); // 9.953390177481186e-5
-                const K11: f64 = f64::from_bits(0xBF079B29BF5CE8B6); // -4.502507355970532e-5
-                const K12: f64 = f64::from_bits(0x3EF516F86D0EE035); // 2.0112732105309796e-5
-                const K13: f64 = f64::from_bits(0xBEE305C8C8C536EB); // -9.070680129365463e-6
-                const K14: f64 = f64::from_bits(0x3ED69B120EE5B1FE); // 5.389629434620917e-6
-                const K15: f64 = f64::from_bits(0xBEC6DEB29361DDB0); // -2.7263060032274846e-6
-
-                horner!(
-                    f,
-                    f,
-                    [
-                        K1, K2, K3, K4, K5, K6, K7, K8, K9, K10, K11, K12, K13, K14, K15
-                    ]
-                )
-            };
-
-            match i.cmp(&0) {
-                core::cmp::Ordering::Equal => (lgf, 1),
-                core::cmp::Ordering::Greater => {
-                    // gi = prod(j = 0 to i - 1, k + f + j)
-                    let mut v = k + f;
-                    let mut gi = v;
-                    for _ in 1..i {
-                        v += 1.0;
-                        gi *= v;
-                    }
-                    // ln(abs(Γ(x))) = ln(Γ(k + f)) + ln(prod(j = 0 to i - 1, k + f + j)) = lgf + ln(gi)
-                    (lgf + ln(gi), 1)
-                }
-                core::cmp::Ordering::Less => {
-                    // gi = prod(j = 0 to |i| - 1, x + j)
-                    let mut v = x;
-                    let mut gi = v;
-                    for _ in 1..-i {
-                        v += 1.0;
-                        gi *= v;
-                    }
-                    // ln(abs(Γ(x))) = ln(Γ(k + f)) - ln(abs(prod(j = 0 to |i| - 1, x + j))) = lgf - ln(abs(gi))
-                    let sign = if gi.is_sign_negative() { -1 } else { 1 };
-                    (lgf - ln(gi.abs()), sign)
-                }
-            }
+        let xd = f64::from(x);
+        let r = if xd >= GAMMA_STIRLING_MIN {
+            // ln(Γ(x)) < 92.2 has an absolute error of about 2^-44.5, and
+            // the exponential adds a relative error of about 2^-40.5
+            exp_f64(stirling(xd, -0.5))
+        } else if xd > GAMMA_REFLECTION {
+            gamma_small(xd)
         } else {
-            // Use Lanczos approximation:
-            // Γ(x) = √(2π) * (x + g - 0.5)^(x - 0.5) * exp(-(x + g - 0.5)) * Ag(x - 1)
-            //      = (x + g - 0.5)^(x - 0.5) * exp(-(x + g - 0.5)) * P(1 / x)
-            // with let P(1 / x) = √(2π) * Ag(x - 1) = Γ(x) / ((x + g - 0.5)^(x - 0.5) * exp(-(x + g - 0.5)))
-            //
-            // choose g = 0.5, so:
-            // ln(Γ(x)) = (x - 0.5) * ln(x) - x + ln(P(1 / x))
-            //
-            // For x < 0.5, use reflection formula:
-            // Γ(x)*Γ(1-x) = π/sin(πx) => Γ(x) = π/(sin(πx)*Γ(1-x))
-
-            // nx = x or 1 - x, so nx >= 0.5
-            let reflect = x.is_sign_negative();
-            let nx = if reflect {
-                1.0 - f64::from(x)
-            } else {
-                f64::from(x)
-            };
-
-            // p = P(1 / nx)
-            let p = {
-                // GENERATE: gamma_lanczos_poly f64 4 0.5 2.93e-39 0.022223
-                const K0: f64 = f64::from_bits(0x40040D931FF62735); // 2.5066282746310216e0
-                const K1: f64 = f64::from_bits(0x3FCABCC42A83B582); // 2.0888568950560332e-1
-                const K2: f64 = f64::from_bits(0x3F81D32FB6BA00D0); // 8.703587306854749e-3
-                const K3: f64 = f64::from_bits(0xBF7B89CEB07855D3); // -6.723220234126487e-3
-                const K4: f64 = f64::from_bits(0xBF3E85F9D91DBB89); // -4.657492619263783e-4
-
-                let inv_nx = nx.recip();
-                K0 + horner!(inv_nx, inv_nx, [K1, K2, K3, K4])
-            };
-
-            // ln(Γ(nx)) = (nx - 0.5) * ln(nx) - nx + ln(P(1 / nx))
-            let lg_nx = (nx - 0.5) * ln(nx) - nx + ln(p);
-
-            if reflect {
-                let sinpix = sinpi_f64(x);
-
-                // ln(abs(Γ(x))) = ln(π) - ln(abs(sin(πx))) - ln(Γ(1-x))
-                let lgx = LN_PI - ln(sinpix.abs()) - lg_nx;
-                let sign = if sinpix.is_sign_negative() { -1 } else { 1 };
-
-                (lgx, sign)
-            } else {
-                // ln(abs(Γ(x))) = ln(Γ(nx))
-                (lg_nx, 1)
-            }
+            // Γ(x) = π / (sin(π * x) * Γ(1 - x)), where
+            // Γ(1 - x) = exp(ln(Γ(1 + y))), with y = -x, is less than Γ(44)
+            PI / (sinpi_f64(x) * exp_f64(stirling(-xd, 0.5)))
         };
-
-        (y as f32, sign)
+        r as f32
     }
+
+    #[inline]
+    fn ln_gamma_finite(x: Self) -> (Self, i8) {
+        let xd = f64::from(x);
+        if xd >= LN_GAMMA_STIRLING_MIN {
+            // The absolute error is about 2^-46 (with a relative error of
+            // about 2^-52 for large arguments), and the result is greater
+            // than 1.79
+            (stirling(xd, -0.5) as f32, 1)
+        } else if xd > LN_GAMMA_REFLECTION {
+            ln_gamma_small(xd)
+        } else {
+            // ln|Γ(x)| = ln(π) - ln|sin(π * x)| - ln(Γ(1 + y)), with y = -x,
+            // where the result is greater than 1.2 in magnitude (the zeros of
+            // `ln|Γ(x)|` are between the representable arguments), and the
+            // absolute error is about 2^-45
+            let s = sinpi_f64(x);
+            let sign = if s.is_sign_negative() { -1 } else { 1 };
+            let r = (LN_PI - ln_f64_accurate(s.abs(), 0)) - stirling(-xd, 0.5);
+            (r as f32, sign)
+        }
+    }
+}
+
+/// Returns `Γ(x)`, for `GAMMA_REFLECTION < x < GAMMA_STIRLING_MIN`, where `x`
+/// is not zero or a negative integer, with a relative error of about 2^-42.5.
+#[inline]
+fn gamma_small(x: f64) -> f64 {
+    // x = n + f, where `f` is exact
+    let (nf, n) = round_i32(x);
+    let f = x - nf;
+    let g = gamma_poly(f);
+
+    if n >= 3 {
+        // Γ(x) = Γ(3 + f) * (3 + f) * ... * (x - 1)
+        let mut p = g;
+        let mut v = x;
+        for _ in 3..n {
+            v -= 1.0;
+            p *= v;
+        }
+        p
+    } else {
+        // Γ(x) = Γ(3 + f) / (x * (x + 1) * ... * (2 + f))
+        let mut p = x;
+        let mut v = x;
+        for _ in n..2 {
+            v += 1.0;
+            p *= v;
+        }
+        g / p
+    }
+}
+
+/// Returns `(ln|Γ(x)|, sign(Γ(x)))`, for
+/// `LN_GAMMA_REFLECTION < x < LN_GAMMA_STIRLING_MIN`, where `x` is not zero or
+/// a negative integer.
+#[inline]
+fn ln_gamma_small(x: f64) -> (f32, i8) {
+    // x = n + f, where `f` is exact
+    let (nf, n) = round_i32(x);
+    let f = x - nf;
+    let g = ln_gamma_poly(f);
+
+    if n == 2 {
+        (g as f32, 1)
+    } else if n > 2 {
+        // ln(Γ(x)) = ln(Γ(2 + f)) + ln((2 + f) * ... * (x - 1)), where the
+        // product is greater than 1.5 and has at most 48 bits (so the
+        // logarithm has a relative error of about 2^-52), and the result is
+        // greater than 0.28
+        let mut v = x - 1.0;
+        let mut p = v;
+        for _ in 3..n {
+            v -= 1.0;
+            p *= v;
+        }
+        ((g + ln_f64_accurate(p, 0)) as f32, 1)
+    } else {
+        // ln|Γ(x)| = ln(Γ(2 + f)) - ln|x * (x + 1) * ... * (1 + f)|
+        let mut p = x;
+        let mut v = x;
+        for _ in n..1 {
+            v += 1.0;
+            p *= v;
+        }
+        let sign = if p.is_sign_negative() { -1 } else { 1 };
+        let r = g - ln_f64_accurate(p.abs(), 0);
+        // When `n <= -2`, the absolute error is about 2^-45.8 (mostly from
+        // `ln(Γ(2 + f))`), which is not small enough relative to results close
+        // to zero (around the zeros between -10 and -2), so they are
+        // calculated like in the `f64` function for such results. When
+        // `n = 1`, the result (close to zero when `x` is close to 1) is about
+        // `-γ * f`, and both terms have small relative errors.
+        let r = if n <= -2 && r.abs() < f64::exp2i_fast(-12) {
+            ln_gamma_near_zero(x)
+        } else {
+            r
+        };
+        (r as f32, sign)
+    }
+}
+
+/// Returns `ln(Γ(y + c + 1/2))`, where `c = ±1/2` (so it is `ln(Γ(y))` or
+/// `ln(Γ(1 + y))`), for `y >= 4`, with the Stirling series:
+///
+/// `ln(Γ(y + c + 1/2)) = (y + c) * ln(y) - y + K0 + K1 / y + K3 / y^3 + ...`
+///
+/// The absolute error is about 2^-46 (mostly from the polynomial), plus about
+/// 2^-52 relative to `(y + c) * ln(y)` (from the logarithm and the rounding of
+/// the product).
+#[inline]
+fn stirling(y: f64, c: f64) -> f64 {
+    // Coefficients fitted for `y >= 4`, with an absolute error of 2^-46.1
+    // GENERATE: gamma_stirling_poly f64 7 4
+    const K0: f64 = f64::from_bits(0x3FED67F1C864BEB5); // 9.189385332046728e-1
+    const K1: f64 = f64::from_bits(0x3FB5555555555555); // 8.333333333333333e-2
+    const K3: f64 = f64::from_bits(0xBF66C16C064F015F); // -2.777777658110533e-3
+    const K5: f64 = f64::from_bits(0x3F4A016E868F5E2F); // 7.936277080444249e-4
+    const K7: f64 = f64::from_bits(0xBF43740A11D30A4D); // -5.936669509981146e-4
+    const K9: f64 = f64::from_bits(0x3F49F1F10EFAD7C3); // 7.917811435251765e-4
+    const K11: f64 = f64::from_bits(0xBF5251C4E8BF406D); // -1.118128103360784e-3
+
+    let l = ln_f64_accurate(y, 0);
+    let t = 1.0 / y;
+    let s = t * t;
+    let s2 = s * s;
+    let q = t * (K1 + s * ((K3 + s * K5) + s2 * ((K7 + s * K9) + s2 * K11)));
+    // `y + c` is exact when `y < 2^52`, otherwise its rounding error is less
+    // than 2^-53 relative to it
+    ((y + c) * l - y) + (K0 + q)
+}
+
+/// Returns `Γ(3 + f)`, for `|f| <= 1/2`, with a relative error of about
+/// 2^-42.5.
+#[inline]
+fn gamma_poly(f: f64) -> f64 {
+    // GENERATE: gamma_poly f64 11 3 -0.5 0.5
+    const K0: f64 = f64::from_bits(0x3FFFFFFFFFFFFB63); // 1.9999999999997378e0
+    const K1: f64 = f64::from_bits(0x3FFD877303907B0B); // 1.8455686701997276e0
+    const K2: f64 = f64::from_bits(0x3FF3F1854798EA11); // 1.2464649960298895e0
+    const K3: f64 = f64::from_bits(0x3FE2665A2BBE04D6); // 5.749941686955491e-1
+    const K4: f64 = f64::from_bits(0x3FCD731875001A06); // 2.3007493698987974e-1
+    const K5: f64 = f64::from_bits(0x3FB2DEFD580FADB4); // 7.371505165035935e-2
+    const K6: f64 = f64::from_bits(0x3F9691F63404ED60); // 2.2041174817088005e-2
+    const K7: f64 = f64::from_bits(0x3F765162965081FE); // 5.448708635441777e-3
+    const K8: f64 = f64::from_bits(0x3F56321078C16967); // 1.3547097069222748e-3
+    const K9: f64 = f64::from_bits(0x3F315D4D52B8118B); // 2.64960649218681e-4
+    const K10: f64 = f64::from_bits(0x3F1085DFAD4EC625); // 6.303003040277666e-5
+    const K11: f64 = f64::from_bits(0x3EE16073DE7D1CA5); // 8.285888682414632e-6
+
+    let f2 = f * f;
+    let f4 = f2 * f2;
+    let f8 = f4 * f4;
+    ((K0 + f * K1) + f2 * (K2 + f * K3))
+        + f4 * ((K4 + f * K5) + f2 * (K6 + f * K7))
+        + f8 * ((K8 + f * K9) + f2 * (K10 + f * K11))
+}
+
+/// Returns `ln(Γ(2 + f))`, for `|f| <= 1/2`, with a relative error of about
+/// 2^-44.
+#[inline]
+fn ln_gamma_poly(f: f64) -> f64 {
+    // GENERATE: ln_gamma_poly f64 14 2 -0.5 0.50001
+    const K1: f64 = f64::from_bits(0x3FDB0EE607209296); // 4.227843350984498e-1
+    const K2: f64 = f64::from_bits(0x3FD4A34CC4A627EE); // 3.2246703342445826e-1
+    const K3: f64 = f64::from_bits(0xBFB13E001A4DDB58); // -6.735230104628209e-2
+    const K4: f64 = f64::from_bits(0x3F951322ABC8D183); // 2.05808083866983e-2
+    const K5: f64 = f64::from_bits(0xBF7E404FE0D2647B); // -7.385551475772019e-3
+    const K6: f64 = f64::from_bits(0x3F67ADD7AE79B856); // 2.8905117540523424e-3
+    const K7: f64 = f64::from_bits(0xBF538ABA30F91757); // -1.1927431368276753e-3
+    const K8: f64 = f64::from_bits(0x3F40B33C50A812BD); // 5.096477992202125e-4
+    const K9: f64 = f64::from_bits(0xBF2D43F42126BDE9); // -2.2327761742023326e-4
+    const K10: f64 = f64::from_bits(0x3F1A1DD100788FC8); // 9.962642808908275e-5
+    const K11: f64 = f64::from_bits(0xBF072E4DCA353C59); // -4.42140092454738e-5
+    const K12: f64 = f64::from_bits(0x3EF4C7805747B82D); // 1.9816686703970507e-5
+    const K13: f64 = f64::from_bits(0xBEE80017452BB114); // -1.1444261109848831e-5
+    const K14: f64 = f64::from_bits(0x3ED8224192C0E921); // 5.7539494200903685e-6
+
+    let f2 = f * f;
+    let f4 = f2 * f2;
+    let f8 = f4 * f4;
+    f * ((((K1 + f * K2) + f2 * (K3 + f * K4)) + f4 * ((K5 + f * K6) + f2 * (K7 + f * K8)))
+        + f8 * (((K9 + f * K10) + f2 * (K11 + f * K12)) + f4 * (K13 + f * K14)))
 }

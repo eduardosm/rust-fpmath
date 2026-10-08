@@ -1,7 +1,7 @@
 use std::fmt::Write as _;
 use std::io::Read as _;
 
-use super::FloatKind;
+use super::CoeffKinds;
 
 #[derive(Debug)]
 enum JuliaError {
@@ -48,7 +48,7 @@ fn run_julia(input: &str) -> Result<Vec<u8>, JuliaError> {
 }
 
 pub(super) fn run_and_render_remez(
-    fkind: FloatKind,
+    fkinds: &CoeffKinds,
     func: &str,
     wfunc: &str,
     range: (f64, f64),
@@ -57,6 +57,26 @@ pub(super) fn run_and_render_remez(
     coeff_prefix: &str,
     out: &mut String,
 ) {
+    let coeffs = run_remez(func, wfunc, range, poly_deg);
+    for (i, coeff_value) in coeffs.into_iter().enumerate() {
+        super::render_const(
+            fkinds.get(i),
+            &format!("{coeff_prefix}{}", i as i32 + poly_i_print_off),
+            coeff_value,
+            out,
+        );
+    }
+}
+
+/// Returns the coefficients of the powers `1, x, ..., x^poly_deg` of the
+/// polynomial that approximates `func` in `range`, minimizing the error
+/// weighted by `wfunc`.
+pub(super) fn run_remez(
+    func: &str,
+    wfunc: &str,
+    range: (f64, f64),
+    poly_deg: i32,
+) -> Vec<rug::Float> {
     let prec = 1024;
     let code = gen_remez_code(prec, func, wfunc, range, poly_deg);
     let result = run_julia(&code).unwrap();
@@ -67,16 +87,9 @@ pub(super) fn run_and_render_remez(
     let err = parse_f64(err_line);
     eprintln!("error = {err:e} = 2^({})", err.log2());
 
-    for i in 0..=poly_deg {
-        let coeff_line = lines.next().unwrap();
-        let coeff_value = parse_rug_float(coeff_line, prec);
-        super::render_const(
-            fkind,
-            &format!("{coeff_prefix}{}", i + poly_i_print_off),
-            coeff_value,
-            out,
-        );
-    }
+    (0..=poly_deg)
+        .map(|_| parse_rug_float(lines.next().unwrap(), prec))
+        .collect()
 }
 
 fn gen_remez_code(prec: u32, func: &str, wfunc: &str, range: (f64, f64), poly_deg: i32) -> String {
