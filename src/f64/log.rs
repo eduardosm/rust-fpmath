@@ -46,7 +46,7 @@ const LOG2_E_X1: f64 = f64::from_bits(0x3E54AE0BF85DDF44); // 1.9259629911266175
 const LOG10_E_X0: f64 = f64::from_bits(0x3FDBCB7B10000000); // 4.342944771051407e-1
 const LOG10_E_X1: f64 = f64::from_bits(0x3E349B9438CA9AAE); // 4.798111141615973e-9
 
-// GENERATE: ln_table f32 F64x2 7 42
+// GENERATE: ln_table f32 7 42
 // LN_TBL[i] = (bits(s), bits(hi), bits(lo)), where s = 1 / (1 + i / 128) rounded to f32
 // and hi + lo = -ln(s), with hi being a multiple of 2^-42
 static LN_TBL: [(u64, u64, u64); 129] = [
@@ -258,8 +258,9 @@ pub(super) fn ln_sum_parts(t_hi: f64, t_lo: f64) -> (f64, f64) {
 /// Returns `(hi, lo)` such that `hi + lo ~= ln(x * 2^edelta)`, with a
 /// relative error of about 2^-75.
 ///
-/// It is slower than `ln_parts`, and meant for `pow`, which amplifies the
-/// error of the logarithm by up to `|y * ln(x)|` (about 2^9.5).
+/// It is slower than `ln_parts`, and meant for the functions that amplify the
+/// error of the logarithm: `pow`, by up to `|y * ln(x)|` (about 2^9.5), and
+/// the gamma functions (see `super::gamma`).
 ///
 /// `x` must be positive and normal.
 #[inline]
@@ -267,6 +268,14 @@ pub(super) fn ln_accurate_parts(x: f64, edelta: i16) -> (f64, f64) {
     let red = Reduced::new(x, edelta);
     let (hi, lo) = ln_1p_poly_accurate(red.zh, red.zl);
     red.add_t(hi, lo)
+}
+
+/// Like `ln_sum_parts`, but with the relative error of `ln_accurate_parts`
+/// (about 2^-75, plus the absolute error of up to 2^-101).
+#[inline]
+pub(super) fn ln_accurate_sum_parts(t_hi: f64, t_lo: f64) -> (f64, f64) {
+    let (hi, lo) = ln_accurate_parts(t_hi, 0);
+    (hi, lo + t_lo / t_hi)
 }
 
 /// Splits `x * 2^edelta = 2^k * m`, with `1 <= m < 2`, returning `(k, m, i)`,

@@ -10,7 +10,7 @@
 //! (24 bits * 24 bits), and `ln(1 + z)` is approximated with a polynomial.
 //! `log2` and `log10` multiply the result by `log2(e)` and `log10(e)`.
 
-use crate::f64::{ln_tbl, split_ln_arg};
+use crate::f64::{ln_1p_q, ln_tbl, split_ln_arg};
 use crate::traits::Float as _;
 
 // GENERATE: consts f64 LOG2_E LOG10_E
@@ -67,6 +67,23 @@ pub(super) fn ln_f64(x: f64, edelta: i16) -> f64 {
     let (s, t_hi, t_lo) = ln_tbl(k, i);
     let z = m * s - 1.0;
     t_hi + (ln_1p_poly(z) + t_lo)
+}
+
+/// Returns `ln(x * 2^edelta)`, where `x` is positive and normal, like
+/// `ln_f64`, but with the polynomial of the `f64` logarithm, so the relative
+/// error is about 2^-52 when the mantissa of `x` has at most 29 bits.
+///
+/// With wider mantissas, the rounding of `z` adds an absolute error of up to
+/// 2^-53.
+#[inline]
+pub(super) fn ln_f64_accurate(x: f64, edelta: i16) -> f64 {
+    // x * 2^edelta = 2^k * (1 + z) / s
+    let (k, m, i) = split_ln_arg(x, edelta);
+    let (s, t_hi, t_lo) = ln_tbl(k, i);
+    let z = m * s - 1.0;
+    // ln(1 + z) ~= z - z^2 / 2 + z^3 * Q(z), where the terms after `z` are
+    // less than 2^-9 * |z|
+    t_hi + ((z + (z * z) * (z * ln_1p_q(z) - 0.5)) + t_lo)
 }
 
 /// Returns `ln(1 + z)`, for `|z| <= 2^-8`, with a relative error of about

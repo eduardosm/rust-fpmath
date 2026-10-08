@@ -123,12 +123,10 @@ fn test_with(func: Func, mut f: impl FnMut(f32)) {
     }
 
     // Test the arguments around the boundaries of the argument reduction
-    // (`n + 0.375` for `gamma` and `n + 0.5` for `ln_gamma`)
+    // (`n + 0.5`)
     for n in -44..=36 {
-        for frac in [0.375, 0.5] {
-            for x in values::around(n as f32 + frac, 2) {
-                f(x);
-            }
+        for x in values::around(n as f32 + 0.5, 2) {
+            f(x);
         }
     }
 
@@ -148,14 +146,26 @@ fn test_with(func: Func, mut f: impl FnMut(f32)) {
 
     // Test the arguments around the zeros of `ln_gamma` (where `|Γ(x)| = 1`),
     // whose results with `ln_gamma` are close to zero
+    let zeros = ln_gamma_zeros(&extrema);
     let n = if func == Func::LnGamma {
         100_000
     } else {
         10_000
     };
-    for x in ln_gamma_zeros(&extrema) {
+    for &x in &zeros {
         for x in values::around(x, n) {
             f(x);
+        }
+    }
+
+    // Test the arguments around the zeros of `ln_gamma` with negative
+    // arguments where its results are `±2^-12`, the limit where it changes
+    // the evaluation method
+    if func == Func::LnGamma {
+        for x in ln_gamma_zero_limits(&zeros) {
+            for x in values::around(x, 1000) {
+                f(x);
+            }
         }
     }
 
@@ -173,22 +183,43 @@ fn test_with(func: Func, mut f: impl FnMut(f32)) {
     }
 }
 
-/// Returns the arguments at the limits of the range: where `ln_gamma`
-/// changes the evaluation method (`±45`), where `gamma` overflows (its result
-/// is the midpoint between the largest finite value and infinity) with large
-/// and tiny arguments, and where `ln_gamma` overflows.
-fn limits() -> [f32; 6] {
+/// Returns the arguments at the limits of the range: where the functions
+/// change the evaluation method (the Stirling series from 4 with `ln_gamma`
+/// and from 10 with `gamma`, and the reflection formula from -10), where
+/// `gamma` overflows (its result is the midpoint between the largest finite
+/// value and infinity) with large and tiny arguments, and where `ln_gamma`
+/// overflows.
+fn limits() -> [f32; 7] {
     let overflow = fpmath::scalbn(1.0, 128) - fpmath::scalbn(1.0, 103);
     // Γ(x) ~= 1/x with tiny x
     let tiny = (1.0 / overflow) as f32;
     [
-        45.0,
-        -45.0,
+        4.0,
+        10.0,
+        -10.0,
         Func::Gamma.solve(overflow, 35.0) as f32,
         tiny,
         -tiny,
         Func::LnGamma.solve(overflow, 4e36) as f32,
     ]
+}
+
+/// Returns the arguments around the zeros of `ln_gamma` with negative
+/// arguments where its results are `±2^-12` (calculated with Newton's method
+/// from the zeros).
+fn ln_gamma_zero_limits(zeros: &[f32]) -> Vec<f32> {
+    let mut xs = Vec::new();
+    for &x0 in zeros.iter().filter(|x| **x < 0.0) {
+        for y in [fpmath::scalbn(1.0, -12), -fpmath::scalbn(1.0, -12)] {
+            let x = Func::LnGamma.solve(y, x0.into()) as f32;
+            // Newton's method could have converged to a solution between
+            // other negative integers
+            if x.is_finite() && x.floor() == x0.floor() {
+                xs.push(x);
+            }
+        }
+    }
+    xs
 }
 
 /// Returns the arguments of the local extrema of `gamma` (where `ψ = Γ'/Γ` is

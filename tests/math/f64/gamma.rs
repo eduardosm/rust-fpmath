@@ -123,12 +123,10 @@ fn test_with(func: Func, mut f: impl FnMut(f64)) {
     }
 
     // Test the arguments around the boundaries of the argument reduction
-    // (`n + 0.375` for `gamma` and `n + 0.5` for `ln_gamma`)
+    // (`n + 0.5`)
     for n in -186..=172 {
-        for frac in [0.375, 0.5] {
-            for x in values::around(f64::from(n) + frac, 2) {
-                f(x);
-            }
+        for x in values::around(f64::from(n) + 0.5, 2) {
+            f(x);
         }
     }
 
@@ -148,10 +146,52 @@ fn test_with(func: Func, mut f: impl FnMut(f64)) {
 
     // Test the arguments around the zeros of `ln_gamma` (where `|Γ(x)| = 1`),
     // whose results with `ln_gamma` are close to zero
+    let zeros = ln_gamma_zeros(&extrema);
     let n = if func == Func::LnGamma { 10_000 } else { 1000 };
-    for x in ln_gamma_zeros(&extrema) {
+    for &x in &zeros {
         for x in values::around(x, n) {
             f(x);
+        }
+    }
+
+    // Test the arguments around the zeros of `ln_gamma` with negative
+    // arguments where its results are `±2^-16`, `±2^-7` and `±2^-4`, the
+    // limits where it changes the evaluation method
+    if func == Func::LnGamma {
+        for x in ln_gamma_zero_limits(&zeros) {
+            for x in values::around(x, 100) {
+                f(x);
+            }
+        }
+    }
+
+    // Test the arguments further away from the zeros of `ln_gamma` with
+    // negative arguments, from 2^14 to 2^48 ULPs, where it changes the
+    // evaluation method at different distances
+    if func == Func::LnGamma {
+        for &x0 in zeros.iter().filter(|x| **x < 0.0) {
+            for shift in 14..48 {
+                for v in values::spread(16, shift) {
+                    let bump = (1 << shift) | (v & ((1 << shift) - 1));
+                    f(f64::from_bits(x0.to_bits() + bump));
+                    f(f64::from_bits(x0.to_bits() - bump));
+                }
+            }
+        }
+
+        // Hard-to-round cases close to the zeros
+        let hard_cases = [
+            0xC003A7DC89BBC04B, // -2.456963611643038
+            0xC003A7FBE7319E44, // -2.4570234357850342
+            0xC003A7FC91A9B4CA, // -2.457024705878756
+            0xC003A7FD93C0E770, // -2.457026628803696
+            0xC005FB410BD22679, // -2.7476826594836976
+            0xC005FB410C2B1733, // -2.747682662072202
+            0xC005FB41122A6FCC, // -2.7476827067566543
+            0xC005FB4318131FD9, // -2.747686565478926
+        ];
+        for bits in hard_cases {
+            f(f64::from_bits(bits));
         }
     }
 
@@ -169,18 +209,29 @@ fn test_with(func: Func, mut f: impl FnMut(f64)) {
     }
 }
 
-/// Returns the arguments at the limits of the range: where `ln_gamma`
-/// changes the evaluation method (`±45`), where `gamma` overflows (its result
-/// is the midpoint between the largest finite value and infinity) with large
-/// and tiny arguments, and where `ln_gamma` overflows.
-fn limits() -> [f64; 6] {
+/// Returns the arguments at the limits of the range: where the functions
+/// change the evaluation method (the Stirling series from 4 with `ln_gamma`
+/// and from 6 with `gamma`, the reflection formula below -4 with `ln_gamma`
+/// and from -10 with `gamma`, the approximations for tiny arguments below
+/// 2^-60 with `ln_gamma` and 2^-64 with `gamma`, and the simpler Stirling
+/// series from 2^52 with `ln_gamma`), where `gamma` overflows (its result is
+/// the midpoint between the largest finite value and infinity) with large and
+/// tiny arguments, and where `ln_gamma` overflows.
+fn limits() -> [f64; 13] {
     let overflow: rug::Float =
         (rug::Float::with_val(EXT_PREC, 1) << 1024) - (rug::Float::with_val(EXT_PREC, 1) << 970);
     // Γ(x) ~= 1/x with tiny x
     let tiny = rug::Float::with_val(EXT_PREC, overflow.recip_ref()).to_f64();
     [
-        45.0,
-        -45.0,
+        4.0,
+        6.0,
+        -4.0,
+        -10.0,
+        fpmath::scalbn(1.0, -60),
+        -fpmath::scalbn(1.0, -60),
+        fpmath::scalbn(1.0, -64),
+        -fpmath::scalbn(1.0, -64),
+        fpmath::scalbn(1.0, 52),
         Func::Gamma.solve(&overflow, 171.6).to_f64(),
         tiny,
         -tiny,
@@ -249,6 +300,27 @@ fn ln_gamma_zeros(extrema: &[rug::Float]) -> Vec<f64> {
         }
     }
     zeros
+}
+
+/// Returns the arguments around the zeros of `ln_gamma` with negative
+/// arguments where its results are `±2^-16`, `±2^-7` and `±2^-4`
+/// (calculated with Newton's method from the zeros).
+fn ln_gamma_zero_limits(zeros: &[f64]) -> Vec<f64> {
+    let mut xs = Vec::new();
+    for &x0 in zeros.iter().filter(|x| **x < 0.0) {
+        for e in [-16, -7, -4] {
+            for sign in [1.0, -1.0] {
+                let y = rug::Float::with_val(EXT_PREC, sign * fpmath::scalbn(1.0, e));
+                let x = Func::LnGamma.solve(&y, x0).to_f64();
+                // Newton's method could have converged to a solution between
+                // other negative integers
+                if x.is_finite() && x.floor() == x0.floor() {
+                    xs.push(x);
+                }
+            }
+        }
+    }
+    xs
 }
 
 /// Returns arguments whose results are very close to a midpoint between two

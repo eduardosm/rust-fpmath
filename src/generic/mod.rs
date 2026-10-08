@@ -28,7 +28,7 @@ pub(crate) use inv_trigonometric::{
 };
 pub(crate) use log::{Log, ln, ln_1p, log2, log10};
 pub(crate) use pow::{Pow, pow, powi};
-pub(crate) use round::{ceil, floor, round, round_fi, trunc};
+pub(crate) use round::{ceil, floor, round, trunc};
 pub(crate) use scalbn::{scalbn, scalbn_medium};
 pub(crate) use sqrt::{Sqrt, rsqrt_sqrt_32, sqrt};
 pub(crate) use trigonometric::{

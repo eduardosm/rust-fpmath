@@ -6,15 +6,12 @@ mod hypot;
 mod inv_hyperbolic;
 mod inv_trigonometric;
 mod log;
-mod log_core;
 mod pow;
 mod sqrt;
 mod trigonometric;
 
 impl crate::traits::Float for f32 {
     type Raw = u32;
-
-    type SRaw = i32;
 
     type RawExp = u8;
 

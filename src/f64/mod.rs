@@ -7,12 +7,12 @@ mod hypot;
 mod inv_hyperbolic;
 mod inv_trigonometric;
 mod log;
-mod log_core;
 mod pow;
 mod sqrt;
 mod trigonometric;
 
 pub(crate) use exp::{EXP2_TBL_BITS, exp2_tbl};
+pub(crate) use gamma::ln_gamma_near_zero;
 pub(crate) use inv_hyperbolic::{acosh_large_corr, asinh_large_corr};
 pub(crate) use log::{ln_1p_q, ln_tbl, split_ln_arg};
 pub(crate) use trigonometric::{FRAC_64_PI, reduce_rad_large_sum, sin_cos_pi_64};
@@ -21,8 +21,6 @@ use crate::traits::Float as _;
 
 impl crate::traits::Float for f64 {
     type Raw = u64;
-
-    type SRaw = i64;
 
     type RawExp = u16;
 
