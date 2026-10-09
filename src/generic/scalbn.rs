@@ -1,3 +1,12 @@
+//! `scalbn`, generic over the floating-point type.
+//!
+//! `2^y` may not be representable, so `x * 2^y` is calculated by multiplying
+//! `x` by up to three powers of two whose exponents add up to `y` (or to a
+//! value that is large enough to make the result overflow or underflow to
+//! zero). When `y` is negative, the smallest power (the one whose exponent
+//! is the largest in magnitude) goes last, so a subnormal result is rounded
+//! only once.
+
 use crate::traits::{CastInto as _, Float};
 
 pub(crate) fn scalbn<F: Float>(x: F, y: i32) -> F {

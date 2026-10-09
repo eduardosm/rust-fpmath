@@ -1,3 +1,21 @@
+//! Cube root for `f64`.
+//!
+//! The argument is split as `|x| = 8^kdiv3 * r`, with an integer `kdiv3` and
+//! `1 <= r < 8`, so
+//!
+//! `cbrt(x) = sgn(x) * 2^kdiv3 * cbrt(r)`
+//!
+//! `cbrt(r)` is first approximated with a polynomial of the mantissa of `r`,
+//! multiplied by 1, `cbrt(2)` or `cbrt(4)`, with a relative error of about
+//! 2^-13.6. That approximation is rounded to a multiple of 2^-16 (`yc`), so
+//! `yc^3` and `r - yc^3` are exact, and
+//!
+//! `cbrt(r) = yc * cbrt(1 + e)`, with `e = (r - yc^3) / yc^3`
+//!
+//! where `cbrt(1 + e) - 1` (about 2^-13.5 at most, in magnitude) is
+//! approximated with another polynomial. The relative error before the final
+//! rounding is about 2^-65.
+
 use crate::traits::Float as _;
 
 // GENERATE: consts f64 CBRT_2 CBRT_4

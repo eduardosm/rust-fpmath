@@ -1,3 +1,21 @@
+//! Hypotenuse for `f64`.
+//!
+//! `hypot(x, y) = sqrt(x^2 + y^2)` is correctly rounded, and it is calculated
+//! with integer arithmetic. With `a = max(|x|, |y|)` and `b = min(|x|, |y|)`:
+//! * When `b` is zero, or its exponent is more than 27 below the one of `a`
+//!   (so it cannot change the rounded result), the result is `a`.
+//! * When `a` and `b` are subnormal, the raw bits of the result are the
+//!   square root of the sum of the squares of their raw bits, rounded to an
+//!   integer (see `isqrt_round`).
+//! * Otherwise, the sum of the squares of the mantissas (the one of `b`
+//!   scaled by the difference of exponents) is calculated as a 128-bit
+//!   integer, with a sticky bit for the bits that are shifted out. Its square
+//!   root is approximated with `super::sqrt::sqrt_approx` and rounded to an
+//!   integer of 53 bits. As in `sqrt` (see `super::sqrt`), that integer is
+//!   the mantissa of the correctly rounded result or differs from it by one,
+//!   which is decided with the remainder (ties are possible here, and they
+//!   round to even).
+
 use super::sqrt::sqrt_approx;
 use crate::traits::Float as _;
 

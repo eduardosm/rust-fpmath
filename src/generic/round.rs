@@ -1,3 +1,15 @@
+//! Rounding functions (`round`, `trunc`, `floor` and `ceil`), generic over
+//! the floating-point type.
+//!
+//! They operate on the raw bits of the argument. When `|x| < 1`, the result
+//! is zero (with the sign of `x`) or ±1. Otherwise, the exponent gives the
+//! number of bits of the mantissa that hold the fractional part (none when
+//! `|x| >= 2^MANT_BITS` or `x` is infinity or NaN, which are returned
+//! unchanged). Those bits are cleared and, when the function has to round
+//! away from zero (depending on them and on the sign), one unit of the last
+//! integer bit is added to the raw bits, which carries into the exponent
+//! when the mantissa overflows.
+
 use crate::traits::{Float, Int as _};
 
 pub(crate) fn round<F: Float>(x: F) -> F {

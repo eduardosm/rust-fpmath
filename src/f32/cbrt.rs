@@ -1,3 +1,17 @@
+//! Cube root for `f32`.
+//!
+//! It is evaluated with plain `f64` arithmetic. The argument is split as
+//! `|x| = 8^kdiv3 * 2^kmod3 * r0`, with an integer `kdiv3`, `0 <= kmod3 <= 2`
+//! and `1 <= r0 < 2`, so
+//!
+//! `cbrt(|x|) = 2^kdiv3 * cbrt(2^kmod3) * cbrt(r0)`
+//!
+//! where `cbrt(2^kmod3)` is 1, `cbrt(2)` or `cbrt(4)`, and `cbrt(r0)` is
+//! approximated with a polynomial, with a relative error of about 2^-10.5.
+//! That approximation of `cbrt(|x|)` is refined with one Halley iteration,
+//! which roughly cubes the relative error, so it is about 2^-32 before the
+//! final rounding.
+
 use crate::traits::Float as _;
 
 // GENERATE: consts f64 CBRT_2 CBRT_4
