@@ -741,14 +741,10 @@ fn ln_gamma_poly_accurate(f: f64) -> (f64, f64) {
     const K25: f64 = f64::from_bits(0xBE1E12ADE298DC51); // -1.7504769945952672e-9
     const K26: f64 = f64::from_bits(0x3E0F732C290BD5D7); // 9.153123416258258e-10
 
-    let t = K12
-        + horner!(
-            f,
-            f,
-            [
-                K13, K14, K15, K16, K17, K18, K19, K20, K21, K22, K23, K24, K25, K26
-            ]
-        );
+    let t = K23 + f * (K24 + f * (K25 + f * K26));
+    let t = K19 + f * (K20 + f * (K21 + f * (K22 + f * t)));
+    let t = K15 + f * (K16 + f * (K17 + f * (K18 + f * t)));
+    let t = K12 + f * (K13 + f * (K14 + f * t));
 
     let f = Split::new(f);
     let (h, l) = f.mul_add(t, 0.0, K11);

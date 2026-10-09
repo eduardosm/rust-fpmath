@@ -666,9 +666,9 @@ impl Reduced {
         let b2 = bh * bh;
         let hb2 = 0.5 * b2;
         // cos(bh) - 1 = -hb2 + cm1_rem
-        let cm1_rem = b2 * horner!(b2, b2, [K4, K6, K8]);
+        let cm1_rem = b2 * (b2 * (K4 + b2 * (K6 + b2 * K8)));
         // sin(bh) - bh
-        let smb = bh * horner!(b2, b2, [K3, K5, K7]);
+        let smb = bh * (b2 * (K3 + b2 * (K5 + b2 * K7)));
 
         // c * bh (exact)
         let p = F64x2::mul11(ch, bh);

@@ -53,7 +53,7 @@ impl crate::generic::Cbrt for f32 {
             const K1: f64 = f64::from_bits(0x3FDC0069D19700AE); // 4.375252291465682e-1
             const K2: f64 = f64::from_bits(0xBFAE8D1148F1473C); // -5.967000976001066e-2
 
-            (K0 + horner!(r0, r0, [K1, K2])) * s
+            (K0 + r0 * (K1 + r0 * K2)) * s
         };
 
         // Refine y0 with a Halley iteration:

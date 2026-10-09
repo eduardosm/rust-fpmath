@@ -43,15 +43,6 @@
 // Uncomment to use `dbg!`
 //extern crate std;
 
-macro_rules! horner {
-    ($outer_x:ident, $inner_x:ident, [$coef:expr]) => {
-        $outer_x * $coef
-    };
-    ($outer_x:ident, $inner_x:ident, [$coef0:expr, $($coefs:expr),+]) => {
-        $outer_x * ($coef0 + horner!($inner_x, $inner_x, [$($coefs),+]))
-    };
-}
-
 #[cfg(test)]
 macro_rules! assert_is_nan {
     ($value:expr) => {{
