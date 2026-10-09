@@ -31,10 +31,11 @@ impl crate::generic::InvHyperbolic for f32 {
                 // |x| >= 16
                 ln_f64(ax, 1) + asinh_large_corr(1.0 / (ax * ax))
             } else {
-                // `x^2 + 1`, the square root and the sum have relative errors
-                // of about 2^-52, and `ln_f64` adds an absolute error of up
-                // to 2^-53 (the argument can have 53 bits), while the result
-                // is greater than 0.48
+                // `x^2 + 1` and the sum have relative errors of about 2^-53
+                // and the square root of up to about 2^-50.7 (see
+                // `fast_sqrt`), and `ln_f64` adds an absolute error of up to
+                // 2^-53 (the argument can have 53 bits), while the result is
+                // greater than 0.48
                 ln_f64(ax + fast_sqrt(ax * ax + 1.0).0, 0)
             };
             (r as f32).copysign(x)
@@ -48,10 +49,10 @@ impl crate::generic::InvHyperbolic for f32 {
             ln_f64(x, 1) + acosh_large_corr(1.0 / (x * x))
         } else {
             // `x^2 - 1` is exact (`x^2` has at most 48 bits), the square
-            // root and the sum have relative errors of about 2^-52, and
-            // `ln_f64` adds an absolute error of up to 2^-53 (the argument
-            // can have 53 bits), while the result is greater than 2^-12
-            // (`x >= 1 + 2^-23`)
+            // root has a relative error of up to about 2^-50.7 (see
+            // `fast_sqrt`) and the sum of about 2^-53, and `ln_f64` adds an
+            // absolute error of up to 2^-53 (the argument can have 53 bits),
+            // while the result is greater than 2^-12 (`x >= 1 + 2^-23`)
             ln_f64(x + fast_sqrt(x * x - 1.0).0, 0)
         };
         r as f32

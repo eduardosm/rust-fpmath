@@ -368,38 +368,84 @@ pub(super) fn gen_tan_poly(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
-/// Generates an approximation of `asin(x) - x` in `[-0.00001, 0.50001]` with
-/// the odd powers `x^3, x^5, ...`.
+/// Generates an approximation of `asin(x)` for `0 <= x <= x_max`, as
 ///
-/// Arguments: `fkind num_coeffs`
+/// `asin(x) ~= x + x^3 * (K1 + K2 * x^2 + ... + Kn * x^(2 * (n - 1)))`
+///
+/// minimizing the relative error of `asin(x)`.
+///
+/// Arguments: `fkinds num_coeffs x_max`
 pub(super) fn gen_asin_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, num_coeffs) = arg_utils::parse_2_args(args)?;
+    let (fkinds, num_coeffs, x_max): (CoeffKinds, i32, f64) = arg_utils::parse_3_args(args)?;
 
     let mut out = String::new();
 
-    let func = "asin(x) - x";
-    let poly_i = (1..=num_coeffs).map(|i| i * 2 + 1).collect::<Vec<_>>();
-    let range = (-0.00001, 0.50001);
+    // With u = x^2, fit (asin(sqrt(u)) / sqrt(u) - 1) / u, minimizing the
+    // absolute error of `asin(x) / x - 1` (the relative error of `asin(x)`),
+    // which is `u` times it.
+    let func = "begin s = sqrt(x); (asin(s) / s - 1) / x end";
+    let wfunc = "x";
+    let range = (1e-40, x_max * x_max);
+
+    julia::run_and_render_remez(
+        &fkinds,
+        func,
+        wfunc,
+        range,
+        num_coeffs - 1,
+        1,
+        "K",
+        &mut out,
+    );
+
+    Ok(out)
+}
+
+/// Generates an approximation of `atan(x) / x - 1` in
+/// `[range_start, range_end]` with the even powers `x^2, x^4, ...`, so its
+/// error is the relative error of `atan(x)`.
+///
+/// `range_start` must be positive (but it can be tiny).
+///
+/// Arguments: `fkind num_coeffs range_start range_end`
+pub(super) fn gen_atan_poly(args: &[&str]) -> Result<String, String> {
+    let (fkind, num_coeffs, range_start, range_end): (_, i32, f64, f64) =
+        arg_utils::parse_4_args(args)?;
+
+    let mut out = String::new();
+
+    let func = "atan(x) / x - 1";
+    let poly_i = (1..=num_coeffs).map(|i| i * 2).collect::<Vec<_>>();
+    let range = (range_start, range_end);
 
     sollya::run_and_render_remez(fkind, func, range, &poly_i, 0, "K", &mut out);
 
     Ok(out)
 }
 
-/// Generates an approximation of `atan(x) - x` in `[range_start, range_end]`
-/// with the odd powers `x^3, x^5, ...`.
+/// Generates a table of `atan(i / 2^bits)` for `i` in `0..=2^bits`.
 ///
-/// Arguments: `fkind num_coeffs range_start range_end`
-pub(super) fn gen_atan_poly(args: &[&str]) -> Result<String, String> {
-    let (fkind, num_coeffs, range_start, range_end) = arg_utils::parse_4_args(args)?;
+/// Arguments: `fkind bits`
+pub(super) fn gen_atan_table(args: &[&str]) -> Result<String, String> {
+    let (fkind, bits): (FloatKind, u32) = arg_utils::parse_2_args(args)?;
 
     let mut out = String::new();
 
-    let func = "atan(x) - x";
-    let poly_i = (1..=num_coeffs).map(|i| i * 2 + 1).collect::<Vec<_>>();
-    let range = (range_start, range_end);
+    let ftype = fkind.name();
+    let prec = fkind.rug_aux_prec();
+    let num = 1u32 << bits;
 
-    sollya::run_and_render_remez(fkind, func, range, &poly_i, 0, "K", &mut out);
+    writeln!(out, "// ATAN_TBL[i] = atan(i / {num})").unwrap();
+    writeln!(out, "static ATAN_TBL: [{ftype}; {}] = [", num + 1).unwrap();
+    for i in 0..=num {
+        let v = (rug::Float::with_val(prec, i) >> bits).atan();
+        out.push_str("    ");
+        render_const_value(fkind, &v, &mut out);
+        out.push_str(", // ");
+        render_const_dec_value(fkind, &v, &mut out);
+        out.push('\n');
+    }
+    writeln!(out, "];").unwrap();
 
     Ok(out)
 }

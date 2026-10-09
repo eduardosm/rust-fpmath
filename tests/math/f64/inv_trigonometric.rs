@@ -251,6 +251,12 @@ fn asin_args(mut f: impl FnMut(f64)) {
         f(x);
     }
 
+    // Test the values around 2^-32, where the implementation changes the
+    // evaluation method (for tiny arguments)
+    for x in values::around(fpmath::scalbn(1.0, -32), 10_000) {
+        f(x);
+    }
+
     // Test values close to one at larger distances (`1 - v` with `v` at each
     // binade below one half)
     for v in values::binades(-37..=-2, 10_000) {
@@ -341,6 +347,14 @@ fn test_atan_with(unit: Unit, mut f: impl FnMut(f64)) {
         f(x);
     }
 
+    // Test the values around 2^-32 and 2^60, where the implementation also
+    // changes the evaluation method (for tiny and huge arguments)
+    for x in values::around(fpmath::scalbn(1.0, -32), 10_000)
+        .chain(values::around(fpmath::scalbn(1.0, 60), 10_000))
+    {
+        f(x);
+    }
+
     // Test results that are very close to a midpoint between two consecutive
     // values, which are the hardest to round. With large arguments, the
     // results are close to a right angle and the function is flat, so the
@@ -404,6 +418,22 @@ fn test_atan2_with(mut f: impl FnMut(f64, f64)) {
     // other one overflow
     let large_diffs = (65..=2097).step_by(18).flat_map(|d| [d, -d]);
     for (y, x) in values::binade_pairs(values::exp_pairs(large_diffs, 61), 1) {
+        f(y, x);
+        f(y, -x);
+    }
+
+    // Test the larger argument in the binades around 2^1021, where the
+    // implementation starts scaling the arguments (to avoid an overflow and a
+    // subnormal reciprocal), with ratios `|y / x|` from 2^-33 to 2^33 (which
+    // include the limits of the table-based reduction at 2^-32 and 2^32)
+    let near_scaling: Vec<(i16, i16)> = (1019..=1023)
+        .flat_map(|e| {
+            [0, 1, 2, 6, 7, 31, 32]
+                .into_iter()
+                .flat_map(move |d| [(e, e - d), (e - d, e)])
+        })
+        .collect();
+    for (y, x) in values::binade_pairs(near_scaling, 100) {
         f(y, x);
         f(y, -x);
     }
