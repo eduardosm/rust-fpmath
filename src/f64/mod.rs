@@ -376,8 +376,8 @@ fn square_parts(x: f64) -> (f64, f64) {
 #[inline]
 fn sqrt_parts(w_hi: f64, w_lo: f64) -> (f64, f64) {
     // y ~= sqrt(w_hi) and r ~= 1 / sqrt(w_hi), with relative errors of at
-    // most about 2^-50.7 and 2^-51 (see `fast_sqrt`), which leave an error
-    // of about 2^-101 after the Newton iteration
+    // most about 2^-50.7 and 2^-51 (see `fast_sqrt`), which the Newton
+    // iteration below roughly squares
     let (y, r) = fast_sqrt(w_hi);
     let y = y.purify();
     // One Newton iteration, with the residual calculated accurately:

@@ -93,8 +93,8 @@ fn sinh_cosh_abs(x: f32) -> (f64, f64) {
 
 /// Returns `tanh(x)`, for `0 <= x < 2^4`.
 ///
-/// The relative error before the final rounding is about 2^-43.5 (like
-/// `exp_m1`).
+/// The relative error before the final rounding is like the one of `exp_m1`
+/// (see `super::exp`).
 #[inline]
 fn tanh_abs(x: f32) -> f64 {
     // exp(2 * x) = S * 2^(f / N)

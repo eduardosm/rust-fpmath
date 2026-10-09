@@ -16,7 +16,7 @@
 //! `atan(c)` is taken from `ATAN_TBL` as a double-word, `t` is calculated as
 //! a double-word, and `atan(t) - t` is approximated with a short polynomial.
 //! The leading parts are added exactly, so the relative error before the
-//! final rounding is about 2^-65.
+//! final rounding is small (see `atan_parts`).
 //!
 //! # `asin` and `acos`
 //!
@@ -324,7 +324,7 @@ fn acos_core(x: f64) -> (f64, f64) {
 }
 
 /// Returns `(p_hi, p_lo)` such that `p_hi + p_lo ~= asin(x) - x = x * S(x^2)`,
-/// for `2^-32 <= x <= 1/2`, with an error of about 2^-64.5 relative to `x`.
+/// for `2^-32 <= x <= 1/2`, with the error of `asin_poly`, relative to `x`.
 #[inline]
 fn asin_poly_small(x: f64) -> (f64, f64) {
     // u = x^2 as a normalized double-word
@@ -335,7 +335,8 @@ fn asin_poly_small(x: f64) -> (f64, f64) {
 
 /// Returns `(y_hi, y_lo, p_hi, p_lo)`, where `y_hi + y_lo ~= y` and
 /// `p_hi + p_lo ~= asin(y) - y = y * S(y^2)`, with `y = sqrt((1 - x) / 2)`, for
-/// `1/2 < x < 1`, with errors of about 2^-100 and 2^-64.5 relative to `y`.
+/// `1/2 < x < 1`, with the errors of `sqrt_parts` and `asin_poly`, relative to
+/// `y`.
 #[inline]
 fn asin_half(x: f64) -> (f64, f64, f64, f64) {
     // y^2 = z = (1 - x) / 2, exact (Sterbenz lemma), and z >= 2^-54 is normal
@@ -478,10 +479,9 @@ fn atan2_core(y: f64, x: f64) -> (f64, f64, i32) {
         (hi, lo, 0)
     } else if base.hi() == 0.0 {
         // atan(n / d) = n / d - (n / d)^3 / 3 + ..., where the second term
-        // is less than 2^-65.6 relative to the first one, and the result
-        // can be subnormal, so `n / d` is calculated as a double-word scaled
-        // by 2^edelta (avoiding subnormals in `F64x2`, which break its
-        // accuracy)
+        // is negligible (like in `atan_core`), and the result can be
+        // subnormal, so `n / d` is calculated as a double-word scaled by
+        // 2^edelta (avoiding subnormals in `F64x2`, which break its accuracy)
         let (n, edelta) = if n.exponent() - d.exponent() < -960 {
             (n * f64::exp2i_fast(106), -106)
         } else {

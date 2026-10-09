@@ -10,12 +10,12 @@
 //!   `asin_small`), and `asin(|x|) = π/2 - 2 * asin(sqrt((1 - |x|) / 2))`
 //!   otherwise (see `asin_half`).
 //!
-//! The relative error before the final rounding is about 2^-38.5 (from the
-//! polynomial of `asin`, amplified by up to 2 for `|x| > 1/2`) or 2^-49
-//! (`atan` and `atan2`). The functions in degrees and half-turns multiply
-//! the result by `180 / π` or `1 / π` rounded to `f64` (with relative errors
-//! of 2^-54.7 and 2^-53.8), which adds an error of up to about 2^-52.4 with
-//! the rounding of the product.
+//! The relative error before the final rounding comes mostly from the
+//! polynomial of `asin` (see `asin_poly`), amplified by up to 2 for
+//! `|x| > 1/2`, or from `atan_unit` (for `atan` and `atan2`). The functions
+//! in degrees and half-turns multiply the result by `180 / π` or `1 / π`
+//! rounded to `f64` (with relative errors of 2^-54.7 and 2^-53.8), which adds
+//! an error of up to about 2^-52.4 with the rounding of the product.
 
 use crate::f64::{atan_index, atan_tbl, fast_sqrt};
 
@@ -124,8 +124,8 @@ fn acos_core(x: f32) -> f64 {
 /// Returns `asin(sqrt((1 - x) / 2))`, for `1/2 < x < 1`.
 #[inline]
 fn asin_half(x: f64) -> f64 {
-    // z = (1 - x) / 2 is exact, and its square root has a relative error of
-    // up to about 2^-50.7 (see `fast_sqrt`)
+    // z = (1 - x) / 2 is exact, and the error of its square root (see
+    // `fast_sqrt`) is small compared to the one of the polynomial
     let z = (1.0 - x) * 0.5;
     let y = fast_sqrt(z).0;
     y + (y * z) * asin_poly(z)

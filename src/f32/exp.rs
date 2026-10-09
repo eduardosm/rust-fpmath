@@ -137,8 +137,7 @@ fn poly(f: f64) -> f64 {
 /// `2^(f / N) - 1 ~= f * (P1 + P2 * f + P3 * f^2 + P4 * f^3)`, with a relative
 /// error of 2^-43.6 for `|f| <= ~1/2`.
 const EXP2_M1_POLY: [f64; 4] = {
-    // exp(r) - 1 ~= r + K2 * r^2 + K3 * r^3 + K4 * r^4 for |r| <= 0.002711 (the
-    // range includes a margin for the double rounding of x87 in `round_i32`)
+    // exp(r) - 1 ~= r + K2 * r^2 + K3 * r^3 + K4 * r^4 for |r| <= 0.002711
     // GENERATE: exp_m1_poly f64 3 -0.002711 0.002711
     const K2: f64 = f64::from_bits(0x3FDFFFFFFFFFFDD0); // 4.999999999999689e-1
     const K3: f64 = f64::from_bits(0x3FC55555C24AC4A7); // 1.6666671740452907e-1

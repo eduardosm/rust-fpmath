@@ -32,9 +32,9 @@ impl crate::generic::Log for f32 {
             ln_1p_poly(x) as f32
         } else {
             // `1 + x` is exact when |x| < 2^53, otherwise its relative error
-            // is at most 2^-53. `z` is not exact (`m` can have up to 53 bits),
-            // but its absolute error is at most 2^-53, while the result is at
-            // least about 2^-8.
+            // is at most 2^-53. Its mantissa can have up to 53 bits, so
+            // `ln_f64` adds its absolute error for wide mantissas, while the
+            // result is at least about 2^-8.
             ln_f64(1.0 + x, 0) as f32
         }
     }
@@ -52,11 +52,10 @@ impl crate::generic::Log for f32 {
 
 /// Returns `ln(x * 2^edelta)`, where `x` is positive and normal.
 ///
-/// The relative error is about 2^-36.8 when the mantissa of `x` has at most
-/// 29 bits (so `z` is exact):
-/// * Polynomial: 2^-36.8 (relative to `ln(1 + z)`, whose magnitude is at
-///   most about the one of the result).
-/// * Evaluation: ~2^-52.
+/// When the mantissa of `x` has at most 29 bits (so `z` is exact), the
+/// relative error is about the one of the polynomial (see `ln_1p_poly`),
+/// which is relative to `ln(1 + z)`, whose magnitude is at most about the one
+/// of the result. The evaluation adds about 2^-52.
 ///
 /// With wider mantissas, the rounding of `z` adds an absolute error of up to
 /// 2^-53.
@@ -71,10 +70,9 @@ pub(super) fn ln_f64(x: f64, edelta: i16) -> f64 {
 
 /// Returns `ln(x * 2^edelta)`, where `x` is positive and normal, like
 /// `ln_f64`, but with the polynomial of the `f64` logarithm, so the relative
-/// error is about 2^-52 when the mantissa of `x` has at most 29 bits.
-///
-/// With wider mantissas, the rounding of `z` adds an absolute error of up to
-/// 2^-53.
+/// error is about 2^-52 when the mantissa of `x` has at most 29 bits (with
+/// wider mantissas, the rounding of `z` adds the same absolute error as in
+/// `ln_f64`).
 #[inline]
 pub(super) fn ln_f64_accurate(x: f64, edelta: i16) -> f64 {
     // x * 2^edelta = 2^k * (1 + z) / s
