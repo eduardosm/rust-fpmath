@@ -1,3 +1,10 @@
+//! `frexp`, generic over the floating-point type.
+//!
+//! The mantissa is the argument with its exponent replaced with -1 (so its
+//! magnitude is in `[0.5, 1)`), and the returned exponent is the original one
+//! plus one. Subnormal arguments are normalized first, and zero, infinity
+//! and NaN are returned unchanged, with a zero exponent.
+
 use crate::traits::{Float, Int as _};
 
 pub(crate) fn frexp<F: Float>(x: F) -> (F, i32) {

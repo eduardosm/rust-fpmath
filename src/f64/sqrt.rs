@@ -1,3 +1,21 @@
+//! Square root for `f64`.
+//!
+//! The result is correctly rounded, and it is calculated with integer
+//! arithmetic. The argument is split as `x = 4^e * m`, with an integer `e`
+//! and `1 <= m < 4` (as a fixed-point number), so
+//!
+//! `sqrt(x) = 2^e * sqrt(m)`
+//!
+//! `sqrt(m)` is approximated with a relative error less than 2^-56 (see
+//! `sqrt_approx`): an approximation of `1 / sqrt(m)` from a table is refined
+//! with two Goldschmidt iterations in 32-bit arithmetic (see
+//! `crate::generic::rsqrt_sqrt_32`) and one more in 64-bit arithmetic, which
+//! gives `sqrt(m)`.
+//!
+//! Rounding that approximation to 53 bits gives an integer `s` that is the
+//! mantissa of the correctly rounded result or differs from it by one, which
+//! is decided with the remainder `m * 2^104 - s^2`, calculated exactly.
+
 use crate::generic::rsqrt_sqrt_32;
 use crate::traits::Float as _;
 
