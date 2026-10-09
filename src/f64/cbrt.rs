@@ -52,7 +52,7 @@ impl crate::generic::Cbrt for f64 {
             const K2: f64 = f64::from_bits(0xBFC4B11B5561E2F4); // -1.6165486973820686e-1
             const K3: f64 = f64::from_bits(0x3F975B306FDD2341); // 2.2808796718240435e-2
 
-            let t = K0 + horner!(r0, r0, [K1, K2, K3]);
+            let t = K0 + r0 * (K1 + r0 * (K2 + r0 * K3));
             t * CBRT_SCALE[usize::from(kmod3)]
         };
 
@@ -75,7 +75,7 @@ impl crate::generic::Cbrt for f64 {
             const K2: f64 = f64::from_bits(0x3FAF9ADD4FA7553F); // 6.172839734396484e-2
             const K3: f64 = f64::from_bits(0xBFA511E8E98E2CB0); // -4.1152266035248686e-2
 
-            e * (K0 + horner!(e, e, [K1, K2, K3]))
+            e * (K0 + e * (K1 + e * (K2 + e * K3)))
         };
 
         // cbrt(r) ~= yc * (1 + c)
