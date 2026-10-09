@@ -14,6 +14,7 @@ mod trigonometric;
 pub(crate) use exp::{EXP2_TBL_BITS, exp2_tbl};
 pub(crate) use gamma::ln_gamma_near_zero;
 pub(crate) use inv_hyperbolic::{acosh_large_corr, asinh_large_corr};
+pub(crate) use inv_trigonometric::{atan_index, atan_tbl};
 pub(crate) use log::{ln_1p_q, ln_tbl, split_ln_arg};
 pub(crate) use trigonometric::{FRAC_64_PI, reduce_rad_large_sum, sin_cos_pi_64};
 
@@ -326,17 +327,65 @@ impl crate::FloatMath for f64 {
     }
 }
 
-/// Return an approximation of `(sqrt(x), 1/sqrt(x))`
+/// Returns approximations of `(sqrt(x), 1 / sqrt(x))`, with relative errors
+/// of at most about 2^-50.7 and 2^-51, for `2^-1021 <= x < 2^1022`.
+///
+/// Outside that range, `x / 2` or `r^2` (see below) is subnormal, which
+/// increases the errors (up to about 2^-50.3) and is slow.
+#[inline]
 pub(crate) fn fast_sqrt(x: f64) -> (f64, f64) {
-    // Initial approximation of r ~= 1/sqrt(x) using bit fiddling.
+    // Initial approximation of r ~= 1 / sqrt(x) using bit fiddling, with a
+    // relative error less than 2^-4.8.
     let hx = 0.5 * x;
     let mut r = f64::from_bits(0x5FE6_EB50_C7B5_37A9_u64.wrapping_sub(x.to_bits() >> 1));
-    // Four Newton iterations to reduce error to nearly 1 ULP
-    // r_next = r * (3 - hi * r^2) / 2
+    // Four Newton iterations, each one roughly doubling the number of correct
+    // bits:
+    // r' = r * (3 - x * r^2) / 2 = 1.5 * r - (x / 2 * r) * r^2
+    // where the last form has a chain of three dependent operations instead
+    // of four, but one more rounding, so the last iteration leaves an error
+    // of up to 4 * 2^-53 instead of 3 * 2^-53 (and the final product adds
+    // 2^-53 to the error of the square root).
     for _ in 0..4 {
-        r *= 1.5 - hx * r * r;
+        r = 1.5 * r - (hx * r) * (r * r);
     }
     (r * x, r)
+}
+
+/// Returns `(p, e)` such that `p` is `x^2` rounded to `f64` and `p + e ~= x^2`,
+/// with an error less than 2^-104 * x^2 when `x^2 >= 2^-960` (so a subnormal
+/// `b^2` does not lose too much accuracy), and no error when
+/// `1 <= x < 1 + 2^-26` (as `inv_hyperbolic::acosh_parts` requires).
+#[inline]
+fn square_parts(x: f64) -> (f64, f64) {
+    // x = a + b, where `a` has 26 bits and `b` at most 27, so `a^2` and
+    // `2 * a * b` are exact, and so is `a^2 - p` (by Sterbenz lemma). Only
+    // `b^2` (less than 2^-50 * x^2) and the following sums can be rounded.
+    // When `1 <= x < 1 + 2^-26`, `a = 1` and `b` has at most 26 bits, so
+    // `b^2` is exact, and so are the sums, whose results are multiples of
+    // 2^-104 with magnitudes below 2^-50.
+    let a = x.split_hi();
+    let b = x - a;
+    let p = (x * x).purify();
+    let e = ((a * a - p) + 2.0 * a * b) + b * b;
+    (p, e)
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= sqrt(w_hi + w_lo)`, with a
+/// relative error of about 2^-100, where `2^-960 <= w_hi < 2^1022` and
+/// `|w_lo| <= 2^-51 * w_hi`.
+#[inline]
+fn sqrt_parts(w_hi: f64, w_lo: f64) -> (f64, f64) {
+    // y ~= sqrt(w_hi) and r ~= 1 / sqrt(w_hi), with relative errors of at
+    // most about 2^-50.7 and 2^-51 (see `fast_sqrt`), which leave an error
+    // of about 2^-101 after the Newton iteration
+    let (y, r) = fast_sqrt(w_hi);
+    let y = y.purify();
+    // One Newton iteration, with the residual calculated accurately:
+    // sqrt(w) ~= y + (w - y^2) / (2 * y) ~= y + (w - y^2) * r / 2
+    // `w_hi - p` is exact (by Sterbenz lemma).
+    let (p, pe) = square_parts(y);
+    let res = ((w_hi - p) - pe) + w_lo;
+    (y, res * (0.5 * r))
 }
 
 /// Rounds `x` to the nearest integer, returning it as `f64` and its lowest

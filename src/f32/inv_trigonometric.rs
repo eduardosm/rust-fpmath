@@ -1,6 +1,27 @@
-use crate::traits::Float as _;
+//! Inverse trigonometric functions for `f32`.
+//!
+//! They use the same methods as the `f64` functions (see
+//! `crate::f64::inv_trigonometric`), but evaluated with plain `f64`
+//! arithmetic, with shorter polynomials and the table of `atan(i / 64)`
+//! rounded to `f64`:
+//! * `atan` and `atan2`: `atan(z) = atan(c) + atan(t)`, with
+//!   `t = (z - c) / (1 + z * c)` and `c = i / 64` (see `atan_unit`).
+//! * `asin` and `acos`: `asin(x) = x + x^3 * P(x^2)` for `|x| <= 1/2` (see
+//!   `asin_small`), and `asin(|x|) = π/2 - 2 * asin(sqrt((1 - |x|) / 2))`
+//!   otherwise (see `asin_half`).
+//!
+//! The relative error before the final rounding is about 2^-38.5 (from the
+//! polynomial of `asin`, amplified by up to 2 for `|x| > 1/2`) or 2^-49
+//! (`atan` and `atan2`). The functions in degrees and half-turns multiply
+//! the result by `180 / π` or `1 / π` rounded to `f64` (with relative errors
+//! of 2^-54.7 and 2^-53.8), which adds an error of up to about 2^-52.4 with
+//! the rounding of the product.
 
-// GENERATE: consts f64 FRAC_180_PI FRAC_1_PI
+use crate::f64::{atan_index, atan_tbl, fast_sqrt};
+
+// GENERATE: consts f64 FRAC_PI_2 PI FRAC_180_PI FRAC_1_PI
+const FRAC_PI_2: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
+const PI: f64 = f64::from_bits(0x400921FB54442D18); // 3.141592653589793e0
 const FRAC_180_PI: f64 = f64::from_bits(0x404CA5DC1A63C1F8); // 5.729577951308232e1
 const FRAC_1_PI: f64 = f64::from_bits(0x3FD45F306DC9C883); // 3.183098861837907e-1
 
@@ -9,262 +30,203 @@ impl crate::generic::InvTrigonometric for f32 {
     const PI: f32 = f32::from_bits(0x40490FDB); // 3.1415927e0
     const FRAC_PI_2: f32 = f32::from_bits(0x3FC90FDB); // 1.5707964e0
 
+    #[inline]
     fn asin_finite(x: Self) -> Self {
         asin_core(x) as f32
     }
 
+    #[inline]
     fn acos_finite(x: Self) -> Self {
         acos_core(x) as f32
     }
 
+    #[inline]
     fn atan_finite(x: Self) -> Self {
         atan_core(x) as f32
     }
 
+    #[inline]
     fn atan2_finite(y: Self, x: Self) -> Self {
-        atan2_core(y, x) as f32
+        atan2_core(y, x, 1.0) as f32
     }
 
+    #[inline]
     fn asind_finite(x: Self) -> Self {
         (asin_core(x) * FRAC_180_PI) as f32
     }
 
+    #[inline]
     fn acosd_finite(x: Self) -> Self {
         (acos_core(x) * FRAC_180_PI) as f32
     }
 
+    #[inline]
     fn atand_finite(x: Self) -> Self {
         (atan_core(x) * FRAC_180_PI) as f32
     }
 
+    #[inline]
     fn atan2d_finite(y: Self, x: Self) -> Self {
-        (atan2_core(y, x) * FRAC_180_PI) as f32
+        atan2_core(y, x, FRAC_180_PI) as f32
     }
 
+    #[inline]
     fn asinpi_finite(x: Self) -> Self {
         (asin_core(x) * FRAC_1_PI) as f32
     }
 
+    #[inline]
     fn acospi_finite(x: Self) -> Self {
         (acos_core(x) * FRAC_1_PI) as f32
     }
 
+    #[inline]
     fn atanpi_finite(x: Self) -> Self {
         (atan_core(x) * FRAC_1_PI) as f32
     }
 
+    #[inline]
     fn atan2pi_finite(y: Self, x: Self) -> Self {
-        (atan2_core(y, x) * FRAC_1_PI) as f32
+        atan2_core(y, x, FRAC_1_PI) as f32
     }
 }
 
+/// Returns `asin(x)`, for `|x| < 1`.
+#[inline(always)]
 fn asin_core(x: f32) -> f64 {
-    // GENERATE: consts f64 FRAC_PI_2
-    const FRAC_PI_2: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
-
-    #[inline]
-    fn asin_poly(x: f64, x2: f64, x3: f64) -> f64 {
-        // GENERATE: asin_poly f64 7
-        const K3: f64 = f64::from_bits(0x3FC555556DCEC097); // 1.6666667806339738e-1
-        const K5: f64 = f64::from_bits(0x3FB33324196CC1B0); // 7.499909992907905e-2
-        const K7: f64 = f64::from_bits(0x3FA6DECF11049302); // 4.466864664781235e-2
-        const K9: f64 = f64::from_bits(0x3F9EBD85687015AF); // 3.0019840716723752e-2
-        const K11: f64 = f64::from_bits(0x3F99B8A837AD73CC); // 2.511847343281541e-2
-        const K13: f64 = f64::from_bits(0x3F78EBA7BEDCFA90); // 6.0841133652603935e-3
-        const K15: f64 = f64::from_bits(0x3FA28A536EDECDA2); // 3.621159294507527e-2
-
-        x + horner!(x3, x2, [K3, K5, K7, K9, K11, K13, K15])
-    }
-
     let x = f64::from(x);
-    let xexp = x.exponent();
-    if xexp < -100 {
-        // zero or tiny
-        x
-    } else if xexp < -1 {
-        // |x| < 0.5
-        let x2 = x * x;
-        let x3 = x2 * x;
-
-        asin_poly(x, x2, x3)
+    let ax = x.abs();
+    if ax <= 0.5 {
+        asin_small(x)
     } else {
-        // |x| >= 0.5
-        // |asin(x)| = π/2 - 2 * asin(sqrt((1 - |x|) / 2))
-
-        // y = sqrt((1 - |x|) / 2)
-        let y2 = (1.0 - x.abs()) * 0.5;
-        let y = crate::f64::fast_sqrt(y2).0;
-        let y3 = y2 * y;
-
-        // t1 = asin(y)
-        let t1 = asin_poly(y, y2, y3);
-
-        // t3 = π/2 - 2 * asin(sqrt((1 - |x|) / 2)) = π/2 - 2 * t1
-        let t3 = FRAC_PI_2 - 2.0 * t1;
-
-        t3.copysign(x)
+        // asin(|x|) = π/2 - 2 * asin(y), with y = sqrt((1 - |x|) / 2)
+        (FRAC_PI_2 - 2.0 * asin_half(ax)).copysign(x)
     }
 }
 
+/// Returns `acos(x)`, for `|x| < 1`.
+#[inline(always)]
 fn acos_core(x: f32) -> f64 {
-    // GENERATE: consts f64 FRAC_PI_2 PI
-    const FRAC_PI_2: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
-    const PI: f64 = f64::from_bits(0x400921FB54442D18); // 3.141592653589793e0
-
-    #[inline]
-    fn asin_poly(x: f64, x2: f64, x3: f64) -> f64 {
-        // GENERATE: asin_poly f64 7
-        const K3: f64 = f64::from_bits(0x3FC555556DCEC097); // 1.6666667806339738e-1
-        const K5: f64 = f64::from_bits(0x3FB33324196CC1B0); // 7.499909992907905e-2
-        const K7: f64 = f64::from_bits(0x3FA6DECF11049302); // 4.466864664781235e-2
-        const K9: f64 = f64::from_bits(0x3F9EBD85687015AF); // 3.0019840716723752e-2
-        const K11: f64 = f64::from_bits(0x3F99B8A837AD73CC); // 2.511847343281541e-2
-        const K13: f64 = f64::from_bits(0x3F78EBA7BEDCFA90); // 6.0841133652603935e-3
-        const K15: f64 = f64::from_bits(0x3FA28A536EDECDA2); // 3.621159294507527e-2
-
-        x + horner!(x3, x2, [K3, K5, K7, K9, K11, K13, K15])
-    }
-
     let x = f64::from(x);
-
-    // acos(x) = π/2 - asin(x)
-    if x.exponent() < -1 {
-        // |x| < 0.5
-        let x2 = x * x;
-        let x3 = x2 * x;
-
-        // t1 = asin(x)
-        let t1 = asin_poly(x, x2, x3);
-
-        // acos(x) = π/2 - asin(x) = π/2 - t1
-        FRAC_PI_2 - t1
+    let ax = x.abs();
+    if ax <= 0.5 {
+        // acos(x) = π/2 - asin(x)
+        FRAC_PI_2 - asin_small(x)
+    } else if x.is_sign_negative() {
+        // acos(x) = π - 2 * asin(y), with y = sqrt((1 - |x|) / 2)
+        PI - 2.0 * asin_half(ax)
     } else {
-        // |x| >= 0.5
-        // |asin(x)| = π/2 - 2 * asin(sqrt((1 - |x|) / 2))
-
-        // y = sqrt((1 - |x|) / 2)
-        let y2 = (1.0 - x.abs()) * 0.5;
-        let y = crate::f64::fast_sqrt(y2).0;
-        let y3 = y2 * y;
-
-        // t1 = asin(y)
-        let t1 = asin_poly(y, y2, y3);
-
-        // t2 = 2 * asin(y) = 2 * t1
-        let t2 = 2.0 * t1;
-
-        if x.is_sign_negative() {
-            // acos(x) = π/2 + |asin(x)|
-            //         = π/2 + (π/2 - 2 * asin(y))
-            //         = π - 2 * asin(y)
-            //         = π - t2
-            PI - t2
-        } else {
-            // acos(x) = π/2 - |asin(x)|
-            //         = π/2 - (π/2 - 2 * asin(y))
-            //         = 2 * asin(y)
-            //         = t2
-            t2
-        }
+        // acos(x) = 2 * asin(y), with y = sqrt((1 - x) / 2)
+        2.0 * asin_half(ax)
     }
 }
 
+/// Returns `asin(sqrt((1 - x) / 2))`, for `1/2 < x < 1`.
+#[inline]
+fn asin_half(x: f64) -> f64 {
+    // z = (1 - x) / 2 is exact, and its square root has a relative error of
+    // up to about 2^-50.7 (see `fast_sqrt`)
+    let z = (1.0 - x) * 0.5;
+    let y = fast_sqrt(z).0;
+    y + (y * z) * asin_poly(z)
+}
+
+/// Returns `asin(x)`, for `|x| <= 1/2`.
+#[inline]
+fn asin_small(x: f64) -> f64 {
+    let u = x * x;
+    x + (x * u) * asin_poly(u)
+}
+
+/// Returns `P(u)` such that `asin(x) ~= x + x^3 * P(x^2)`, for
+/// `0 <= u = x^2 <= 1/4`, with a relative error of 2^-39.9 in `asin(x)`.
+#[inline]
+fn asin_poly(u: f64) -> f64 {
+    // GENERATE: asin_poly f64 8 0.5
+    const K1: f64 = f64::from_bits(0x3FC555555479BF78); // 1.6666666626724314e-1
+    const K2: f64 = f64::from_bits(0x3FB333340BC1A94B); // 7.500005042098683e-2
+    const K3: f64 = f64::from_bits(0x3FA6DB24EB7F2A75); // 4.464068770137867e-2
+    const K4: f64 = f64::from_bits(0x3F9F2836DA5E808F); // 3.0426842764086855e-2
+    const K5: f64 = f64::from_bits(0x3F9663412BCB6602); // 2.186300115395135e-2
+    const K6: f64 = f64::from_bits(0x3F9527A6D5769F68); // 2.0659071711321003e-2
+    const K7: f64 = f64::from_bits(0x3F5FEC145D6755A4); // 1.9483755946699622e-3
+    const K8: f64 = f64::from_bits(0x3FA0DDC06A86515B); // 3.294183063840946e-2
+
+    let u2 = u * u;
+    let u4 = u2 * u2;
+    ((K1 + u * K2) + u2 * (K3 + u * K4)) + u4 * ((K5 + u * K6) + u2 * (K7 + u * K8))
+}
+
+/// Returns `atan(x)`, for finite `x`.
+#[inline]
 fn atan_core(x: f32) -> f64 {
-    // GENERATE: consts f64 FRAC_PI_2
-    const FRAC_PI_2: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
-
-    #[inline]
-    fn atan_poly(x: f64, x2: f64, x3: f64) -> f64 {
-        // GENERATE: atan_poly f64 12 -0.00001 1.0
-        const K3: f64 = f64::from_bits(0xBFD555554F68C559); // -3.333333278161113e-1
-        const K5: f64 = f64::from_bits(0x3FC99997094AB706); // 1.9999969438270443e-1
-        const K7: f64 = f64::from_bits(0xBFC248EE9E86D65D); // -1.428507112556642e-1
-        const K9: f64 = f64::from_bits(0x3FBC6D143BCF5365); // 1.1103941402627766e-1
-        const K11: f64 = f64::from_bits(0xBFB725C6FE9111C5); // -9.042018618590138e-2
-        const K13: f64 = f64::from_bits(0x3FB3205A97388D0B); // 7.471243087688977e-2
-        const K15: f64 = f64::from_bits(0xBFAE8F4BC9F39CA8); // -5.96870121024094e-2
-        const K17: f64 = f64::from_bits(0x3FA5EFE28EEACC68); // 4.284580225557805e-2
-        const K19: f64 = f64::from_bits(0xBF99D06CD85E3CD4); // -2.5209141450940845e-2
-        const K21: f64 = f64::from_bits(0x3F865E4AB262F61C); // 1.0922034806180973e-2
-        const K23: f64 = f64::from_bits(0xBF68A9059ACF59C6); // -3.0102834193528076e-3
-        const K25: f64 = f64::from_bits(0x3F3985DFF09C577A); // 3.894492843853275e-4
-
-        x + horner!(
-            x3,
-            x2,
-            [K3, K5, K7, K9, K11, K13, K15, K17, K19, K21, K23, K25]
-        )
-    }
-
     let x = f64::from(x);
-    if x.exponent() < -100 {
-        // zero or tiny
-        x
-    } else if x.abs() <= 1.0 {
-        let x2 = x * x;
-        let x3 = x2 * x;
-        atan_poly(x, x2, x3)
+    let ax = x.abs();
+    let r = if ax <= 1.0 {
+        atan_unit(ax)
     } else {
-        // atan(x) = ±pi/2 - atan(1 / x)
-        let inv_x = x.recip();
-        let inv_x2 = inv_x * inv_x;
-        let inv_x3 = inv_x2 * inv_x;
-
-        FRAC_PI_2.copysign(x) - atan_poly(inv_x, inv_x2, inv_x3)
-    }
+        // atan(|x|) = π/2 - atan(1 / |x|), where `1 / |x|` is rounded to
+        // `f64`
+        FRAC_PI_2 - atan_unit(1.0 / ax)
+    };
+    r.copysign(x)
 }
 
-fn atan2_core(n: f32, d: f32) -> f64 {
-    // GENERATE: consts f64 FRAC_PI_2
-    const FRAC_PI_2: f64 = f64::from_bits(0x3FF921FB54442D18); // 1.5707963267948966e0
+/// Returns `atan2(y, x) * k`, for finite and non-zero `x` and `y`.
+#[inline]
+fn atan2_core(y: f32, x: f32, k: f64) -> f64 {
+    // atan2(y, x) = base + sign * atan(n / d), with n = min(|x|, |y|) and
+    // d = max(|x|, |y|):
+    // * x > 0, |y| <= |x|: atan2(|y|, x) = atan(n / d)
+    // * x > 0, |y| > |x|: atan2(|y|, x) = π/2 - atan(n / d)
+    // * x < 0, |y| <= |x|: atan2(|y|, x) = π - atan(n / d)
+    // * x < 0, |y| > |x|: atan2(|y|, x) = π/2 + atan(n / d)
+    // * y < 0: atan2(y, x) = -atan2(|y|, x)
+    // `(base, sign)` is taken from `BASE_SIGN`, without branches.
+    const BASE_SIGN: [(f64, f64); 8] = [
+        (0.0, 1.0),
+        (FRAC_PI_2, -1.0),
+        (PI, -1.0),
+        (FRAC_PI_2, 1.0),
+        (-0.0, -1.0),
+        (-FRAC_PI_2, 1.0),
+        (-PI, 1.0),
+        (-FRAC_PI_2, -1.0),
+    ];
 
-    #[inline]
-    fn atan_poly(x: f64, x2: f64, x3: f64) -> f64 {
-        // GENERATE: atan_poly f64 12 -0.00001 1.0
-        const K3: f64 = f64::from_bits(0xBFD555554F68C559); // -3.333333278161113e-1
-        const K5: f64 = f64::from_bits(0x3FC99997094AB706); // 1.9999969438270443e-1
-        const K7: f64 = f64::from_bits(0xBFC248EE9E86D65D); // -1.428507112556642e-1
-        const K9: f64 = f64::from_bits(0x3FBC6D143BCF5365); // 1.1103941402627766e-1
-        const K11: f64 = f64::from_bits(0xBFB725C6FE9111C5); // -9.042018618590138e-2
-        const K13: f64 = f64::from_bits(0x3FB3205A97388D0B); // 7.471243087688977e-2
-        const K15: f64 = f64::from_bits(0xBFAE8F4BC9F39CA8); // -5.96870121024094e-2
-        const K17: f64 = f64::from_bits(0x3FA5EFE28EEACC68); // 4.284580225557805e-2
-        const K19: f64 = f64::from_bits(0xBF99D06CD85E3CD4); // -2.5209141450940845e-2
-        const K21: f64 = f64::from_bits(0x3F865E4AB262F61C); // 1.0922034806180973e-2
-        const K23: f64 = f64::from_bits(0xBF68A9059ACF59C6); // -3.0102834193528076e-3
-        const K25: f64 = f64::from_bits(0x3F3985DFF09C577A); // 3.894492843853275e-4
+    let ay = y.abs();
+    let ax = x.abs();
+    let swap = ay > ax;
+    let n = f64::from(ay.min(ax));
+    let d = f64::from(ay.max(ax));
+    let i = (usize::from(y.is_sign_negative()) << 2)
+        | (usize::from(x.is_sign_negative()) << 1)
+        | usize::from(swap);
+    let (base, sign) = BASE_SIGN[i];
 
-        x + horner!(
-            x3,
-            x2,
-            [K3, K5, K7, K9, K11, K13, K15, K17, K19, K21, K23, K25]
-        )
-    }
+    // `n / d` is rounded to `f64`, and it cannot underflow (`f32` values are
+    // greater than 2^-150)
+    (base + sign * atan_unit(n / d)) * k
+}
 
-    let mut n = f64::from(n);
-    let mut d = f64::from(d);
+/// Returns `atan(z)`, for `0 <= z <= 1`, with a relative error of about
+/// 2^-49.
+///
+/// `atan(z) = atan(c) + atan(t)`, with `t = (z - c) / (1 + z * c)` and
+/// `c = i / 64` (so |t| <= 1/128), where `atan(c)` comes from a table and
+/// `atan(t)` is approximated with a polynomial.
+#[inline]
+fn atan_unit(z: f64) -> f64 {
+    // atan(t) ~= t + t^3 * (K2 + K4 * t^2)
+    // GENERATE: atan_poly f64 2 1e-30 0.0079
+    const K2: f64 = f64::from_bits(0xBFD5555555137350); // -3.3333333309365276e-1
+    const K4: f64 = f64::from_bits(0x3FC99931798AC818); // 1.9998758730577104e-1
 
-    let ysgn = n.is_sign_negative();
-    let xsgn = d.is_sign_negative();
-
-    let mut off = 0.0;
-    if xsgn {
-        off = 2.0f64.set_sign(ysgn);
-    }
-    if n.abs() > d.abs() {
-        (n, d) = (d, n);
-        n = -n;
-        off += 1.0f64.set_sign(ysgn ^ xsgn);
-    }
-
-    let z = n / d;
-    if off == 0.0 && z.exponent() <= -32 {
-        // atan2(y, x) ~= y/x = n/d
-        z
-    } else {
-        // atan2(y, x) = atan(n/d) + off * π/2
-        let z2 = z * z;
-        let z3 = z2 * z;
-        atan_poly(z, z2, z3) + off * FRAC_PI_2
-    }
+    let (i, c) = atan_index(z);
+    // `z - c` is exact (Sterbenz lemma, or c = 0), and `1 + z * c` has a
+    // relative error of at most 2^-53 (it is exact when `z` comes from an
+    // `f32`)
+    let t = (z - c) / (1.0 + z * c);
+    let t2 = t * t;
+    atan_tbl(i) + (t + (t * t2) * (K2 + t2 * K4))
 }

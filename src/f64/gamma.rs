@@ -59,7 +59,7 @@
 //! The relative error before the final rounding is less than about 2^-63.
 
 use super::exp::{Reduced as ExpReduced, exp_poly};
-use super::f64x2::F64x2;
+use super::f64x2::{F64x2, Split};
 use super::log::{ln_accurate_parts, ln_accurate_sum_parts, ln_parts};
 use super::round_i32;
 use super::trigonometric::sinpi_f64x2;
@@ -604,47 +604,6 @@ fn ln_gamma_poly(f: f64) -> (f64, f64) {
     let (h, l) = f.mul_add(h, l, K2);
     let (h, l) = f.mul_add(h, l, K1);
     f.mul(h, l)
-}
-
-/// A number `f = f1 + f2`, where `f1` has 26 significant bits, so its
-/// products with other numbers of 26 bits are exact.
-#[derive(Copy, Clone)]
-struct Split {
-    f: f64,
-    f1: f64,
-    f2: f64,
-}
-
-impl Split {
-    #[inline]
-    fn new(f: f64) -> Self {
-        let f1 = f.split_hi();
-        Self { f, f1, f2: f - f1 }
-    }
-
-    /// Returns `(hi, lo)` such that `hi + lo ~= f * (a_hi + a_lo)`, with a
-    /// relative error of about 2^-77, where `|a_lo| <= 2^-23 * |a_hi|`.
-    ///
-    /// `hi` has at most 52 bits and `|lo| <= 2^-23 * |hi|`.
-    #[inline]
-    fn mul(self, a_hi: f64, a_lo: f64) -> (f64, f64) {
-        // a_hi = a1 + a2, where `a1` has 26 bits, so `a1 * f1` and `a1 * f2`
-        // are exact and the rounding errors of the other products are small
-        let a1 = a_hi.split_hi();
-        let a2 = a_hi - a1;
-        (a1 * self.f1, (a1 * self.f2 + a2 * self.f) + a_lo * self.f)
-    }
-
-    /// Returns `(hi, lo)` such that `hi + lo ~= c + f * (a_hi + a_lo)`, where
-    /// `|f * (a_hi + a_lo)| <= |c.hi()|` and `|a_lo| <= 2^-23 * |a_hi|`.
-    ///
-    /// `|lo| <= 2^-24 * |hi|`.
-    #[inline]
-    fn mul_add(self, a_hi: f64, a_lo: f64, c: F64x2) -> (f64, f64) {
-        let (p_hi, p_lo) = self.mul(a_hi, a_lo);
-        let s = F64x2::fast_add11(c.hi(), p_hi);
-        (s.hi(), s.lo() + (p_lo + c.lo()))
-    }
 }
 
 /// A product `h + l` of factors of up to 53 bits, where `h` has at most 26

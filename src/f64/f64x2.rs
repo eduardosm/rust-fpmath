@@ -1,5 +1,7 @@
 #![allow(clippy::suspicious_arithmetic_impl)]
 
+use crate::traits::Float as _;
+
 // Users of this type are responsible for avoiding infinities and NaNs
 // (and operations that produce them).
 
@@ -84,30 +86,8 @@ impl F64x2 {
     }
 
     #[inline]
-    pub(super) fn halve(self) -> Self {
-        Self {
-            hi: self.hi * 0.5,
-            lo: self.lo * 0.5,
-        }
-    }
-
-    #[inline]
-    pub(super) fn twice(self) -> Self {
-        Self {
-            hi: self.hi * 2.0,
-            lo: self.lo * 2.0,
-        }
-    }
-
-    #[inline]
     pub(super) fn mul11(lhs: f64, rhs: f64) -> Self {
         let (hi, lo) = two_prod(lhs, rhs);
-        Self { hi, lo }
-    }
-
-    #[inline]
-    pub(super) fn square1(x: f64) -> Self {
-        let (hi, lo) = two_prod(x, x);
         Self { hi, lo }
     }
 
@@ -131,26 +111,6 @@ impl F64x2 {
         Self { hi, lo }
     }
 
-    /// `hi` must be positive and normal.
-    pub(super) fn sqrt(self) -> Self {
-        // Initial approximation of sqrt(hi) and 1/sqrt(hi)
-        let (y0, r) = super::fast_sqrt(self.hi);
-        let y0 = purify(y0);
-        let r = purify(r);
-        let hr = purify(0.5 * r);
-
-        // y ~= sqrt(hi), with a Newton iteration that uses an exact
-        // residual to make it accurate to less than 1 ULP
-        // y_next = y + (hi - y * y) / (2 * y) ~= y + (hi - y * y) * hr
-        let (p, pe) = two_prod(y0, y0);
-        let y = purify(y0 + purify(purify(purify(self.hi - p) - pe) * hr));
-
-        // A final Newton iteration in full precision
-        let d = self - Self::square1(y);
-        let (hi, lo) = fast_two_sum(y, purify(d.to_f64() * hr));
-        Self { hi, lo }
-    }
-
     /// Like `scalbn(self.to_f64(), y)`, but rounding only once, so
     /// subnormals do not suffer double rounding.
     #[inline]
@@ -167,6 +127,64 @@ impl F64x2 {
             let r = purify((self + c).to_f64() - c).copysign(self.hi);
             crate::generic::scalbn(r, y)
         }
+    }
+}
+
+/// A number `f = f1 + f2`, where `f1` has 26 significant bits, so its
+/// products with other numbers of 26 bits are exact.
+#[derive(Copy, Clone)]
+pub(super) struct Split {
+    f: f64,
+    f1: f64,
+    f2: f64,
+}
+
+impl Split {
+    #[inline]
+    pub(super) fn new(f: f64) -> Self {
+        let f1 = f.split_hi();
+        Self { f, f1, f2: f - f1 }
+    }
+
+    /// Returns `f1`.
+    #[inline]
+    pub(super) fn hi(self) -> f64 {
+        self.f1
+    }
+
+    /// Returns `f2 = f - f1`.
+    #[inline]
+    pub(super) fn lo(self) -> f64 {
+        self.f2
+    }
+
+    /// Returns `(hi, lo)` such that `hi + lo ~= f * (a_hi + a_lo)`, with a
+    /// relative error of about 2^-76 + 2^-52 * |a_lo / a_hi|.
+    ///
+    /// `hi` has at most 52 bits and `|lo|` is at most about
+    /// `(2^-24 + |a_lo / a_hi|) * |hi|`.
+    #[inline]
+    pub(super) fn mul(self, a_hi: f64, a_lo: f64) -> (f64, f64) {
+        // a_hi = a1 + a2, where `a1` has 26 bits, so `a1 * f1` and `a1 * f2`
+        // are exact. The rounding errors of `a2 * f` and the first sum (less
+        // than 2^-24 * |f * a_hi|) add about 2^-76, and those of `a_lo * f`
+        // and the second sum add about 2^-52 * |a_lo / a_hi|.
+        let a1 = a_hi.split_hi();
+        let a2 = a_hi - a1;
+        (a1 * self.f1, (a1 * self.f2 + a2 * self.f) + a_lo * self.f)
+    }
+
+    /// Returns `(hi, lo)` such that `hi + lo ~= c + f * (a_hi + a_lo)`, where
+    /// `|f * (a_hi + a_lo)| <= |c.hi()|`, with the product calculated by
+    /// `mul`.
+    ///
+    /// When `c` and the product have the same sign, `|lo|` is at most about
+    /// `(2^-24 + |a_lo / a_hi|) / 2 * |hi|`.
+    #[inline]
+    pub(super) fn mul_add(self, a_hi: f64, a_lo: f64, c: F64x2) -> (f64, f64) {
+        let (p_hi, p_lo) = self.mul(a_hi, a_lo);
+        let s = F64x2::fast_add11(c.hi(), p_hi);
+        (s.hi(), s.lo() + (p_lo + c.lo()))
     }
 }
 

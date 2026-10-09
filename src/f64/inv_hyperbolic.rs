@@ -23,6 +23,7 @@
 
 use super::f64x2::F64x2;
 use super::log::{ln_parts, ln_sum_parts};
+use super::{sqrt_parts, square_parts};
 use crate::traits::Float as _;
 
 impl crate::generic::InvHyperbolic for f64 {
@@ -228,39 +229,4 @@ pub(crate) fn acosh_large_corr(u: f64) -> f64 {
     let u2 = u * u;
     let q = (K2 + u * K3) + u2 * ((K4 + u * K5) + u2 * K6);
     -0.25 * u + u2 * q
-}
-
-/// Returns `(p, e)` such that `p` is `x^2` rounded to `f64` and `p + e ~= x^2`,
-/// with an error less than 2^-104 * x^2, and no error when
-/// `1 <= x < 1 + 2^-26` (as `acosh_parts` requires).
-#[inline]
-fn square_parts(x: f64) -> (f64, f64) {
-    // x = a + b, where `a` has 26 bits and `b` at most 27, so `a^2` and
-    // `2 * a * b` are exact, and so is `a^2 - p` (by Sterbenz lemma). Only
-    // `b^2` (less than 2^-50 * x^2) and the following sums can be rounded.
-    // When `1 <= x < 1 + 2^-26`, `a = 1` and `b` has at most 26 bits, so
-    // `b^2` is exact, and so are the sums, whose results are multiples of
-    // 2^-104 with magnitudes below 2^-50.
-    let a = x.split_hi();
-    let b = x - a;
-    let p = (x * x).purify();
-    let e = ((a * a - p) + 2.0 * a * b) + b * b;
-    (p, e)
-}
-
-/// Returns `(hi, lo)` such that `hi + lo ~= sqrt(w_hi + w_lo)`, with a
-/// relative error of about 2^-100, where `w_hi` is positive and normal and
-/// `|w_lo| <= 2^-51 * w_hi`.
-#[inline]
-fn sqrt_parts(w_hi: f64, w_lo: f64) -> (f64, f64) {
-    // y ~= sqrt(w_hi) and r ~= 1 / sqrt(w_hi), with relative errors of about
-    // 2^-52
-    let (y, r) = super::fast_sqrt(w_hi);
-    let y = y.purify();
-    // One Newton iteration, with the residual calculated accurately:
-    // sqrt(w) ~= y + (w - y^2) / (2 * y) ~= y + (w - y^2) * r / 2
-    // `w_hi - p` is exact (by Sterbenz lemma).
-    let (p, pe) = square_parts(y);
-    let res = ((w_hi - p) - pe) + w_lo;
-    (y, res * (0.5 * r))
 }

@@ -36,6 +36,7 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "tan_poly" => approx::gen_tan_poly(&args),
         "asin_poly" => approx::gen_asin_poly(&args),
         "atan_poly" => approx::gen_atan_poly(&args),
+        "atan_table" => approx::gen_atan_table(&args),
         "asinh_poly" => approx::gen_asinh_poly(&args),
         "atanh_poly" => approx::gen_atanh_poly(&args),
         "asinh_acosh_large_poly" => approx::gen_asinh_acosh_large_poly(&args),
