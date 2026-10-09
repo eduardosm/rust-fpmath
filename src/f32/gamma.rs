@@ -53,8 +53,9 @@ impl crate::generic::Gamma for f32 {
 
         let xd = f64::from(x);
         let r = if xd >= GAMMA_STIRLING_MIN {
-            // ln(Γ(x)) < 92.2 has an absolute error of about 2^-44.5, and
-            // the exponential adds a relative error of about 2^-40.5
+            // ln(Γ(x)) < 92.2 has an absolute error of about 2^-44.5 (see
+            // `stirling`), and the exponential adds its relative error (see
+            // `exp_f64`), which is larger
             exp_f64(stirling(xd, -0.5))
         } else if xd > GAMMA_REFLECTION {
             gamma_small(xd)
@@ -70,9 +71,8 @@ impl crate::generic::Gamma for f32 {
     fn ln_gamma_finite(x: Self) -> (Self, i8) {
         let xd = f64::from(x);
         if xd >= LN_GAMMA_STIRLING_MIN {
-            // The absolute error is about 2^-46 (with a relative error of
-            // about 2^-52 for large arguments), and the result is greater
-            // than 1.79
+            // The error (see `stirling`) is small relative to the result,
+            // which is greater than 1.79
             (stirling(xd, -0.5) as f32, 1)
         } else if xd > LN_GAMMA_REFLECTION {
             ln_gamma_small(xd)
@@ -90,7 +90,8 @@ impl crate::generic::Gamma for f32 {
 }
 
 /// Returns `Γ(x)`, for `GAMMA_REFLECTION < x < GAMMA_STIRLING_MIN`, where `x`
-/// is not zero or a negative integer, with a relative error of about 2^-42.5.
+/// is not zero or a negative integer, with about the relative error of
+/// `gamma_poly`.
 #[inline]
 fn gamma_small(x: f64) -> f64 {
     // x = n + f, where `f` is exact

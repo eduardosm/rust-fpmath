@@ -2,12 +2,12 @@
 //!
 //! `hypot(x, y) = sqrt(x^2 + y^2)` is correctly rounded. `x^2 + y^2` is
 //! calculated in `f64` (where the squares are exact), and its square root is
-//! approximated with a relative error less than 2^-34 (see `sqrt_approx`).
-//! Rounding that approximation to `f32` gives the correctly rounded result,
-//! unless it is very close to the midpoint between two consecutive `f32`
-//! values. In that case, or when both arguments are subnormal or zero, the
-//! result is calculated with integer arithmetic instead (see `hypot_exact`),
-//! like the `f64` function (see `crate::f64::hypot`).
+//! approximated with Newton iterations (see `sqrt_approx`). Rounding that
+//! approximation to `f32` gives the correctly rounded result, unless it is
+//! very close to the midpoint between two consecutive `f32` values. In that
+//! case, or when both arguments are subnormal or zero, the result is
+//! calculated with integer arithmetic instead (see `hypot_exact`), like the
+//! `f64` function (see `crate::f64::hypot`).
 
 use crate::generic::rsqrt_sqrt_32;
 use crate::traits::Float as _;
@@ -21,8 +21,8 @@ impl crate::generic::Hypot for f32 {
         }
 
         // h ~= hypot(x, y) = sqrt(x^2 + y^2)
-        // x^2 and y^2 are exact, and their sum and the square root approximation
-        // add a relative error less than 2^-34 (see `sqrt_approx`)
+        // x^2 and y^2 are exact, so the relative error of `h` is the one of
+        // `sqrt_approx`, less than 2^-34 (the rounding of the sum is negligible)
         let xd = f64::from(x);
         let yd = f64::from(y);
         let h = sqrt_approx(xd * xd + yd * yd);

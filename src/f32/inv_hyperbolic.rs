@@ -31,11 +31,10 @@ impl crate::generic::InvHyperbolic for f32 {
                 // |x| >= 16
                 ln_f64(ax, 1) + asinh_large_corr(1.0 / (ax * ax))
             } else {
-                // `x^2 + 1` and the sum have relative errors of about 2^-53
-                // and the square root of up to about 2^-50.7 (see
-                // `fast_sqrt`), and `ln_f64` adds an absolute error of up to
-                // 2^-53 (the argument can have 53 bits), while the result is
-                // greater than 0.48
+                // `x^2 + 1` and the sum are rounded, the square root has the
+                // error of `fast_sqrt`, and `ln_f64` adds its absolute error
+                // for arguments of up to 53 bits, while the result is greater
+                // than 0.48
                 ln_f64(ax + fast_sqrt(ax * ax + 1.0).0, 0)
             };
             (r as f32).copysign(x)
@@ -49,10 +48,10 @@ impl crate::generic::InvHyperbolic for f32 {
             ln_f64(x, 1) + acosh_large_corr(1.0 / (x * x))
         } else {
             // `x^2 - 1` is exact (`x^2` has at most 48 bits), the square
-            // root has a relative error of up to about 2^-50.7 (see
-            // `fast_sqrt`) and the sum of about 2^-53, and `ln_f64` adds an
-            // absolute error of up to 2^-53 (the argument can have 53 bits),
-            // while the result is greater than 2^-12 (`x >= 1 + 2^-23`)
+            // root has the error of `fast_sqrt`, the sum is rounded, and
+            // `ln_f64` adds its absolute error for arguments of up to 53
+            // bits, while the result is greater than 2^-12
+            // (`x >= 1 + 2^-23`)
             ln_f64(x + fast_sqrt(x * x - 1.0).0, 0)
         };
         r as f32
@@ -71,10 +70,9 @@ impl crate::generic::InvHyperbolic for f32 {
             atanh_small(f64::from(x)) as f32
         } else {
             // atanh(x) = ln((1 + |x|) / (1 - |x|)) / 2 * sgn(x)
-            // `1 + |x|` and `1 - |x|` are exact, the division has a relative
-            // error of 2^-53, and `ln_f64` adds an absolute error of up to
-            // 2^-53 (the argument can have 53 bits), while the result is
-            // greater than 2^-5
+            // `1 + |x|` and `1 - |x|` are exact, the division is rounded, and
+            // `ln_f64` adds its absolute error for arguments of up to 53
+            // bits, while the result is greater than 2^-5
             let ax = f64::from(x.abs());
             let r = 0.5 * ln_f64((1.0 + ax) / (1.0 - ax), 0);
             (r as f32).copysign(x)

@@ -3,8 +3,8 @@
 //! The result is correctly rounded, and it is calculated with integer
 //! arithmetic, like the `f64` function (see `crate::f64::sqrt`). The argument
 //! is split as `x = 4^e * m`, with an integer `e` and `1 <= m < 4`, and
-//! `sqrt(m)` is approximated with a relative error less than 2^-27.9 by the
-//! 32-bit Goldschmidt iterations (see `crate::generic::rsqrt_sqrt_32`).
+//! `sqrt(m)` is approximated by the 32-bit Goldschmidt iterations (see
+//! `crate::generic::rsqrt_sqrt_32`).
 //!
 //! Rounding that approximation to 24 bits gives an integer `s` that is the
 //! mantissa of the correctly rounded result or differs from it by one, which
@@ -27,12 +27,12 @@ impl crate::generic::Sqrt for f32 {
         // m as 2.30 fixed point
         let m = xn.mant() << (7 + odd);
 
-        // s ~= sqrt(m), as 2.30 fixed point
-        // |s / sqrt(m) - 1| < 2^-27.9, which is less than 1/15 of the ULP
-        // of the result.
+        // s ~= sqrt(m), as 2.30 fixed point, with |s / sqrt(m) - 1| < 2^-27.9
+        // (see `rsqrt_sqrt_32`)
         let (_, s) = rsqrt_sqrt_32(m);
 
-        // s ~= sqrt(m) * 2^23, rounded to an integer
+        // s ~= sqrt(m) * 2^23, rounded to an integer, with an error less than
+        // 1/8 before rounding
         let s = (s + (1 << 6)) >> 7;
 
         // `s` is the correctly rounded result or differs from it by one.

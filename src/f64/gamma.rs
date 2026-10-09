@@ -26,8 +26,9 @@
 //!
 //! The logarithms are calculated with `super::log::ln_accurate_parts` (except
 //! in `ln_gamma_huge`, where the error of `super::log::ln_parts` is small
-//! enough), so the error before the final rounding is less than about 2^-64.7,
-//! plus about 2^-71 relative to the result (from the Stirling series). It is
+//! enough), so the absolute error before the final rounding is small (the
+//! largest one is in the reflection formula, see `ln_gamma_reflection`), plus
+//! about 2^-71 relative to the result (from the Stirling series). It is
 //! small relative to the result except close to the zeros of `ln|Γ(x)|`.
 //! Around 1 and 2, the relative errors of the terms are small. Around the
 //! zeros with negative `x` (from -18 to -2), the terms nearly cancel, so the
@@ -38,8 +39,8 @@
 //! # `gamma`
 //!
 //! For `x >= GAMMA_STIRLING_MIN`, `Γ(x) = exp(ln(Γ(x)))`, where `ln(Γ(x))` is
-//! calculated with an absolute error of less than about 2^-63.8 and the
-//! exponential is evaluated like in `exp` (see `super::exp`).
+//! calculated with the Stirling series (see `gamma_stirling` for its error)
+//! and the exponential is evaluated like in `exp` (see `super::exp`).
 //!
 //! For `x <= GAMMA_REFLECTION`, it uses the reflection formula, also
 //! evaluated as an exponential:
@@ -80,9 +81,9 @@ const LN_GAMMA_REFLECTION: f64 = -4.0;
 /// `gamma` uses the reflection formula for `x <= GAMMA_REFLECTION`.
 const GAMMA_REFLECTION: f64 = -10.0;
 
-// Coefficients of the Stirling series (see `stirling`), where `K0` and `K1`
-// are exact (rounded to double-words), and the others are fitted for
-// `x >= 4`, with an absolute error of 2^-68.5
+// Coefficients of the Stirling series, where `K0 = ln(2 * π) / 2` and
+// `K1 = 1/12` are exact (rounded to double-words), and the others are fitted
+// for `x >= 4`, with an absolute error of 2^-68.5 in the sum of their terms
 // GENERATE: gamma_stirling_poly F64x2:2,f64 13 4
 const K0: F64x2 = F64x2::from_bits(0x3FED67F1C864BEB5, 0xBC865B5A1B7FF5DF); // 9.189385332046727417803297364056e-1
 const K1: F64x2 = F64x2::from_bits(0x3FB5555555555555, 0x3C55555555555555); // 8.333333333333333333333333333333e-2
@@ -139,7 +140,7 @@ fn gamma_stirling(x: f64) -> f64 {
     // `stirling`: 2^-66, plus 2^-75 relative to (x - 0.5) * ln(x), which is
     // less than 883, and the error of the logarithm times `x - 0.5`, which is
     // as large), and so is the relative error of the result, plus the error of
-    // the exponential (2^-64.5).
+    // the exponential (2^-64.5, see `ExpReduced::eval`).
     let (l_hi, l_lo) = ln_accurate_parts(x, 0);
     let (hi, lo) = stirling(x, -0.5, l_hi, l_lo);
     let y = F64x2::fast_add11(hi, lo);
@@ -155,7 +156,7 @@ fn gamma_reflection(x: f64) -> f64 {
     // Γ(x) = ±exp(ln|Γ(x)|), where the absolute error of `ln|Γ(x)|` is less
     // than about 2^-63.4 (see `ln_gamma_reflection_parts`, with
     // (0.5 - x) * ln(-x) < 969), and so is the relative error of the result,
-    // plus the error of the exponential (2^-64.5).
+    // plus the error of the exponential (2^-64.5, see `ExpReduced::eval`).
     let (hi, lo, negative) = ln_gamma_reflection_parts(x);
     // `hi` can be close to zero (when |Γ(x)| ~= 1), so the sum is exact
     let w = F64x2::add11(hi, lo);
@@ -217,8 +218,8 @@ fn gamma_small(x: f64) -> f64 {
 #[inline]
 fn ln_gamma_stirling(x: f64) -> f64 {
     if x < f64::exp2i_fast(52) {
-        // The absolute error is less than about 2^-66, plus about 2^-75
-        // relative to the result (see `stirling`), which is greater than 1.79
+        // The error (see `stirling`) is small relative to the result, which
+        // is greater than 1.79
         let (l_hi, l_lo) = ln_accurate_parts(x, 0);
         let (hi, lo) = stirling(x, -0.5, l_hi, l_lo);
         hi + lo
@@ -271,11 +272,11 @@ fn ln_gamma_reflection(x: f64) -> (f64, i8) {
 /// The absolute error is less than about 2^-65, plus about 2^-74 relative to
 /// `(0.5 - x) * ln(-x)`:
 /// * `ln(Γ(1 - x))`: about 2^-66, plus about 2^-75 relative to
-///   `(0.5 - x) * ln(-x)`, and the error of the logarithm (2^-75) times
-///   `0.5 - x` (see `stirling`).
+///   `(0.5 - x) * ln(-x)` (see `stirling`), and the error of the logarithm
+///   (2^-75, see `ln_accurate_parts`) times `0.5 - x`.
 /// * `ln|sin(π * x)|`: the relative error of the sine (about 2^-66), plus
-///   2^-75 times the logarithm, whose magnitude is at most 34 (since
-///   |sin(π * x)| >= sin(π * 2^-50)).
+///   the one of the logarithm (2^-75) times its magnitude, which is at most
+///   34 (since |sin(π * x)| >= sin(π * 2^-50)).
 #[inline(always)]
 fn ln_gamma_reflection_parts(x: f64) -> (f64, f64, bool) {
     // Γ(x) = π / (sin(π * x) * Γ(1 - x)), and with y = -x:
@@ -458,7 +459,8 @@ fn ln_gamma_near_root(x: f64) -> Option<f64> {
 /// `ln(Γ(y + c + 1/2)) = (y + c) * ln(y) - y + K0 + K1 / y + K3 / y^3 + ...`
 ///
 /// where the terms after `K1 / y` are approximated with a polynomial in
-/// `1 / y^2`, with an absolute error of 2^-68.5.
+/// `1 / y^2`, whose coefficients (`K3`, `K5`, ...) are fitted with the error
+/// that their comment gives.
 ///
 /// The leading parts of the terms are added exactly, and the other parts are
 /// less than 2^-14.5, or 2^-23 relative to `(y + c) * ln(y)`, so the absolute

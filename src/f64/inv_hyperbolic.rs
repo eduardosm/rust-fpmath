@@ -8,8 +8,8 @@
 //! * `atanh(x) = ln((1 + x) / (1 - x)) / 2`
 //!
 //! The arguments of `ln` are calculated as sums of two `f64`, with relative
-//! errors of about 2^-100 for `asinh` and `acosh`, and 2^-75 for `atanh`
-//! (which is less than 2^-70 relative to its result, greater than 2^-6).
+//! errors that are small compared to the one of `ln` (see `asinh_parts`,
+//! `acosh_parts` and `ln_atanh_parts`).
 //!
 //! When `x >= 16`, `asinh` and `acosh` avoid the square root:
 //!
@@ -114,12 +114,15 @@ fn asinh_parts(x: f64) -> (f64, f64) {
         // x >= 16
         ln_2x_plus(x, asinh_large_corr)
     } else {
-        // w = x^2 + 1 = w_hi + w_lo
+        // w = x^2 + 1 = w_hi + w_lo, where the sum is exact and the error of
+        // `square_parts` is negligible
         let (p, pe) = square_parts(x);
         let w = F64x2::add11(1.0, p);
-        // y = sqrt(x^2 + 1) = y_hi + y_lo
+        // y = sqrt(x^2 + 1) = y_hi + y_lo, with the relative error of
+        // `sqrt_parts`
         let (y_hi, y_lo) = sqrt_parts(w.hi(), w.lo() + pe);
-        // t = x + y = t_hi + t_lo, where y > x
+        // t = x + y = t_hi + t_lo, where y > x, so the relative error of `t`
+        // is at most about the one of `y`
         let t = F64x2::fast_add11(y_hi, x);
         // asinh(x) = ln(t)
         ln_sum_parts(t.hi(), t.lo() + y_lo)
@@ -142,9 +145,13 @@ fn acosh_parts(x: f64) -> (f64, f64) {
         // `w_hi >= 2^-51`, but `|pe|` can be up to 2^-53, so renormalize to
         // keep `w_lo` much smaller than `w_hi`, as `sqrt_parts` requires
         let w = F64x2::fast_add11(w.hi(), w.lo() + pe);
-        // y = sqrt(x^2 - 1) = y_hi + y_lo
+        // y = sqrt(x^2 - 1) = y_hi + y_lo, with half the relative error of
+        // `w`, plus the one of `sqrt_parts`
         let (y_hi, y_lo) = sqrt_parts(w.hi(), w.lo());
-        // t = x + y = t_hi + t_lo, where y < x
+        // t = x + y = t_hi + t_lo, where y < x. The error of `w` adds at
+        // most about 2^-90 relative to `t` (when `x` is close to 1 + 2^-26,
+        // where it is the largest relative to `w`, and y ~= 2^-12.5), which is
+        // more than the error of `sqrt_parts`.
         let t = F64x2::fast_add11(x, y_hi);
         // acosh(x) = ln(t), which is greater than 2^-26 (`x >= 1 + 2^-52`),
         // as `ln_sum_parts` requires
@@ -167,7 +174,8 @@ fn ln_atanh_parts(x: f64) -> (f64, f64) {
     // have 26 bits, so `q1 * v1` and `q2 * v1` are exact, and so is
     // `u_hi - q1 * v1` (by Sterbenz lemma). The remaining terms (including
     // `v2`) are less than 2^-23 * u_hi, so their rounding errors are less than
-    // about 2^-75 * u_hi, and so relative to `t`.
+    // about 2^-75 * u_hi, and so relative to `t`, which is less than 2^-70
+    // relative to the result (`ln(t)` is greater than 2^-5).
     let q = (u.hi() / v.hi()).purify();
     let q1 = q.split_hi();
     let q2 = q - q1;

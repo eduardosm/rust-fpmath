@@ -6,11 +6,10 @@
 //!
 //! `sqrt(x) = 2^e * sqrt(m)`
 //!
-//! `sqrt(m)` is approximated with a relative error less than 2^-56 (see
-//! `sqrt_approx`): an approximation of `1 / sqrt(m)` from a table is refined
-//! with two Goldschmidt iterations in 32-bit arithmetic (see
-//! `crate::generic::rsqrt_sqrt_32`) and one more in 64-bit arithmetic, which
-//! gives `sqrt(m)`.
+//! `sqrt(m)` is approximated by `sqrt_approx`: an approximation of
+//! `1 / sqrt(m)` from a table is refined with two Goldschmidt iterations in
+//! 32-bit arithmetic (see `crate::generic::rsqrt_sqrt_32`) and one more in
+//! 64-bit arithmetic, which gives `sqrt(m)`.
 //!
 //! Rounding that approximation to 53 bits gives an integer `s` that is the
 //! mantissa of the correctly rounded result or differs from it by one, which
@@ -58,13 +57,13 @@ impl crate::generic::Sqrt for f64 {
 #[inline]
 pub(super) fn sqrt_approx(m: u64) -> u64 {
     // r ~= 1 / sqrt(m), as 0.64 fixed point
-    // |r * sqrt(m) - 1| < 2^-28.7 (2^-29 from `rsqrt_sqrt_32`, plus
-    // the truncation of m to 32 bits)
+    // |r * sqrt(m) - 1| < 2^-28.6 (2^-29 from `rsqrt_sqrt_32`, plus 2^-31
+    // from the truncation of m to 32 bits)
     let (r, _) = rsqrt_sqrt_32((m >> 32) as u32);
     let r = u64::from(r) << 32;
 
     // One more Goldschmidt iteration with 64-bit arithmetic, after which
-    // the relative error is about 1.5 * (2^-28.7)^2 < 2^-56.
+    // the relative error is about 1.5 times the square of the one of `r`.
     let s = mul64(m, r); // 2.62
     let d = mul64(s, r); // 2.62
     let u = (3 << 62) - d; // 2.62

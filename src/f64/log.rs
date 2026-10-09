@@ -17,8 +17,8 @@
 //! `ln(1 + z)` otherwise, so `t_hi + ln(1 + z)` has no cancellation.
 //!
 //! `ln(1 + z)` is approximated with a polynomial, where `z - z^2 / 2` is
-//! calculated with extended precision, so the relative error is less than
-//! about 2^-63.5, even when `t_hi` is zero.
+//! calculated with extended precision, so the relative error is small even
+//! when `t_hi` is zero (see `ln_1p_poly`).
 //!
 //! `log2(x)` and `log10(x)` are calculated as `ln(x) * log2(e)` and
 //! `ln(x) * log10(e)`, with extended precision.
@@ -228,8 +228,8 @@ impl crate::generic::Log for f64 {
     }
 }
 
-/// Returns `(hi, lo)` such that `hi + lo ~= ln(x * 2^edelta)`, with a
-/// relative error of about 2^-63.5 and `|lo| <= ~2^-15 * |hi|`.
+/// Returns `(hi, lo)` such that `hi + lo ~= ln(x * 2^edelta)`, with the
+/// relative error of `ln_1p_poly` and `|lo| <= ~2^-15 * |hi|`.
 ///
 /// `x` must be positive and normal.
 #[inline]
@@ -239,8 +239,9 @@ pub(super) fn ln_parts(x: f64, edelta: i16) -> (f64, f64) {
     red.add_t(hi, lo)
 }
 
-/// Returns `(hi, lo)` such that `hi + lo ~= ln(t_hi + t_lo)`, with a relative
-/// error of about 2^-63.5 when `|ln(t_hi + t_lo)| > 2^-37`.
+/// Returns `(hi, lo)` such that `hi + lo ~= ln(t_hi + t_lo)`, with the
+/// relative error of `ln_1p_poly` (about 2^-63.5) when
+/// `|ln(t_hi + t_lo)| > 2^-37`.
 ///
 /// `ln(1 + t_lo / t_hi)` is approximated by `t_lo / t_hi`, with an absolute
 /// error of up to 2^-101, which is not negligible for smaller results (for
@@ -270,8 +271,8 @@ pub(super) fn ln_accurate_parts(x: f64, edelta: i16) -> (f64, f64) {
     red.add_t(hi, lo)
 }
 
-/// Like `ln_sum_parts`, but with the relative error of `ln_accurate_parts`
-/// (about 2^-75, plus the absolute error of up to 2^-101).
+/// Like `ln_sum_parts` (including its absolute error), but with the relative
+/// error of `ln_accurate_parts`.
 #[inline]
 pub(super) fn ln_accurate_sum_parts(t_hi: f64, t_lo: f64) -> (f64, f64) {
     let (hi, lo) = ln_accurate_parts(t_hi, 0);
@@ -361,7 +362,7 @@ impl Reduced {
 /// Returns `(hi, lo)` such that `hi + lo ~= ln(1 + zh + zl)`, for
 /// `|zh + zl| <= 2^-8` and `|zl| <= 2^-51 * |zh|`, with a relative error of
 /// about 2^-63.5:
-/// * Polynomial approximation: 2^-64.2.
+/// * Polynomial approximation: 2^-64.2 (see `ln_1p_q`).
 /// * Evaluation of the terms after `zh - zh^2 / 2` (magnitude below
 ///   2^-16 * |zh|): ~2^-67.
 /// * Neglected `zl` terms: 2^-67.

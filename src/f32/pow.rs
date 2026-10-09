@@ -8,10 +8,9 @@
 //! be up to about 104 when the result is finite and non-zero, so it uses the
 //! more accurate logarithm `super::log::ln_f64_accurate`.
 //!
-//! The relative error before the final rounding is about 2^-40.5:
-//! * Logarithm: 2^-52, amplified by up to 2^6.7.
-//! * Product: 2^-53, also amplified by up to 2^6.7.
-//! * Exponential: 2^-40.5.
+//! The relative error before the final rounding is about the one of the
+//! exponential (see `super::exp::exp_f64`). The ones of the logarithm and of
+//! the rounding of the product, amplified by up to 2^6.7, are much smaller.
 //!
 //! Integer exponents with `|y| <= 1024` (in both `pow` and `powi`) use binary
 //! exponentiation in `f64` instead (see `powi_small`), when the result is far
