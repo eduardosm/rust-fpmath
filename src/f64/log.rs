@@ -240,7 +240,7 @@ pub(super) fn ln_parts(x: f64, edelta: i16) -> (f64, f64) {
 }
 
 /// Returns `(hi, lo)` such that `hi + lo ~= ln(t_hi + t_lo)`, with the
-/// relative error of `ln_1p_poly` (about 2^-63.5) when
+/// relative error of `ln_1p_poly` (about 2^-66) when
 /// `|ln(t_hi + t_lo)| > 2^-37`.
 ///
 /// `ln(1 + t_lo / t_hi)` is approximated by `t_lo / t_hi`, with an absolute
@@ -361,8 +361,8 @@ impl Reduced {
 
 /// Returns `(hi, lo)` such that `hi + lo ~= ln(1 + zh + zl)`, for
 /// `|zh + zl| <= 2^-8` and `|zl| <= 2^-51 * |zh|`, with a relative error of
-/// about 2^-63.5:
-/// * Polynomial approximation: 2^-64.2 (see `ln_1p_q`).
+/// about 2^-66:
+/// * Polynomial approximation: 2^-71.4 (see `ln_1p_q`).
 /// * Evaluation of the terms after `zh - zh^2 / 2` (magnitude below
 ///   2^-16 * |zh|): ~2^-67.
 /// * Neglected `zl` terms: 2^-67.
@@ -385,24 +385,25 @@ fn ln_1p_poly(zh: f64, zl: f64) -> (f64, f64) {
 }
 
 /// Returns `Q(z)` such that `ln(1 + z) ~= z - z^2 / 2 + z^3 * Q(z)`, for
-/// `|z| <= 2^-8`, with a relative error of 2^-64.2 (in `ln(1 + z)`).
+/// `|z| <= 2^-8`, with a relative error of 2^-71.4 (in `ln(1 + z)`).
 #[inline]
 pub(crate) fn ln_1p_q(z: f64) -> f64 {
-    // GENERATE: ln_1p_poly f64 5 -0.003907 0.003907 2
+    // GENERATE: ln_1p_poly f64 6 -0.003907 0.003907 2
     const K3: f64 = f64::from_bits(0x3FD5555555555557); // 3.333333333333334e-1
-    const K4: f64 = f64::from_bits(0xBFCFFFFFFFF7C18A); // -2.4999999998500427e-1
-    const K5: f64 = f64::from_bits(0x3FC99999998752F7); // 1.999999999667563e-1
-    const K6: f64 = f64::from_bits(0xBFC5556D297ED01A); // -1.6666950727597013e-1
-    const K7: f64 = f64::from_bits(0x3FC24941EDC64E0D); // 1.4286064252938538e-1
+    const K4: f64 = f64::from_bits(0xBFD0000000000003); // -2.5000000000000017e-1
+    const K5: f64 = f64::from_bits(0x3FC999999989C304); // 1.9999999997119045e-1
+    const K6: f64 = f64::from_bits(0xBFC55555553F1CA4); // -1.6666666662624607e-1
+    const K7: f64 = f64::from_bits(0x3FC2493FE50367B0); // 1.428604000309952e-1
+    const K8: f64 = f64::from_bits(0xBFC0001DCEA16A3B); // -1.2500355328923426e-1
 
     let z2 = z * z;
-    (K3 + z * K4) + z2 * ((K5 + z * K6) + z2 * K7)
+    (K3 + z * K4) + z2 * ((K5 + z * K6) + z2 * (K7 + z * K8))
 }
 
 /// Returns `(hi, lo)` such that `hi + lo ~= ln(1 + zh + zl)`, for
 /// `|zh + zl| <= 2^-8` and `|zl| <= 2^-52 * |zh|`, with a relative error of
 /// about 2^-77:
-/// * Polynomial approximation: 2^-82.7.
+/// * Polynomial approximation: 2^-79.4.
 /// * Evaluation of the terms after `zh - zh^2 / 2 + zh^3 / 3` (magnitude below
 ///   2^-25.9 * |zh|): ~2^-77.
 /// * Neglected `zl` terms: 2^-77.

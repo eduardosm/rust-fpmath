@@ -179,6 +179,16 @@ enum Unit {
 const EXT_PREC: u32 = 256;
 
 impl Unit {
+    /// Calculates the arcsine with high precision.
+    fn asin(self, x: &rug::Float) -> rug::Float {
+        let x = rug::Float::with_val(EXT_PREC, x);
+        match self {
+            Self::Radians => x.asin(),
+            Self::Degrees => x.asin_u(360),
+            Self::HalfRevs => x.asin_pi(),
+        }
+    }
+
     /// Calculates the cosine with high precision.
     fn cos(self, x: &rug::Float) -> rug::Float {
         let x = rug::Float::with_val(EXT_PREC, x);
@@ -292,6 +302,26 @@ fn test_asin_with(unit: Unit, mut f: impl FnMut(f64)) {
                 }
             }
         }
+    }
+
+    // Around one half, where the argument of the polynomial is the largest
+    // with both evaluation methods, `asin` is not flat, so search for such
+    // results among the arguments close to values spread around it (see
+    // `values::midpoint_scan`).
+    let asin = |x: &rug::Float| unit.asin(x);
+    for x0 in values::interval(0.47, 0.53, 20_000) {
+        f(values::midpoint_scan(x0, asin, 1 << 12));
+    }
+
+    // Hard-to-round cases right above one half (in degrees), found with a
+    // random search
+    let hard_cases = [
+        0x3FE0235C4A36DFB9, // 0.504316468191056
+        0x3FE0297088E529DB, // 0.5050585435613429
+        0x3FE036FB6BA2B6D4, // 0.5067116834886414
+    ];
+    for bits in hard_cases {
+        f(f64::from_bits(bits));
     }
 }
 

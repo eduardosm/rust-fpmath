@@ -15,7 +15,7 @@ mod trigonometric;
 mod values;
 
 const MIN_MAX_ERROR: f32 = 0.4999;
-const ERROR_LIMIT: f32 = 0.51;
+const ERROR_LIMIT: f32 = 0.5 + 1.0 / 2048.0;
 
 fn check_result(input: impl std::fmt::Debug, actual: f32, expected: f64, max_error: &mut f32) {
     let err = calc_error_ulp(actual, expected);

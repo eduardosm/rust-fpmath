@@ -155,8 +155,8 @@ fn test_with(func: Func, mut f: impl FnMut(f64)) {
     }
 
     // Test the arguments around the zeros of `ln_gamma` with negative
-    // arguments where its results are `±2^-16`, `±2^-7` and `±2^-4`, the
-    // limits where it changes the evaluation method
+    // arguments where its results are `±2^-15`, `±2^-14`, `±2^-4` and `±1`,
+    // the limits where it changes the evaluation method (or close to them)
     if func == Func::LnGamma {
         for x in ln_gamma_zero_limits(&zeros) {
             for x in values::around(x, 100) {
@@ -185,10 +185,43 @@ fn test_with(func: Func, mut f: impl FnMut(f64)) {
             0xC003A7FBE7319E44, // -2.4570234357850342
             0xC003A7FC91A9B4CA, // -2.457024705878756
             0xC003A7FD93C0E770, // -2.457026628803696
+            0xC003A8057C9B1564, // -2.4570417151286836
+            0xC005FB3BBA045827, // -2.747672513253764
             0xC005FB410BD22679, // -2.7476826594836976
             0xC005FB410C2B1733, // -2.747682662072202
             0xC005FB41122A6FCC, // -2.7476827067566543
             0xC005FB4318131FD9, // -2.747686565478926
+        ];
+        for bits in hard_cases {
+            f(f64::from_bits(bits));
+        }
+
+        // Test results that are very close to a midpoint between two
+        // consecutive values from 2^28 to 2^48 ULPs away from the zeros
+        // closest to zero, where the results are small and the evaluation
+        // method changes. `ln_gamma` is not flat there, so search for them
+        // among the arguments close to those values (see
+        // `values::midpoint_scan`).
+        let eval = |x: &rug::Float| func.eval(x);
+        for &x0 in zeros.iter().filter(|x| (-8.0..0.0).contains(*x)) {
+            for shift in 28..48 {
+                for v in values::spread(32, shift) {
+                    let bump = (1 << shift) | (v & ((1 << shift) - 1));
+                    for bits in [x0.to_bits() + bump, x0.to_bits() - bump] {
+                        f(values::midpoint_scan(f64::from_bits(bits), eval, 1 << 12));
+                    }
+                }
+            }
+        }
+
+        // Hard-to-round cases further away from the zeros
+        let hard_cases = [
+            0xC003B7B647010213, // -2.464703135221734
+            0xC003BB33CFF7F769, // -2.4664074180172304
+            0xC003BDC120EBF719, // -2.467653519822204
+            0xC003D3E4CA47A3C3, // -2.4784637263405513
+            0xC01025DEFBBC2D7B, // -4.03698342643781
+            0xC0102BD07D05F09C, // -4.042787507522146
         ];
         for bits in hard_cases {
             f(f64::from_bits(bits));
@@ -303,12 +336,12 @@ fn ln_gamma_zeros(extrema: &[rug::Float]) -> Vec<f64> {
 }
 
 /// Returns the arguments around the zeros of `ln_gamma` with negative
-/// arguments where its results are `±2^-16`, `±2^-7` and `±2^-4`
+/// arguments where its results are `±2^-15`, `±2^-14`, `±2^-4` and `±1`
 /// (calculated with Newton's method from the zeros).
 fn ln_gamma_zero_limits(zeros: &[f64]) -> Vec<f64> {
     let mut xs = Vec::new();
     for &x0 in zeros.iter().filter(|x| **x < 0.0) {
-        for e in [-16, -7, -4] {
+        for e in [-15, -14, -4, 0] {
             for sign in [1.0, -1.0] {
                 let y = rug::Float::with_val(EXT_PREC, sign * fpmath::scalbn(1.0, e));
                 let x = Func::LnGamma.solve(&y, x0).to_f64();

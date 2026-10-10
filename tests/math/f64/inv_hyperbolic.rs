@@ -153,6 +153,21 @@ fn test_acosh_with(mut f: impl FnMut(f64)) {
     for x0 in values::binades(1..=3, 300) {
         f(values::midpoint_scan(x0, acosh, 1 << 14));
     }
+    // It is not flat enough right above 16 either, where the correction term
+    // of the evaluation for large arguments is the largest.
+    for x0 in values::interval(16.0, 18.0, 3000) {
+        f(values::midpoint_scan(x0, acosh, 1 << 12));
+    }
+
+    // Hard-to-round cases right above 16, found with a random search
+    let hard_cases = [
+        0x4030029C5B628275, // 16.010198318052478
+        0x403002CA153F18A5, // 16.01089604177891
+        0x4030455F8924C388, // 16.27098900935701
+    ];
+    for bits in hard_cases {
+        f(f64::from_bits(bits));
+    }
 }
 
 fn test_atanh_with(mut f: impl FnMut(f64)) {
@@ -240,6 +255,13 @@ fn asinh_near_midpoints() -> Vec<f64> {
             xs.extend(values::around(x, 1));
         }
     }
+    // More of them right below 2^-5, where the terms after `x` of the
+    // polynomial for small arguments are the largest
+    for x0 in values::interval(0.028, 0.03125, 20_000) {
+        if let Some(x) = values::offset_midpoint(x0, asinh, dg) {
+            xs.push(x);
+        }
+    }
 
     let sinh = |y: &rug::Float| rug::Float::with_val(EXT_PREC, y).sinh();
     let x0s = values::binades(4..=63, 1000).chain(values::binades((64..=1023).step_by(2), 20));
@@ -253,6 +275,21 @@ fn asinh_near_midpoints() -> Vec<f64> {
     for x0 in values::binades(-1..=3, 300) {
         xs.push(values::midpoint_scan(x0, asinh, 1 << 14));
     }
+    // It is not flat enough right above 16 either, where the correction term
+    // of the evaluation for large arguments is the largest.
+    for x0 in values::interval(16.0, 18.0, 3000) {
+        xs.push(values::midpoint_scan(x0, asinh, 1 << 12));
+    }
+
+    // Hard-to-round cases right below 2^-5 and right above 16, found with a
+    // random search
+    let hard_cases = [
+        0x3F9ECAD34C841DC5, // 0.030070592446490147
+        0x403000389AFB2FB5, // 16.000863729786676
+        0x40300D695887E7FA, // 16.05238869970342
+        0x403065DA75207751, // 16.397864647318162
+    ];
+    xs.extend(hard_cases.map(f64::from_bits));
 
     // Close arguments can give the same midpoint
     xs.sort_by(f64::total_cmp);

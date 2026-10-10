@@ -9,7 +9,7 @@ repository = "https://github.com/eduardosm/rust-fpmath"
 license = "MIT OR Apache-2.0"
 keywords = ["float", "floating-point", "math"]
 categories = ["mathematics", "no-std", "science"]
-exclude = ["/.github", ".gitignore", "/ci"]
+exclude = ["/.github", ".gitignore", "/.markdownlint.yaml", "/ci"]
 publish = false
 
 [features]

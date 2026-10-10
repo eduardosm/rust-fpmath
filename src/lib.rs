@@ -38,9 +38,9 @@
 //!
 //! # Accuracy
 //!
-//! The results of all functions have an error of less than 0.55 ULP (units in
-//! the last place), with the exception of [`sqrt`], whose result is always
-//! correctly rounded (its error is less than 0.5 ULP).
+//! The results of all functions have an error of less than 0.5 + 2<sup>-10</sup>
+//! ULP (units in the last place), with the exception of [`sqrt`], whose result
+//! is always correctly rounded (its error is less than 0.5 ULP).
 
 // TODO:
 // * Error function and complementary (erf, erfc)

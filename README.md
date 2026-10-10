@@ -11,7 +11,7 @@ fpmath is a pure-Rust floating point library that implements math functions for
 
 ## Features
 
-* Less than 0.55 ULP error in most functions.
+* Less than 0.5 + 2<sup>-10</sup> ULP error in most functions.
 * `no_std`
 * All functions are tested for accuracy ([MPFR] is used to calculate reference
   values).

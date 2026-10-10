@@ -232,8 +232,8 @@ fn test_with(unit: Unit, mut f: impl FnMut(f64)) {
     }
 
     // Test the arguments around the multiples of small fractions of a right
-    // angle (from 1/4 to 1/32), also scaled by 2^20
-    for d in [4, 8, 16, 32] {
+    // angle (from 1/4 to 1/64), also scaled by 2^20
+    for d in [4, 8, 16, 32, 64] {
         let step = unit.right_angle(EXT_PREC) / d;
         for k in 1..=100 {
             for scale in [1, 1 << 20] {
@@ -248,12 +248,12 @@ fn test_with(unit: Unit, mut f: impl FnMut(f64)) {
 
 /// Returns the arguments around the centers (where the reduced argument is
 /// zero) and the boundaries (where it is the largest) of the subintervals
-/// used by the implementation, which splits each right angle in 32, in the
+/// used by the implementation, which splits each right angle in 64, in the
 /// first two periods and at more binades.
 fn table_points(unit: Unit) -> Vec<f64> {
     // Half the width of a subinterval
-    let half = unit.right_angle(EXT_PREC) / 64;
-    let first = (0..=512).map(|j| rug::Float::with_val(EXT_PREC, j));
+    let half = unit.right_angle(EXT_PREC) / 128;
+    let first = (0..=1024).map(|j| rug::Float::with_val(EXT_PREC, j));
     let more =
         values::binades(0..=60, 100).map(|x| rug::Float::with_val(EXT_PREC, x / &half).round());
     first

@@ -7,9 +7,9 @@
 //! `cbrt(|x|) = 2^kdiv3 * cbrt(2^kmod3) * cbrt(r0)`
 //!
 //! where `cbrt(2^kmod3)` is 1, `cbrt(2)` or `cbrt(4)`, and `cbrt(r0)` is
-//! approximated with a polynomial, with a relative error of about 2^-10.5.
+//! approximated with a polynomial, with a relative error of about 2^-13.6.
 //! That approximation of `cbrt(|x|)` is refined with one Halley iteration,
-//! which roughly cubes the relative error, so it is about 2^-32 before the
+//! which roughly cubes the relative error, so it is about 2^-41 before the
 //! final rounding.
 
 use crate::traits::Float as _;
@@ -48,12 +48,13 @@ impl crate::generic::Cbrt for f32 {
 
         // y0 ~= cbrt(|x|)
         let y0 = {
-            // GENERATE: cbrt_poly f64 3
-            const K0: f64 = f64::from_bits(0x3FE3EE5A15141A55); // 6.22845688981054e-1
-            const K1: f64 = f64::from_bits(0x3FDC0069D19700AE); // 4.375252291465682e-1
-            const K2: f64 = f64::from_bits(0xBFAE8D1148F1473C); // -5.967000976001066e-2
+            // GENERATE: cbrt_poly f64 4
+            const K0: f64 = f64::from_bits(0x3FE1B7EA3EA937F0); // 5.537005637977455e-1
+            const K1: f64 = f64::from_bits(0x3FE2BA2945673001); // 5.852247577217896e-1
+            const K2: f64 = f64::from_bits(0xBFC4B11B5561E2F4); // -1.6165486973820686e-1
+            const K3: f64 = f64::from_bits(0x3F975B306FDD2341); // 2.2808796718240435e-2
 
-            (K0 + r0 * (K1 + r0 * K2)) * s
+            (K0 + r0 * (K1 + r0 * (K2 + r0 * K3))) * s
         };
 
         // Refine y0 with a Halley iteration:

@@ -289,42 +289,10 @@ impl crate::generic::Exp for f64 {
 const MIN_SCALE_K: i32 = -960;
 const MAX_SCALE_K: i32 = 1023;
 
-/// `[K2, K3, K4, K5]` such that `exp(r) - 1 - r ~= r^2 * P(r)`, with
-/// `P(r) = K2 + K3 * r + K4 * r^2 + K5 * r^3` and an absolute error of about
-/// 2^-64.6, for `|r| <= 0.002711`.
-const EXP_POLY: [f64; 4] = {
-    // GENERATE: exp_m1_poly f64 4 -0.002711 0.002711
-    const K2: f64 = f64::from_bits(0x3FDFFFFFFFFFFE5A); // 4.999999999999766e-1
-    const K3: f64 = f64::from_bits(0x3FC5555555555459); // 1.6666666666665966e-1
-    const K4: f64 = f64::from_bits(0x3FA55555C2EEE615); // 4.1666679425770216e-2
-    const K5: f64 = f64::from_bits(0x3F81111163F6E1CE); // 8.333335745974415e-3
-
-    [K2, K3, K4, K5]
-};
-
-/// Returns `P(r)` (see `EXP_POLY`).
-#[inline]
-pub(super) fn exp_poly(r: f64) -> f64 {
-    let [k2, k3, k4, k5] = EXP_POLY;
-    let r2 = r * r;
-    (k2 + r * k3) + r2 * (k4 + r * k5)
-}
-
-/// Returns `(A, B)` such that `P(±r) = A ± r * B` (see `EXP_POLY`).
-#[inline]
-pub(super) fn exp_poly_parts(r: f64) -> (f64, f64) {
-    let [k2, k3, k4, k5] = EXP_POLY;
-    let r2 = r * r;
-    (k2 + r2 * k4, k3 + r2 * k5)
-}
-
 /// `[K3, K4, K5, K6]` such that `exp(r) - 1 - r - r^2 / 2 ~= r^3 * Q(r)`, with
 /// `Q(r) = K3 + K4 * r + K5 * r^2 + K6 * r^3` and an absolute error of about
 /// 2^-76.7, which is a relative error of about 2^-68.2 in `exp(r) - 1`, for
 /// `|r| <= 0.002711`.
-///
-/// It is more accurate than `EXP_POLY` because `exp(x) - 1` can be much
-/// smaller than `2^(m / N)`.
 const EXP_M1_POLY: [f64; 4] = {
     // GENERATE: exp_m1_poly f64 4 -0.002711 0.002711 2
     const K3: f64 = f64::from_bits(0x3FC55555555554AF); // 1.6666666666666205e-1
@@ -348,6 +316,23 @@ pub(super) fn exp_m1_poly_parts(r: f64) -> (f64, f64) {
     let [k3, k4, k5, k6] = EXP_M1_POLY;
     let r2 = r * r;
     (k3 + r2 * k5, k4 + r2 * k6)
+}
+
+/// Returns `P(r) = 1/2 + r * Q(r)` (see `EXP_M1_POLY`), so
+/// `exp(r) - 1 - r ~= r^2 * P(r)`.
+#[inline]
+pub(super) fn exp_poly(r: f64) -> f64 {
+    let [k3, k4, k5, k6] = EXP_M1_POLY;
+    let r2 = r * r;
+    (0.5 + r * k3) + r2 * ((k4 + r * k5) + r2 * k6)
+}
+
+/// Returns `(A, B)` such that `P(±r) = A ± r * B` (see `exp_poly`).
+#[inline]
+pub(super) fn exp_poly_parts(r: f64) -> (f64, f64) {
+    // P(±r) = 1/2 ± r * Q(±r) = (1/2 + r^2 * qb) ± r * qa
+    let (qa, qb) = exp_m1_poly_parts(r);
+    (0.5 + (r * r) * qb, qa)
 }
 
 /// Reduced argument: `x = m * ln(2) / N + r`, or the equivalent for other
@@ -463,7 +448,7 @@ impl Reduced {
     }
 
     /// Returns `(hi, lo)` such that `hi + lo ~= 2^(m / N) * exp(r)`, with a
-    /// relative error of about 2^-64.5 when `exp_poly(r) = p`.
+    /// relative error of about 2^-68 when `exp_poly(r) = p`.
     ///
     /// `hi` is exact and `|lo| < 2^-17 * |hi|`.
     ///
