@@ -81,12 +81,29 @@ fn asinh_small(x: f64) -> f64 {
     const K9: f64 = f64::from_bits(0x3F9F1C6E2BE455B5); // 3.0381890706015564e-2
     const K11: f64 = f64::from_bits(0xBF96DB9BE588322A); // -2.2322116741678645e-2
 
-    // The terms after `x` are less than 2^-12.5 * |x|, so their rounding
-    // errors are less than about 2^-64 relative to the result.
+    // -1/6 = K3_HI + K3_LO, where `K3_HI` (`K3` truncated) has 11 bits and
+    // `K3_LO` has a relative error of 2^-53 (2^-65 relative to 1/6). The
+    // rounding of `K3` alone is 2^-66.6 relative to the result.
+    const K3_HI: f64 = f64::from_bits(K3.to_bits() & (u64::MAX << 42));
+    const K3_LO: f64 = (-1.0 - 6.0 * K3_HI) / 6.0;
+
+    // The cubic term is up to 2^-12.5 * |x|, so its rounding errors would be
+    // up to about 2^-64 relative to the result. Its leading part is added
+    // exactly to `x` instead: x = a + b, where `a` has 14 bits, so
+    // `K3_HI * a^3` is exact, and
+    // -x^3 / 6 = K3_HI * a^3 + K3_HI * b * (x^2 + x * a + a^2) + K3_LO * x^3
+    // The remaining terms are less than 2^-22 * |x|, so their rounding errors
+    // are less than about 2^-73 relative to the result.
+    let a = f64::from_bits(x.to_bits() & (u64::MAX << 39));
+    let b = x - a;
+    let a2 = a * a;
+    let s = F64x2::fast_add11(x, K3_HI * (a2 * a));
+
     let x2 = x * x;
     let x4 = x2 * x2;
-    let q = (K3 + x2 * K5) + x4 * ((K7 + x2 * K9) + x4 * K11);
-    x + x * (x2 * q)
+    let c3 = K3_HI * (b * ((x2 + x * a) + a2)) + K3_LO * (x2 * x);
+    let q = (K5 + x2 * K7) + x4 * (K9 + x2 * K11);
+    s.hi() + ((s.lo() + c3) + (x4 * x) * q)
 }
 
 /// Returns `atanh(x)`, for `2^-27 <= |x| < 2^-6`.
@@ -112,7 +129,7 @@ fn atanh_small(x: f64) -> f64 {
 fn asinh_parts(x: f64) -> (f64, f64) {
     if x.exponent() >= 4 {
         // x >= 16
-        ln_2x_plus(x, asinh_large_corr)
+        ln_2x_plus(x, 0.25, asinh_large_tail)
     } else {
         // w = x^2 + 1 = w_hi + w_lo, where the sum is exact and the error of
         // `square_parts` is negligible
@@ -134,7 +151,7 @@ fn asinh_parts(x: f64) -> (f64, f64) {
 fn acosh_parts(x: f64) -> (f64, f64) {
     if x.exponent() >= 4 {
         // x >= 16
-        ln_2x_plus(x, acosh_large_corr)
+        ln_2x_plus(x, -0.25, acosh_large_tail)
     } else {
         // w = x^2 - 1 = w_hi + w_lo, which must be exact when `x` is close
         // to one, where `w` is small: `p + pe` is exact when
@@ -188,20 +205,35 @@ fn ln_atanh_parts(x: f64) -> (f64, f64) {
 }
 
 /// Returns `(hi, lo)` such that `hi + lo ~= ln(2 * x) + g(1 / x^2)`, for
-/// `x >= 16`, where `g` is `asinh_large_corr` or `acosh_large_corr`.
+/// `x >= 16`, where `g(u) = k * u + tail(u)` is `asinh_large_corr` (with
+/// `k = 1/4` and `asinh_large_tail`) or `acosh_large_corr` (with `k = -1/4`
+/// and `acosh_large_tail`).
+///
+/// The absolute error added to the one of `ln_parts` is less than about
+/// 2^-64, while the result is greater than 3.4.
 #[inline]
-fn ln_2x_plus(x: f64, g: impl FnOnce(f64) -> f64) -> (f64, f64) {
+fn ln_2x_plus(x: f64, k: f64, tail: impl FnOnce(f64) -> f64) -> (f64, f64) {
     let (hi, lo) = ln_parts(x, 1);
     if x.exponent() >= 32 {
         // |g(1 / x^2)| < 2^-66, which is less than 2^-70 relative to the
         // result (greater than 22), so it is negligible
         (hi, lo)
     } else {
-        // `|g(u)| < 2^-9.9` and `u` has a relative error of about 2^-52, so
-        // the error is less than about 2^-62, while the result is greater
-        // than 3.4
-        let u = 1.0 / (x * x);
-        (hi, lo + g(u))
+        // `k * u` is up to 2^-10, so the rounding errors of `x^2`, of the
+        // division and of the sum `lo + g(u)` would add up to about 2^-61.5.
+        // Instead:
+        // * x^2 = p + pe (see `square_parts`), so u = u0 + du, where
+        //   `u0 = 1 / p` is rounded (its error is at most 2^-62, which is
+        //   2^-64 in `k * u`) and `du ~= -pe * u0^2`.
+        // * `k * u0` is exact, and it is added exactly to `hi`.
+        // The rounding errors of the other terms (`lo` is up to about
+        // 2^-15 * hi, and `k * du + tail(u)` is less than 2^-19) are
+        // negligible.
+        let (p, pe) = square_parts(x);
+        let u0 = (1.0 / p).purify();
+        let du = -(pe * u0) * u0;
+        let s = F64x2::fast_add11(hi, k * u0);
+        (s.hi(), (s.lo() + lo) + (k * du + tail(u0)))
     }
 }
 
@@ -209,6 +241,12 @@ fn ln_2x_plus(x: f64, g: impl FnOnce(f64) -> f64) -> (f64, f64) {
 /// bound avoids subnormal intermediate values).
 #[inline]
 pub(crate) fn asinh_large_corr(u: f64) -> f64 {
+    0.25 * u + asinh_large_tail(u)
+}
+
+/// Returns `ln((1 + sqrt(1 + u)) / 2) - u / 4`, for `2^-500 <= u <= 2^-8`.
+#[inline]
+fn asinh_large_tail(u: f64) -> f64 {
     // ln((1 + sqrt(1 + u)) / 2) ~= u / 4 + u^2 * (K2 + K3 * u + ... + K6 * u^4)
     // GENERATE: asinh_acosh_large_poly f64 asinh 5 1e-30 0.00390625
     const K2: f64 = f64::from_bits(0xBFB7FFFFFFFFFFFE); // -9.374999999999997e-2
@@ -219,13 +257,19 @@ pub(crate) fn asinh_large_corr(u: f64) -> f64 {
 
     let u2 = u * u;
     let q = (K2 + u * K3) + u2 * ((K4 + u * K5) + u2 * K6);
-    0.25 * u + u2 * q
+    u2 * q
 }
 
 /// Returns `ln((1 + sqrt(1 - u)) / 2)`, for `2^-500 <= u <= 2^-8` (the lower
 /// bound avoids subnormal intermediate values).
 #[inline]
 pub(crate) fn acosh_large_corr(u: f64) -> f64 {
+    -0.25 * u + acosh_large_tail(u)
+}
+
+/// Returns `ln((1 + sqrt(1 - u)) / 2) + u / 4`, for `2^-500 <= u <= 2^-8`.
+#[inline]
+fn acosh_large_tail(u: f64) -> f64 {
     // ln((1 + sqrt(1 - u)) / 2) ~= -u / 4 + u^2 * (K2 + K3 * u + ... + K6 * u^4)
     // GENERATE: asinh_acosh_large_poly f64 acosh 5 1e-30 0.00390625
     const K2: f64 = f64::from_bits(0xBFB8000000000002); // -9.375000000000003e-2
@@ -236,5 +280,5 @@ pub(crate) fn acosh_large_corr(u: f64) -> f64 {
 
     let u2 = u * u;
     let q = (K2 + u * K3) + u2 * ((K4 + u * K5) + u2 * K6);
-    -0.25 * u + u2 * q
+    u2 * q
 }

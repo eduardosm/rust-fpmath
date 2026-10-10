@@ -16,7 +16,7 @@
 
 ### Changed
 
-- Maximum error has been brought down to 0.55 ULP from 1 ULP.
+- Maximum error has been brought down to 0.5 + 2<sup>-10</sup> ULP from 1 ULP.
 - Poles of `tand` and `tanpi` now have alternating signs.
 - `f32` math functions now use `f64` internally.
 - Performance of most math functions has been improved.

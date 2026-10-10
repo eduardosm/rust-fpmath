@@ -6,11 +6,11 @@
 //! result is finite and non-zero. `y * ln(|x|)` is calculated as a sum of two
 //! `f64`, and its exponential with the evaluation of `exp` (see `super::exp`).
 //!
-//! The relative error before the final rounding is about 2^-63.5:
+//! The relative error before the final rounding is about 2^-64.7:
 //! * Logarithm: 2^-75 (see `super::log::ln_accurate_parts`), amplified by up
 //!   to 2^9.6.
 //! * Product: 2^-76 (see `exp_y_ln`), also amplified by up to 2^9.6.
-//! * Exponential: 2^-64.5 (see `super::exp::Reduced::eval`).
+//! * Exponential: 2^-68 (see `super::exp::Reduced::eval`).
 //!
 //! Integer exponents with `|y| <= 64` (in both `pow` and `powi`) use binary
 //! exponentiation with extra precision instead (see `powi_small`), when the

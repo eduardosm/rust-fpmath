@@ -3,18 +3,20 @@
 //! They use the same table and formulas as the `f64` functions (see
 //! `crate::f64::trigonometric`), but the reduced argument is a single `f64`
 //! and the evaluation uses plain `f64` arithmetic, which also allows a
-//! cheaper tangent. The argument is reduced to `x = n * π/64 + b`, where `n`
-//! is an integer (only `n mod 128` is used) and `|b| <= ~π/128`:
+//! cheaper tangent. The argument is reduced to `x = n * π/128 + b`, where `n`
+//! is an integer (only `n mod 256` is used) and `|b| <= ~π/128`. The
+//! reductions of this module use a step of π/64 (twice the step of the table,
+//! so `n` is even), which is accurate enough for `f32`:
 //!
 //! * Radians: `|x| < 2^21` is reduced by `reduce_rad`, larger arguments use
-//!   the `f64` reduction.
-//! * Degrees and half revolutions: `|x| = n * 90/32 + t` and
-//!   `|x| = (n + t)/64`, with `t` exact (`reduce_deg` and
+//!   the `f64` reduction (whose step is π/128).
+//! * Degrees and half revolutions: `|x| = k * 90/32 + t` and
+//!   `|x| = (k + t)/64`, with `n = 2 * k` and `t` exact (`reduce_deg` and
 //!   `reduce_half_revs`), followed by the conversion to radians. Huge
 //!   arguments are first replaced with a smaller number with the same
 //!   remainder modulo 360 (degrees) or with zero (half revolutions).
 //!
-//! With `a = n * π/64`, `s = sin(a)` and `c = cos(a)` (from the `f64` table):
+//! With `a = n * π/128`, `s = sin(a)` and `c = cos(a)` (from the `f64` table):
 //!
 //! * `sin(a + b) = (s + c*b) + (s * (cos(b) - 1) + c * (sin(b) - b))`
 //! * `cos(a + b) = (c - s*b) + (c * (cos(b) - 1) - s * (sin(b) - b))`
@@ -25,7 +27,7 @@
 //! right signs of zero) when `x` is a multiple of a right angle in degrees or
 //! half revolutions.
 
-use crate::f64::{FRAC_64_PI, reduce_rad_large_sum, round_u8, sin_cos_pi_64};
+use crate::f64::{FRAC_64_PI, reduce_rad_large_sum, round_u8, sin_cos_pi_128};
 use crate::traits::Float;
 
 // GENERATE: consts f64 FRAC_PI_180 PI
@@ -121,10 +123,10 @@ fn with_sign_of(v: f64, x: f32) -> f32 {
 
 /// Reduces the angle argument `|x|` (in radians) to `(n, b)` such that:
 /// * `|b| <= ~π/128`
-/// * `|x| = 2*π*M + π/64*n + b`
+/// * `|x| = 2*π*M + π/128*n + b`
 /// * `M` is an integer
 ///
-/// `n` is only meaningful modulo 128.
+/// `n` is only meaningful modulo 256.
 #[inline]
 fn reduce_rad(x: f32) -> (u8, f64) {
     let xa = f64::from(x).abs();
@@ -133,19 +135,21 @@ fn reduce_rad(x: f32) -> (u8, f64) {
         const FRAC_PI_64_F0: f64 = f64::from_bits(0x3FA921FB54000000); // 4.9087385181337595e-2
         const FRAC_PI_64_F1: f64 = f64::from_bits(0x3DC10B4611A62633); // 3.100292436501689e-11
 
-        // |x| < 2^21, so 0 <= n < 2^25.4 and, since `FRAC_PI_64_F0` has 27
-        // significant bits, `nf * FRAC_PI_64_F0` is exact, and so is
-        // `xa - nf * FRAC_PI_64_F0` (by Sterbenz lemma, or because `nf = 0`).
-        // The error of the split (below `2^-88 * n`) and the rounding of
-        // `nf * FRAC_PI_64_F1` (below `2^-87.9 * n`) add an absolute error
+        // |x| = k * π/64 + b, with n = 2 * k.
+        //
+        // |x| < 2^21, so 0 <= k < 2^25.4 and, since `FRAC_PI_64_F0` has 27
+        // significant bits, `kf * FRAC_PI_64_F0` is exact, and so is
+        // `xa - kf * FRAC_PI_64_F0` (by Sterbenz lemma, or because `kf = 0`).
+        // The error of the split (below `2^-88 * k`) and the rounding of
+        // `kf * FRAC_PI_64_F1` (below `2^-87.9 * k`) add an absolute error
         // below `2^-61.5`, and the last subtraction a relative error below
-        // `u`. When `n` is a nonzero multiple of 32, the distance from `x` to
-        // `n * π/64` is at least 2^-24.8 when |x| >= 2^18, 2^-25.8 when
+        // `u`. When `k` is a nonzero multiple of 32, the distance from `x` to
+        // `k * π/64` is at least 2^-24.8 when |x| >= 2^18, 2^-25.8 when
         // 2^15 <= |x| < 2^18 and 2^-27.8 when |x| < 2^15 (found by
         // exhaustive search), so the relative error of `b` is below 2^-38.8.
-        let (nf, n) = round_u8(xa * FRAC_64_PI);
-        let b = (xa - nf * FRAC_PI_64_F0) - nf * FRAC_PI_64_F1;
-        (n, b)
+        let (kf, k) = round_u8(xa * FRAC_64_PI);
+        let b = (xa - kf * FRAC_PI_64_F0) - kf * FRAC_PI_64_F1;
+        (k.wrapping_mul(2), b)
     } else {
         reduce_rad_large_sum(xa)
     }
@@ -153,11 +157,11 @@ fn reduce_rad(x: f32) -> (u8, f64) {
 
 /// Reduces the angle argument `|x|` (in degrees) to `(n, t)` such that:
 /// * `|t| <= ~45/32`
-/// * `|x| = 360*M + 90/32*n + t`
+/// * `|x| = 360*M + 90/64*n + t`
 /// * `M` is an integer
 /// * `t` is exact
 ///
-/// `n` is only meaningful modulo 128.
+/// `n` is even and only meaningful modulo 256.
 #[inline]
 fn reduce_deg(x: f32) -> (u8, f64) {
     // `STEP` has 6 significant bits.
@@ -169,12 +173,14 @@ fn reduce_deg(x: f32) -> (u8, f64) {
         deg_mod_360(x)
     };
 
-    // 0 <= y < 2^33, so 0 <= n < 2^32 and `nf * STEP` is exact.
-    // `y - nf * STEP` is exact by Sterbenz lemma when n >= 2 or y >= 2.
+    // y = k * STEP + t, with n = 2 * k.
+    //
+    // 0 <= y < 2^33, so 0 <= k < 2^32 and `kf * STEP` is exact.
+    // `y - kf * STEP` is exact by Sterbenz lemma when k >= 2 or y >= 2.
     // Otherwise, both operands are multiples of `ulp(y)` and the result is
-    // less than 2 in magnitude (or `nf = 0`).
-    let (nf, n) = round_u8(y * (1.0 / STEP));
-    (n, y - nf * STEP)
+    // less than 2 in magnitude (or `kf = 0`).
+    let (kf, k) = round_u8(y * (1.0 / STEP));
+    (k.wrapping_mul(2), y - kf * STEP)
 }
 
 /// Returns `y` such that `0 <= y < 2^33` and `y = |x| (mod 360)`, for
@@ -199,11 +205,11 @@ fn deg_mod_360(x: f32) -> f64 {
 /// Reduces the angle argument `|x|` (in half revolutions) to `(n, t)` such
 /// that:
 /// * `|t| <= 1/2`
-/// * `|x| = 2*M + (n + t)/64`
+/// * `|x| = 2*M + n/128 + t/64`
 /// * `M` is an integer
 /// * `t` is exact
 ///
-/// `n` is only meaningful modulo 128.
+/// `n` is even and only meaningful modulo 256.
 #[inline]
 fn reduce_half_revs(x: f32) -> (u8, f64) {
     // |x| >= 2^24 is an even integer, so it can be replaced with zero.
@@ -214,10 +220,10 @@ fn reduce_half_revs(x: f32) -> (u8, f64) {
     };
 
     // 0 <= y < 2^24, so `u = y * 64` is exact and less than 2^30, and so is
-    // `u - nf`.
+    // `u - kf`. u = k + t, with n = 2 * k.
     let u = y * 64.0;
-    let (nf, n) = round_u8(u);
-    (n, u - nf)
+    let (kf, k) = round_u8(u);
+    (k.wrapping_mul(2), u - kf)
 }
 
 /// Returns `sin(π * x)` without rounding it to `f32` (used by the reflection
@@ -245,43 +251,43 @@ fn sin_cos_poly(b: f64) -> (f64, f64) {
     (cm1, smb)
 }
 
-/// Returns `sin(n * π/64 + b)`.
+/// Returns `sin(n * π/128 + b)`.
 #[inline]
 fn sin_eval(n: u8, b: f64) -> f64 {
-    let (s, c) = sin_cos_pi_64(n);
+    let (s, c) = sin_cos_pi_128(n);
     let (cm1, smb) = sin_cos_poly(b);
     (s + c * b) + (s * cm1 + c * smb)
 }
 
-/// Returns `cos(n * π/64 + b)`.
+/// Returns `cos(n * π/128 + b)`.
 #[inline]
 fn cos_eval(n: u8, b: f64) -> f64 {
-    let (s, c) = sin_cos_pi_64(n);
+    let (s, c) = sin_cos_pi_128(n);
     let (cm1, smb) = sin_cos_poly(b);
     (c - s * b) + (c * cm1 - s * smb)
 }
 
-/// Returns `(sin(n * π/64 + b), cos(n * π/64 + b))`.
+/// Returns `(sin(n * π/128 + b), cos(n * π/128 + b))`.
 ///
 /// Evaluated as `(s * cos(b) + c * sin(b), c * cos(b) - s * sin(b))`, sharing
 /// `cos(b)` and `sin(b)`.
 #[inline]
 fn sin_cos_eval(n: u8, b: f64) -> (f64, f64) {
-    let (s, c) = sin_cos_pi_64(n);
+    let (s, c) = sin_cos_pi_128(n);
     let (cm1, smb) = sin_cos_poly(b);
     let cb = 1.0 + cm1;
     let sb = b + smb;
     (s * cb + c * sb, c * cb - s * sb)
 }
 
-/// Returns `tan(n * π/64 + b)`.
+/// Returns `tan(n * π/128 + b)`.
 #[inline]
 fn tan_eval(n: u8, b: f64) -> f64 {
     // GENERATE: tan_poly f64 2 0.0247
     const K3: f64 = f64::from_bits(0x3FD555554C09CA81); // 3.3333332467660887e-1
     const K5: f64 = f64::from_bits(0x3FC11291BAE7B019); // 1.333791887876721e-1
 
-    let (s, c) = sin_cos_pi_64(n);
+    let (s, c) = sin_cos_pi_128(n);
     // t ~= tan(b)
     let b2 = b * b;
     let t = b + (b * b2) * (K3 + b2 * K5);

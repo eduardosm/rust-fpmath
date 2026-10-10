@@ -28,7 +28,7 @@
 //! is calculated as a double-word, and `asin(y) = y + y * S(y^2)`, where
 //! `y^2 = (1 - |x|) / 2` is exact.
 //!
-//! The relative error before the final rounding is about 2^-63.
+//! The relative error before the final rounding is about 2^-65.
 //!
 //! # Degrees and half-turns
 //!
@@ -355,13 +355,13 @@ fn asin_half(x: f64) -> (f64, f64, f64, f64) {
 
 /// Returns `(hi, lo)` such that `hi + lo ~= S(u) = asin(x) / x - 1`, where
 /// `u = x^2 = u_hi + u_lo` (with `|u_lo| <= 2^-53 * u_hi`), for
-/// `0 <= u <= 1/4`, with an absolute error of about 2^-64.5.
+/// `0 <= u <= 1/4`, with an absolute error of about 2^-66.
 ///
 /// `S(u) < 0.048` and `|lo| <= 2^-23 * |hi|`.
 #[inline]
 fn asin_poly(u_hi: f64, u_lo: f64) -> (f64, f64) {
     // S(u) ~= u * (K1 + K2 * u + ... + K15 * u^14), with a relative error of
-    // 2^-67.7 in `asin(x)`
+    // 2^-67 in `asin(x)`
     // GENERATE: asin_poly F64x2:3,f64 15 0.5
     const K1: F64x2 = F64x2::from_bits(0x3FC5555555555556, 0xBC6E79DD537C2A84); // 1.666666666666666719535110873307e-1
     const K2: F64x2 = F64x2::from_bits(0x3FB3333333333298, 0x3C45B4816E305F15); // 7.499999999999784852060387934620e-2
@@ -379,24 +379,23 @@ fn asin_poly(u_hi: f64, u_lo: f64) -> (f64, f64) {
     const K14: f64 = f64::from_bits(0xBFA052C93749A753); // -3.188160705469891e-2
     const K15: f64 = f64::from_bits(0x3FA1EAA418A136A9); // 3.4993293768463225e-2
 
-    // The terms of degree 4 and higher (up to about 2^-8.3 relative to
-    // `S(u)`) are evaluated with plain `f64` arithmetic, where the first two
-    // steps are in Horner form, so the error of `t` is about 2^-57.5, which
-    // is multiplied by u^4 <= 2^-8 in `S(u)`
+    // The terms of degree 5 and higher (up to about 2^-10.7 relative to
+    // `S(u)`) are evaluated with plain `f64` arithmetic, where the last two
+    // steps are in Horner form, so the error of `v` is about 2^-60, which is
+    // multiplied by u^4 <= 2^-8 in `S(u)`
     let u = u_hi;
     let u2 = u * u;
     let u4 = u2 * u2;
     let t = ((K6 + u * K7) + u2 * (K8 + u * K9))
         + u4 * (((K10 + u * K11) + u2 * (K12 + u * K13)) + u4 * (K14 + u * K15));
-    let t = K4 + u * (K5 + u * t);
+    let v = u * (K5 + u * t);
 
-    // K3 + u * t, where the rounding error of `u * t` (less than 2^-59.8) is
-    // multiplied by u^3 <= 2^-6 in `S(u)`, and the next steps use exact
+    // `K4 + v` is added exactly (`K4 > v`), and the next steps use exact
     // products
-    let p = u * t;
-    let c = F64x2::fast_add11(K3.hi(), p);
+    let c = F64x2::fast_add11(K4, v);
     let us = Split::new(u);
-    let (h, l) = us.mul_add(c.hi(), c.lo() + K3.lo(), K2);
+    let (h, l) = us.mul_add(c.hi(), c.lo(), K3);
+    let (h, l) = us.mul_add(h, l, K2);
     let (h, l) = us.mul_add(h, l, K1);
     let (s_hi, s_lo) = us.mul(h, l);
 
@@ -536,14 +535,16 @@ impl AtanParts {
 /// (so `d + c * n < 2^1022` and its reciprocal is normal), given `q ~= n / d`
 /// (with a relative error of at most 2^-50).
 ///
-/// The relative error is about 2^-65 (mostly from the polynomial).
+/// The relative error is about 2^-65 (mostly from the rounding errors of
+/// `atan(t) - t`).
 #[inline(always)]
 fn atan_parts(n: f64, d: f64, q: f64) -> AtanParts {
-    // atan(t) ~= t + t^3 * (K2 + K4 * t^2 + K6 * t^4)
-    // GENERATE: atan_poly f64 3 1e-30 0.0079
-    const K2: f64 = f64::from_bits(0xBFD55555555554FC); // -3.333333333333284e-1
-    const K4: f64 = f64::from_bits(0x3FC999999890B46A); // 1.9999999951815833e-1
-    const K6: f64 = f64::from_bits(0xBFC248B4D786A7DF); // -1.428438236592333e-1
+    // atan(t) ~= t + t^3 * (K2 + K4 * t^2 + K6 * t^4 + K8 * t^6)
+    // GENERATE: atan_poly f64 4 1e-30 0.0079
+    const K2: f64 = f64::from_bits(0xBFD5555555555555); // -3.333333333333333e-1
+    const K4: f64 = f64::from_bits(0x3FC999999999977E); // 1.9999999999998502e-1
+    const K6: f64 = f64::from_bits(0xBFC2492490BA9005); // -1.4285714213212955e-1
+    const K8: f64 = f64::from_bits(0x3FBC70DF219EF891); // 1.110972840387794e-1
 
     // c = i / 64, the closest to n / d
     let (i, c) = atan_index(q);
@@ -576,7 +577,7 @@ fn atan_parts(n: f64, d: f64, q: f64) -> AtanParts {
 
     // atan(t) - t
     let t2 = th * th;
-    let p = (th * t2) * (K2 + t2 * (K4 + t2 * K6));
+    let p = (th * t2) * (K2 + t2 * (K4 + t2 * (K6 + t2 * K8)));
 
     let a = ATAN_TBL[i];
     AtanParts {

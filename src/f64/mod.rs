@@ -16,7 +16,7 @@ pub(crate) use gamma::ln_gamma_near_zero;
 pub(crate) use inv_hyperbolic::{acosh_large_corr, asinh_large_corr};
 pub(crate) use inv_trigonometric::{atan_index, atan_tbl};
 pub(crate) use log::{ln_1p_q, ln_tbl, split_ln_arg};
-pub(crate) use trigonometric::{FRAC_64_PI, reduce_rad_large_sum, sin_cos_pi_64};
+pub(crate) use trigonometric::{FRAC_64_PI, reduce_rad_large_sum, sin_cos_pi_128};
 
 use crate::traits::Float as _;
 

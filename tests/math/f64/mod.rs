@@ -15,7 +15,7 @@ mod trigonometric;
 mod values;
 
 const MIN_MAX_ERROR: f64 = 0.4999;
-const ERROR_LIMIT: f64 = 0.51;
+const ERROR_LIMIT: f64 = 0.5 + 1.0 / 2048.0;
 
 const RUG_PREC: u32 = 53 + 20;
 

@@ -140,7 +140,7 @@ fn gamma_stirling(x: f64) -> f64 {
     // `stirling`: 2^-66, plus 2^-75 relative to (x - 0.5) * ln(x), which is
     // less than 883, and the error of the logarithm times `x - 0.5`, which is
     // as large), and so is the relative error of the result, plus the error of
-    // the exponential (2^-64.5, see `ExpReduced::eval`).
+    // the exponential (2^-68, see `ExpReduced::eval`).
     let (l_hi, l_lo) = ln_accurate_parts(x, 0);
     let (hi, lo) = stirling(x, -0.5, l_hi, l_lo);
     let y = F64x2::fast_add11(hi, lo);
@@ -156,7 +156,7 @@ fn gamma_reflection(x: f64) -> f64 {
     // Γ(x) = ±exp(ln|Γ(x)|), where the absolute error of `ln|Γ(x)|` is less
     // than about 2^-63.4 (see `ln_gamma_reflection_parts`, with
     // (0.5 - x) * ln(-x) < 969), and so is the relative error of the result,
-    // plus the error of the exponential (2^-64.5, see `ExpReduced::eval`).
+    // plus the error of the exponential (2^-68, see `ExpReduced::eval`).
     let (hi, lo, negative) = ln_gamma_reflection_parts(x);
     // `hi` can be close to zero (when |Γ(x)| ~= 1), so the sum is exact
     let w = F64x2::add11(hi, lo);
@@ -256,9 +256,10 @@ fn ln_gamma_reflection(x: f64) -> (f64, i8) {
     let r = hi + lo;
     // The absolute error is less than about 2^-64.7 when `x > -20` (see
     // `ln_gamma_reflection_parts`, with (0.5 - x) * ln(-x) < 62), which is
-    // not small enough relative to results close to zero (from -18 to -4).
-    // With `x <= -20`, the magnitude of the result is at least 9.
-    if r.abs() < 1.0 / 16.0 {
+    // not small enough relative to results below one in magnitude, close to
+    // the zeros (from -18 to -4). With `x <= -20`, the magnitude of the
+    // result is at least 9.
+    if r.abs() < 1.0 {
         (ln_gamma_near_zero(x), sign)
     } else {
         (r, sign)
@@ -362,10 +363,10 @@ fn ln_gamma_small(x: f64) -> (f64, i8) {
         let (l_hi, l_lo) = ln_accurate_sum_parts(p.hi(), p.lo());
 
         let r = sub_ln(g_hi, g_lo, l_hi, l_lo);
-        // When the terms nearly cancel, the absolute error is less than about
-        // 2^-67 (mostly from `ln(Γ(2 + f))`), which is not small enough
-        // relative to results close to zero (from -4 to -2)
-        if r.abs() < 1.0 / 128.0 {
+        // The absolute error is less than about 2^-67 (mostly from
+        // `ln(Γ(2 + f))`), which is not small enough relative to results
+        // below 1/16 in magnitude, close to the zeros (from -4 to -2)
+        if r.abs() < 1.0 / 16.0 {
             (ln_gamma_near_zero(x), sign)
         } else {
             (r, sign)
@@ -384,9 +385,11 @@ fn sub_ln(g_hi: f64, g_lo: f64, l_hi: f64, l_lo: f64) -> f64 {
 ///
 /// It is calculated like in `ln_gamma_small`, but with more accurate
 /// approximations of `ln(Γ(2 + f))` and of the product, so the absolute error
-/// is less than about 2^-76, which is small enough when the result is at
-/// least 2^-16. Smaller results are calculated with an expansion around the
-/// closest root (see `ln_gamma_near_root`).
+/// is less than about 2^-76 (2^-78 when the result is less than 2^-14, where
+/// the terms are less than 0.12), which is small enough when the result is at
+/// least 2^-15. Smaller results are always within the range of an expansion
+/// around the closest root (see `ln_gamma_near_root`), which is more accurate
+/// in all its range.
 #[cold]
 #[inline(never)]
 pub(crate) fn ln_gamma_near_zero(x: f64) -> f64 {
@@ -407,10 +410,11 @@ pub(crate) fn ln_gamma_near_zero(x: f64) -> f64 {
     let (l_hi, l_lo) = ln_accurate_sum_parts(p.hi(), p.lo());
 
     let r = sub_ln(g_hi, g_lo, l_hi, l_lo);
-    if r.abs() >= f64::exp2i_fast(-16) {
+    if r.abs() >= f64::exp2i_fast(-14) {
         r
     } else {
-        // `x` is always close enough to a root (see `LN_GAMMA_ROOTS`)
+        // Out of the ranges of the expansions, the magnitude of the result
+        // is at least 2^-15 (see `LN_GAMMA_ROOTS`)
         ln_gamma_near_root(x).unwrap_or(r)
     }
 }
@@ -420,11 +424,13 @@ pub(crate) fn ln_gamma_near_zero(x: f64) -> f64 {
 ///
 /// Close to the roots, the result is the difference of two nearly equal
 /// terms with the other methods, but the expansion has a relative error of
-/// about 2^-64:
-/// * Approximation: less than 2^-70.
+/// at most about 2^-65 (at the limits of its range):
+/// * Approximation: less than 2^-70, plus the rounding of the coefficients
+///   after the leading one (2^-53 relative to their terms, which are less
+///   than 2^-12.5 relative to the result).
 /// * `x - x0` is calculated as a double-word (with `x0` as a sum of three
-///   `f64`), and so is its product with the leading coefficient.
-/// * The other terms are less than 2^-12.5 relative to the result.
+///   `f64`), and so are its products and the sum with the leading
+///   coefficient.
 #[cold]
 fn ln_gamma_near_root(x: f64) -> Option<f64> {
     // The roots are sorted in decreasing order, so only the nearest ones
@@ -440,12 +446,16 @@ fn ln_gamma_near_root(x: f64) -> Option<f64> {
             let d = F64x2::fast_add11(h, -root.x0[1]);
             let (d_hi, d_lo) = (d.hi(), d.lo() - root.x0[2]);
 
-            // ln|Γ(x)| ~= d * k0 + d^2 * Q(d)
+            // ln|Γ(x)| ~= d * w, with w = k0 + d * Q(d), where the first
+            // step of `Q(d)` is added exactly (`|k1|` is larger than the
+            // other terms) and the products with `d_hi` are calculated as
+            // sums of two `f64`
             let [k1, k2, k3, k4] = root.k;
-            let q = k1 + d_hi * (k2 + d_hi * (k3 + d_hi * k4));
-            let p = F64x2::mul11(d_hi, root.k0.hi());
-            let lo = p.lo() + ((d_hi * root.k0.lo() + d_lo * root.k0.hi()) + (d_hi * d_hi) * q);
-            return Some(p.hi() + lo);
+            let q = F64x2::fast_add11(k1, d_hi * (k2 + d_hi * (k3 + d_hi * k4)));
+            let ds = Split::new(d_hi);
+            let (w_hi, w_lo) = ds.mul_add(q.hi(), q.lo(), root.k0);
+            let (hi, lo) = ds.mul(w_hi, w_lo);
+            return Some(hi + (lo + d_lo * w_hi));
         }
     }
     None
@@ -779,11 +789,10 @@ struct LnGammaRoot {
 /// order, from -2.457 to -13.
 ///
 /// The radii are such that `|ln|Γ(x)|| >= 2^-15` at the limits of the ranges
-/// (see the tests), so any argument where `ln_gamma_near_zero` finds a result
-/// less than 2^-16 in magnitude is within one of them. The other roots (two
-/// between each pair of consecutive integers until -18) are so close to the
-/// poles that `|ln|Γ(x)|| > 2^-14` with the representable arguments around
-/// them.
+/// (see the tests), so any argument whose result is less than 2^-15 in
+/// magnitude is within one of them. The other roots (two between each pair of
+/// consecutive integers until -18) are so close to the poles that
+/// `|ln|Γ(x)|| > 2^-14` with the representable arguments around them.
 static LN_GAMMA_ROOTS: [LnGammaRoot; 23] = [
     ROOT_2_457,
     ROOT_2_747,
@@ -1214,7 +1223,7 @@ mod tests {
         }
 
         // `ln_gamma_near_zero` requires `|ln|Γ(x)|| >= 2^-15` at the limits of
-        // the ranges (greater than 2^-16 plus its error)
+        // the ranges, where it stops using the expansions
         for root in LN_GAMMA_ROOTS.iter() {
             for x in [root.x0[0] - root.radius, root.x0[0] + root.radius] {
                 let y = rug::Float::with_val(256, x).ln_abs_gamma().0;
@@ -1227,8 +1236,8 @@ mod tests {
     fn test_ln_gamma_roots_complete() {
         // `ln_gamma_near_zero` also requires an expansion around every zero
         // of `ln|Γ(x)|` with representable arguments where `|ln|Γ(x)||` is
-        // less than 2^-16 (plus its error). `|ln|Γ(x)||` increases away from
-        // the zeros, so, with the requirement checked in
+        // less than 2^-15. `|ln|Γ(x)||` increases away from the zeros, so,
+        // with the requirement checked in
         // `test_ln_gamma_roots`, it is enough to check the arguments closest
         // to each zero.
         const PREC: u32 = 256;
