@@ -21,9 +21,11 @@
 //! when `t_hi` is zero (see `ln_1p_poly`).
 //!
 //! `log2(x)` and `log10(x)` are calculated as `ln(x) * log2(e)` and
-//! `ln(x) * log10(e)`, with extended precision.
+//! `ln(x) * log10(e)`, with extended precision, and `log2_1p(x)` and
+//! `log10_1p(x)` are calculated from `ln_1p(x)` in the same way.
 
 use super::f64x2::F64x2;
+use super::mul_tiny;
 use crate::traits::Float as _;
 
 /// Number of bits of the index of `LN_TBL`
@@ -45,6 +47,10 @@ const LOG2_E_X1: f64 = f64::from_bits(0x3E54AE0BF85DDF44); // 1.9259629911266175
 // GENERATE: split_const LOG10_E_X LOG10_E 0 26 53
 const LOG10_E_X0: f64 = f64::from_bits(0x3FDBCB7B10000000); // 4.342944771051407e-1
 const LOG10_E_X1: f64 = f64::from_bits(0x3E349B9438CA9AAE); // 4.798111141615973e-9
+
+// GENERATE: consts F64x2 LOG2_E LOG10_E
+const LOG2_E: F64x2 = F64x2::from_bits(0x3FF71547652B82FE, 0x3C7777D0FFDA0D24); // 1.442695040888963407359924681002e0
+const LOG10_E: F64x2 = F64x2::from_bits(0x3FDBCB7B1526E50E, 0x3C695355BAAAFAD3); // 4.342944819032518276511289189166e-1
 
 // GENERATE: ln_table f32 7 42
 // LN_TBL[i] = (bits(s), bits(hi), bits(lo)), where s = 1 / (1 + i / 128) rounded to f32
@@ -190,27 +196,13 @@ impl crate::generic::Log for f64 {
 
     #[inline]
     fn ln_1p_finite(x: Self) -> Self {
-        let x_exp = x.exponent();
-        if x_exp < -8 {
-            if x_exp < -53 {
-                // ln(1 + x) = x - x^2 / 2 + ..., where |x| < 2^-53, so
-                // x^2 / 2 - ... < 2^-54 * |x|, which is less than half the
-                // spacing of `f64` around x, and the result rounds to x
-                return x;
-            }
-            // |x| < 2^-8
-            let (hi, lo) = ln_1p_poly(x, 0.0);
-            hi + lo
-        } else if x_exp >= 64 {
-            // ln(1 + x) = ln(x) + ln(1 + 1 / x), where ln(1 + 1 / x) < 2^-64
-            // is less than 2^-69 relative to ln(x) > 44, so it is negligible
-            // (and calculating it could involve subnormal numbers)
-            let (hi, lo) = ln_parts(x, 0);
-            hi + lo
+        if x.exponent() < -53 {
+            // ln(1 + x) = x - x^2 / 2 + ..., where |x| < 2^-53, so
+            // x^2 / 2 - ... < 2^-54 * |x|, which is less than half the
+            // spacing of `f64` around x, and the result rounds to x
+            x
         } else {
-            // 1 + x = p_hi + p_lo
-            let p = F64x2::add11(1.0, x);
-            let (hi, lo) = ln_sum_parts(p.hi(), p.lo());
+            let (hi, lo) = ln_1p_parts(x);
             hi + lo
         }
     }
@@ -222,9 +214,54 @@ impl crate::generic::Log for f64 {
     }
 
     #[inline]
+    fn log2_1p_finite(x: Self) -> Self {
+        if x.exponent() < -70 {
+            // ln(1 + x) = x - x^2 / 2 + ..., where |x| < 2^-70, so the terms
+            // after `x` are negligible (less than 2^-71 * |x|)
+            mul_tiny(x, LOG2_E)
+        } else {
+            let (hi, lo) = ln_1p_parts(x);
+            mul_split(LOG2_E_X0, LOG2_E_X1, hi, lo)
+        }
+    }
+
+    #[inline]
     fn log10_finite(x: Self, edelta: i16) -> Self {
         let (hi, lo) = ln_parts(x, edelta);
         mul_split(LOG10_E_X0, LOG10_E_X1, hi, lo)
+    }
+
+    #[inline]
+    fn log10_1p_finite(x: Self) -> Self {
+        if x.exponent() < -70 {
+            // see `log2_1p_finite`
+            mul_tiny(x, LOG10_E)
+        } else {
+            let (hi, lo) = ln_1p_parts(x);
+            mul_split(LOG10_E_X0, LOG10_E_X1, hi, lo)
+        }
+    }
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= ln(1 + x)`, with the relative
+/// error of `ln_1p_poly` (about 2^-66) and `|lo| <= ~2^-15 * |hi|`.
+///
+/// `x` must be greater than -1 and `|x| >= 2^-70`.
+#[inline]
+fn ln_1p_parts(x: f64) -> (f64, f64) {
+    let x_exp = x.exponent();
+    if x_exp < -8 {
+        // |x| < 2^-8
+        ln_1p_poly(x, 0.0)
+    } else if x_exp >= 64 {
+        // ln(1 + x) = ln(x) + ln(1 + 1 / x), where ln(1 + 1 / x) < 2^-64
+        // is less than 2^-69 relative to ln(x) > 44, so it is negligible
+        // (and calculating it could involve subnormal numbers)
+        ln_parts(x, 0)
+    } else {
+        // 1 + x = p_hi + p_lo
+        let p = F64x2::add11(1.0, x);
+        ln_sum_parts(p.hi(), p.lo())
     }
 }
 

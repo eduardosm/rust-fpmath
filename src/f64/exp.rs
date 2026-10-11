@@ -30,9 +30,16 @@
 //!
 //! In the latter two, `r` is calculated as a sum of two `f64`, where the
 //! product with the high part of `ln(2) / N` or `ln(10)` is exact.
+//!
+//! `exp_m1`, `exp2_m1` and `exp10_m1` use the same reductions, with a more
+//! accurate evaluation whose leading part is also exact, so one can be
+//! subtracted from it without losing accuracy (see `Reduced::eval_m1`). With
+//! small arguments, the result is close to `r`, which is not exact for the
+//! bases 2 and 10, so `exp(r) - 1 = r + r^2 * P(r)` is calculated from `r` as
+//! a sum of two `f64` (see `small_exp_m1`).
 
-use super::f64x2::F64x2;
-use super::round_i32;
+use super::f64x2::{F64x2, Split};
+use super::{mul_tiny, round_i32};
 use crate::generic::scalbn_medium;
 use crate::traits::Float as _;
 
@@ -265,6 +272,27 @@ impl crate::generic::Exp for f64 {
     }
 
     #[inline]
+    fn exp2_m1_finite(x: Self) -> Self {
+        // GENERATE: consts F64x2 LN_2
+        const LN_2: F64x2 = F64x2::from_bits(0x3FE62E42FEFA39EF, 0x3C7ABC9E3B39803F); // 6.931471805599453094172321214582e-1
+
+        if x.exponent() < -13 {
+            // |x * ln(2)| < 2^-13.5
+            small_exp_m1(x, LN_2, LN_2_X0, LN_2_X1)
+        } else if x < -54.0 {
+            // 2^x < 2^-54, so 2^x - 1 rounds to -1
+            -1.0
+        } else if x > 1023.0 {
+            // 2^x - 1 rounds to the same value as 2^x, which overflows or
+            // is very close to overflowing
+            Self::exp2_finite(x)
+        } else {
+            let (hi, lo) = Reduced::exp2(x).eval_m1();
+            hi + lo
+        }
+    }
+
+    #[inline]
     fn exp10_finite(x: Self) -> Self {
         let x_exp = x.exponent();
         if x_exp >= 9 {
@@ -280,6 +308,28 @@ impl crate::generic::Exp for f64 {
 
         let red = Reduced::exp10(x);
         red.eval_to_f64(exp_poly(red.r))
+    }
+
+    #[inline]
+    fn exp10_m1_finite(x: Self) -> Self {
+        // `ln(10)` as a double-word (the one of the module is an `f64`)
+        // GENERATE: consts F64x2 LN_10
+        const LN_10: F64x2 = F64x2::from_bits(0x40026BB1BBB55516, 0xBCAF48AD494EA3E9); // 2.302585092994045684017991454684e0
+
+        if x.exponent() < -15 {
+            // |x * ln(10)| < 2^-13.5
+            small_exp_m1(x, LN_10, LN_10_X0, LN_10_X1)
+        } else if x < -16.5 {
+            // 10^x < 2^-54, so 10^x - 1 rounds to -1
+            -1.0
+        } else if x > 308.0 {
+            // 10^x - 1 rounds to the same value as 10^x, which overflows or
+            // is very close to overflowing
+            Self::exp10_finite(x)
+        } else {
+            let (hi, lo) = Reduced::exp10(x).eval_m1();
+            hi + lo
+        }
     }
 }
 
@@ -487,6 +537,26 @@ impl Reduced {
         (hi, lo)
     }
 
+    /// Returns `(hi, lo)` such that `hi + lo ~= 2^(m / N) * exp(r) - 1`, with
+    /// the absolute error of `eval_precise`:
+    /// * `m != 0`: the magnitude of the result is at least about
+    ///   `0.0027 * max(1, 2^(m / N))`, so its relative error is at most about
+    ///   2^-66.
+    /// * `m = 0`: the result is `exp(r) - 1`, close to `r`, and the absolute
+    ///   error is about 2^-79.5 (the rounded terms are below 2^-27), which is
+    ///   2^-66 relative to the result when `|r| = 2^-13.5`.
+    ///
+    /// `k = m >> EXP2_TBL_BITS` must be in `[MIN_SCALE_K, MAX_SCALE_K]`.
+    #[inline]
+    fn eval_m1(&self) -> (f64, f64) {
+        // 2^(m / N) * exp(r) - 1 ~= (hi - 1) + lo, where `hi - 1` is
+        // calculated exactly as a sum of two `f64` (it is a single `f64`
+        // when `-1 <= k <= 52`)
+        let (hi, lo) = self.eval_precise(exp_m1_poly(self.r));
+        let d = F64x2::sub11(hi, 1.0);
+        (d.hi(), d.lo() + lo)
+    }
+
     /// Returns `2^(m / N) * exp(r)` rounded to `f64`, where `p` is
     /// `exp_poly(r)` or a more accurate approximation.
     #[inline]
@@ -524,13 +594,31 @@ pub(super) fn exp_m1_parts(x: f64) -> (f64, f64) {
         // result is at most 2^-64.4
         (x, (x * x) * (0.5 + x * exp_m1_poly(x)))
     } else {
-        // exp(x) - 1 = 2^(m / N) * exp(r) - 1 ~= (hi - 1) + lo, where `hi - 1`
-        // is calculated exactly as a sum of two `f64` (it is a single `f64`
-        // when `-1 <= k <= 52`)
-        let red = Reduced::exp(x);
-        let (hi, lo) = red.eval_precise(exp_m1_poly(red.r));
-        let d = F64x2::sub11(hi, 1.0);
-        (d.hi(), d.lo() + lo)
+        Reduced::exp(x).eval_m1()
+    }
+}
+
+/// Returns `exp(r) - 1` rounded to `f64`, where `r = x * c`, for
+/// `|r| < 2^-13.5`, with a relative error of at most about 2^-65 before the
+/// final rounding. `x` and the result can be subnormal.
+///
+/// `c` is `ln(2)` or `ln(10)`, given as a double-word (`k`) and split as
+/// `c0 + c1` (see `LN_2_X0` and `LN_10_X0`).
+#[inline]
+fn small_exp_m1(x: f64, k: F64x2, c0: f64, c1: f64) -> f64 {
+    if x.exponent() < -70 {
+        // exp(r) - 1 = r + r^2 / 2 + ..., where |r| < 2^-68, so the terms
+        // after `r` are negligible (less than 2^-69 * |r|)
+        mul_tiny(x, k)
+    } else {
+        // r = r_hi + r_lo, with a relative error of about 2^-77
+        // exp(r) - 1 = r + r^2 * (1/2 + r * Q(r)), where the second term has
+        // a relative error of about 5 * 2^-53 (`r` is rounded) and it is less
+        // than 2^-14.5 * |r|, so its error relative to the result (including
+        // the one of its sum with `r_lo`) is at most about 2^-65
+        let (r_hi, r_lo) = Split::new(x).mul(c0, c1);
+        let r = r_hi + r_lo;
+        r_hi + (r_lo + (r * r) * (0.5 + r * exp_m1_poly(r)))
     }
 }
 

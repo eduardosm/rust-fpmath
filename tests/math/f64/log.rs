@@ -16,7 +16,7 @@ fn test_ln() {
 #[test]
 fn test_ln_1p() {
     let mut max_error: f64 = 0.0;
-    test_ln_1p_with(|x| {
+    test_log_1p_with(Func::Ln1p, |x| {
         let expected = rug::Float::with_val(RUG_PREC, x).ln_1p();
         let actual = fpmath::ln_1p(x);
 
@@ -40,11 +40,37 @@ fn test_log2() {
 }
 
 #[test]
+fn test_log2_1p() {
+    let mut max_error: f64 = 0.0;
+    test_log_1p_with(Func::Log2_1p, |x| {
+        let expected = rug::Float::with_val(RUG_PREC, x).log2_1p();
+        let actual = fpmath::log2_1p(x);
+
+        check_result(x, actual, expected, &mut max_error);
+    });
+    eprintln!("max error = {max_error}");
+    assert!(max_error > MIN_MAX_ERROR);
+}
+
+#[test]
 fn test_log10() {
     let mut max_error: f64 = 0.0;
     test_log_with(Func::Log10, |x| {
         let expected = rug::Float::with_val(RUG_PREC, x).log10();
         let actual = fpmath::log10(x);
+
+        check_result(x, actual, expected, &mut max_error);
+    });
+    eprintln!("max error = {max_error}");
+    assert!(max_error > MIN_MAX_ERROR);
+}
+
+#[test]
+fn test_log10_1p() {
+    let mut max_error: f64 = 0.0;
+    test_log_1p_with(Func::Log10_1p, |x| {
+        let expected = rug::Float::with_val(RUG_PREC, x).log10_1p();
+        let actual = fpmath::log10_1p(x);
 
         check_result(x, actual, expected, &mut max_error);
     });
@@ -58,13 +84,40 @@ enum Func {
     Ln,
     Ln1p,
     Log2,
+    Log2_1p,
     Log10,
+    Log10_1p,
 }
 
 /// Precision used to calculate the test values.
 const EXT_PREC: u32 = 256;
 
 impl Func {
+    /// Returns whether the function is `log_b(1 + x)` (instead of
+    /// `log_b(x)`).
+    fn is_1p(self) -> bool {
+        matches!(self, Self::Ln1p | Self::Log2_1p | Self::Log10_1p)
+    }
+
+    /// Returns the range of arguments of `log_b(1 + x)` that are subnormal or
+    /// have subnormal results, if those results are not trivial.
+    ///
+    /// The results are `x * log_b(e)` rounded there (which is `x` for
+    /// `ln_1p`), so they are subnormal for `|x| < 2^-1022 / log_b(e)`: only a
+    /// part of the subnormal arguments for `log2_1p` (the results of the
+    /// largest ones are normal), and all of them and the smallest normal ones
+    /// for `log10_1p`.
+    fn tiny_range(self) -> Option<(f64, f64)> {
+        match self {
+            Self::Log2_1p | Self::Log10_1p => {
+                let min = f64::MIN_POSITIVE;
+                let inverse = |y: f64| self.inverse(&rug::Float::with_val(EXT_PREC, y)).to_f64();
+                Some((inverse(-min).min(-min), inverse(min).max(min)))
+            }
+            _ => None,
+        }
+    }
+
     /// Calculates the function with high precision.
     fn eval(self, x: &rug::Float) -> rug::Float {
         let x = rug::Float::with_val(EXT_PREC, x);
@@ -72,7 +125,9 @@ impl Func {
             Self::Ln => x.ln(),
             Self::Ln1p => x.ln_1p(),
             Self::Log2 => x.log2(),
+            Self::Log2_1p => x.log2_1p(),
             Self::Log10 => x.log10(),
+            Self::Log10_1p => x.log10_1p(),
         }
     }
 
@@ -83,7 +138,9 @@ impl Func {
             Self::Ln => y.exp(),
             Self::Ln1p => y.exp_m1(),
             Self::Log2 => y.exp2(),
+            Self::Log2_1p => y.exp2_m1(),
             Self::Log10 => y.exp10(),
+            Self::Log10_1p => y.exp10_m1(),
         }
     }
 }
@@ -153,17 +210,28 @@ fn test_log_with(func: Func, mut f: impl FnMut(f64)) {
     }
 }
 
-fn test_ln_1p_with(mut f: impl FnMut(f64)) {
+/// Tests `ln_1p`, `log2_1p` or `log10_1p`.
+fn test_log_1p_with(func: Func, mut f: impl FnMut(f64)) {
+    assert!(func.is_1p());
+
     // Test special values
     for x in values::specials() {
         f(x);
         f(-x);
     }
 
-    // Test a set of subnormal values, whose results are trivial (`x`)
+    // Test a set of subnormal values, whose results are trivial for `ln_1p`
     for x in values::subnormals(1000) {
         f(x);
         f(-x);
+    }
+
+    // Test more arguments that are subnormal or have subnormal results, for
+    // the other bases
+    if let Some((lo, hi)) = func.tiny_range() {
+        for x in values::interval(lo, hi, 500_000) {
+            f(x);
+        }
     }
 
     // Test a set of normal values at each binade, positive and in (-1, 0)
@@ -174,7 +242,8 @@ fn test_ln_1p_with(mut f: impl FnMut(f64)) {
         f(-x);
     }
 
-    // Test more values with small magnitudes, whose results are close to `x`
+    // Test more values with small magnitudes, whose results are close to
+    // `x * log_b(e)`
     for x in values::binades(-60..=-1, 10_000) {
         f(x);
         f(-x);
@@ -217,15 +286,16 @@ fn test_ln_1p_with(mut f: impl FnMut(f64)) {
         f(x);
     }
 
-    // Test the arguments around `e^n - 1` for integers `n`, whose results are
-    // close to integers
-    for x in base_powers(Func::Ln1p) {
+    // Test the arguments around `b^n - 1` for integers `n`, whose results are
+    // close to integers (exact with powers of two for `log2_1p` and with
+    // small powers of ten for `log10_1p`)
+    for x in base_powers(func) {
         f(x);
     }
 
     // Test results that are very close to a midpoint between two consecutive
     // values, which are the hardest to round
-    for x in near_midpoints(Func::Ln1p) {
+    for x in near_midpoints(func) {
         f(x);
     }
 
@@ -270,12 +340,13 @@ fn table_reciprocals() -> impl Iterator<Item = f64> {
 }
 
 /// Returns the arguments around the integer powers of the base (`b^n`, or
-/// `e^n - 1` for `ln_1p`) in the range of finite values.
+/// `b^n - 1` for the functions of `1 + x`) in the range of finite values.
 fn base_powers(func: Func) -> impl Iterator<Item = f64> {
-    let lowest = match func {
+    let lowest = if func.is_1p() {
         // The smallest value above -1 is `-1 + 2^-53`
-        Func::Ln1p => (rug::Float::with_val(EXT_PREC, 1) << -53) - 1,
-        _ => rug::Float::with_val(EXT_PREC, 1) << -1074,
+        (rug::Float::with_val(EXT_PREC, 1) << -53) - 1
+    } else {
+        rug::Float::with_val(EXT_PREC, 1) << -1074
     };
     let n_lo = func.eval(&lowest).to_f64().ceil() as i32;
     let n_hi = func
@@ -297,6 +368,11 @@ fn base_powers(func: Func) -> impl Iterator<Item = f64> {
 ///
 /// With small arguments, `ln_1p(x) = x + g(x)` is not flat, but `g` is (see
 /// `values::offset_midpoint`). For `ln` close to one, see [`ln_near_one`].
+///
+/// `log2_1p` and `log10_1p` are close to `x * log_b(e)` with small arguments,
+/// so the arguments with results close to a midpoint are searched among the
+/// ones close to other values (see `values::midpoint_scan`), also with tiny
+/// arguments, down to the smallest ones with normal results.
 fn near_midpoints(func: Func) -> Vec<f64> {
     let eval = |x: &rug::Float| func.eval(x);
     let inverse = |y: &rug::Float| func.inverse(y);
@@ -305,9 +381,8 @@ fn near_midpoints(func: Func) -> Vec<f64> {
 
     // Arguments at every other binade far from one (with exponents of at least
     // 64 in magnitude), whose results are large
-    let large = (-1022..=1023).filter(|e: &i16| {
-        e.abs() >= 64 && e % 2 == 0 && (e.is_positive() || !matches!(func, Func::Ln1p))
-    });
+    let large = (-1022..=1023)
+        .filter(|e: &i16| e.abs() >= 64 && e % 2 == 0 && (e.is_positive() || !func.is_1p()));
     for x0 in values::binades(large, 20) {
         xs.extend(values::around(
             values::midpoint_inverse(x0, eval, inverse),
@@ -327,6 +402,15 @@ fn near_midpoints(func: Func) -> Vec<f64> {
                 if let Some(x) = values::offset_midpoint(x0, eval, dg) {
                     xs.extend(values::around(x, 1));
                 }
+            }
+        }
+        Func::Log2_1p | Func::Log10_1p => {
+            // Fewer values than for `ln_1p`, each one needs several
+            // evaluations
+            let x0s = values::binades(-53..=-2, 100)
+                .chain(values::binades((-1019..=-54).step_by(16), 20));
+            for x0 in x0s.flat_map(|x| [x, -x]) {
+                xs.push(values::midpoint_scan(x0, eval, 1 << 12));
             }
         }
         Func::Log2 | Func::Log10 => {}

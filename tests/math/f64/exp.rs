@@ -40,11 +40,37 @@ fn test_exp2() {
 }
 
 #[test]
+fn test_exp2_m1() {
+    let mut max_error: f64 = 0.0;
+    test_with(Func::Exp2M1, |x| {
+        let expected = rug::Float::with_val(RUG_PREC, x).exp2_m1();
+        let actual = fpmath::exp2_m1(x);
+
+        check_result(x, actual, expected, &mut max_error);
+    });
+    eprintln!("max error = {max_error}");
+    assert!(max_error > MIN_MAX_ERROR);
+}
+
+#[test]
 fn test_exp10() {
     let mut max_error: f64 = 0.0;
     test_with(Func::Exp10, |x| {
         let expected = rug::Float::with_val(RUG_PREC, x).exp10();
         let actual = fpmath::exp10(x);
+
+        check_result(x, actual, expected, &mut max_error);
+    });
+    eprintln!("max error = {max_error}");
+    assert!(max_error > MIN_MAX_ERROR);
+}
+
+#[test]
+fn test_exp10_m1() {
+    let mut max_error: f64 = 0.0;
+    test_with(Func::Exp10M1, |x| {
+        let expected = rug::Float::with_val(RUG_PREC, x).exp10_m1();
+        let actual = fpmath::exp10_m1(x);
 
         check_result(x, actual, expected, &mut max_error);
     });
@@ -58,13 +84,20 @@ enum Func {
     Exp,
     ExpM1,
     Exp2,
+    Exp2M1,
     Exp10,
+    Exp10M1,
 }
 
 /// Precision used to calculate the test values.
 const EXT_PREC: u32 = 256;
 
 impl Func {
+    /// Returns whether the function is `b^x - 1` (instead of `b^x`).
+    fn is_m1(self) -> bool {
+        matches!(self, Self::ExpM1 | Self::Exp2M1 | Self::Exp10M1)
+    }
+
     /// Calculates the function with high precision.
     fn eval(self, x: &rug::Float) -> rug::Float {
         let x = rug::Float::with_val(EXT_PREC, x);
@@ -72,7 +105,9 @@ impl Func {
             Self::Exp => x.exp(),
             Self::ExpM1 => x.exp_m1(),
             Self::Exp2 => x.exp2(),
+            Self::Exp2M1 => x.exp2_m1(),
             Self::Exp10 => x.exp10(),
+            Self::Exp10M1 => x.exp10_m1(),
         }
     }
 
@@ -83,7 +118,9 @@ impl Func {
             Self::Exp => y.ln(),
             Self::ExpM1 => y.ln_1p(),
             Self::Exp2 => y.log2(),
+            Self::Exp2M1 => y.log2_1p(),
             Self::Exp10 => y.log10(),
+            Self::Exp10M1 => y.log10_1p(),
         }
     }
 
@@ -92,18 +129,19 @@ impl Func {
         let two = rug::Float::with_val(EXT_PREC, 2);
         match self {
             Self::Exp | Self::ExpM1 => two.ln(),
-            Self::Exp2 => rug::Float::with_val(EXT_PREC, 1),
-            Self::Exp10 => two.log10(),
+            Self::Exp2 | Self::Exp2M1 => rug::Float::with_val(EXT_PREC, 1),
+            Self::Exp10 | Self::Exp10M1 => two.log10(),
         }
     }
 
     /// Returns the range of arguments with non-trivial results. Below it,
-    /// the results are rounded to zero (or to -1 for `exp_m1`), and above it,
-    /// they overflow.
+    /// the results are rounded to zero (or to -1 for `b^x - 1`), and above
+    /// it, they overflow.
     fn range(self) -> (f64, f64) {
-        let lo = match self {
-            Self::ExpM1 => exp2i(-60) - 1,
-            _ => exp2i(-1076),
+        let lo = if self.is_m1() {
+            exp2i(-60) - 1
+        } else {
+            exp2i(-1076)
         };
         (
             self.inverse(&lo).to_f64(),
@@ -111,14 +149,31 @@ impl Func {
         )
     }
 
-    /// Returns the range of arguments with subnormal results, if any.
+    /// Returns the range of arguments with subnormal results that are not
+    /// trivial, if any. The results of `b^x - 1` are subnormal around zero,
+    /// where they are `x * ln(b)` rounded (which is trivial for `exp_m1`).
     fn subnormal_range(self) -> Option<(f64, f64)> {
         match self {
             Self::ExpM1 => None,
+            Self::Exp2M1 | Self::Exp10M1 => Some((
+                self.inverse(&-exp2i(-1022)).to_f64(),
+                self.inverse(&exp2i(-1022)).to_f64(),
+            )),
             _ => Some((
                 self.inverse(&exp2i(-1075)).to_f64(),
                 self.inverse(&exp2i(-1022)).to_f64(),
             )),
+        }
+    }
+
+    /// Returns the range of arguments where the results of `b^x - 1` are
+    /// close to -1 and the function is flat (see [`near_midpoints`]).
+    fn flat_range(self) -> Option<(f64, f64)> {
+        match self {
+            Self::ExpM1 => Some((-37.0, -8.0)),
+            Self::Exp2M1 => Some((-53.5, -11.5)),
+            Self::Exp10M1 => Some((-16.0, -3.5)),
+            _ => None,
         }
     }
 
@@ -127,12 +182,13 @@ impl Func {
     /// overflow) and, at the other end, the smallest normal value, the
     /// smallest subnormal value and half of it (below which the results are
     /// rounded to zero), or the midpoint between -1 and the next value (below
-    /// which the results of `exp_m1` are rounded to -1).
+    /// which the results of `b^x - 1` are rounded to -1).
     fn limit_results(self) -> Vec<rug::Float> {
         let overflow = exp2i(1024) - exp2i(970);
-        match self {
-            Self::ExpM1 => vec![overflow, exp2i(-54) - 1],
-            _ => vec![overflow, exp2i(-1022), exp2i(-1074), exp2i(-1075)],
+        if self.is_m1() {
+            vec![overflow, exp2i(-54) - 1]
+        } else {
+            vec![overflow, exp2i(-1022), exp2i(-1074), exp2i(-1075)]
         }
     }
 }
@@ -145,21 +201,21 @@ fn test_with(func: Func, mut f: impl FnMut(f64)) {
     }
 
     // Test a set of subnormal values, whose results are trivial (one, or `x`
-    // for `exp_m1`)
+    // for `exp_m1`) or `x * ln(b)` rounded (for `exp2_m1` and `exp10_m1`)
     for x in values::subnormals(1000) {
         f(x);
         f(-x);
     }
 
     // Test a set of normal values at each binade, most of them have trivial
-    // results (zero, one, infinity, `x` or -1)
+    // results (zero, one, infinity, `x` or -1) or `x * ln(b)` rounded
     for x in values::binades(-1022..=1023, 100) {
         f(x);
         f(-x);
     }
 
     // Test more values with small magnitudes, whose results are close to one
-    // (or to `x` for `exp_m1`)
+    // (or to `x * ln(b)` for `b^x - 1`)
     for x in values::binades(-60..=-1, 20_000) {
         f(x);
         f(-x);
@@ -237,13 +293,18 @@ fn reduction_boundaries(func: Func) -> impl Iterator<Item = f64> {
 /// Where the function is flat (its result changes much less than an ULP
 /// between consecutive arguments), the arguments closest to the inverse of a
 /// midpoint have such results. This happens with small arguments (results
-/// close to one) and, for `exp_m1`, with large negative arguments (results
+/// close to one) and, for `b^x - 1`, with large negative arguments (results
 /// close to -1).
 ///
 /// With small arguments, `exp_m1(x) = x + g(x)` is not flat, but `g` is. When
 /// the result is in the same binade as `x`, the arguments closest to the
 /// inverse of `g` at an odd multiple of half an ULP of `x` have results close
 /// to a midpoint.
+///
+/// `exp2_m1` and `exp10_m1` are close to `x * ln(b)` with small arguments, so
+/// the arguments with results close to a midpoint are searched among the ones
+/// close to other values (see `values::midpoint_scan`), also with tiny
+/// arguments, down to the smallest ones with normal results.
 fn near_midpoints(func: Func) -> Vec<f64> {
     let small = values::binades(-56..=-2, 1000).flat_map(|x| [x, -x]);
 
@@ -259,11 +320,14 @@ fn near_midpoints(func: Func) -> Vec<f64> {
                     xs.extend(values::around(x, 1));
                 }
             }
-            for x0 in values::interval(-37.0, -8.0, 100_000) {
-                xs.extend(values::around(
-                    values::midpoint_inverse(x0, eval, inverse),
-                    1,
-                ));
+        }
+        Func::Exp2M1 | Func::Exp10M1 => {
+            // Fewer values than for the other functions, each one needs
+            // several evaluations
+            let x0s = values::binades(-56..=-2, 100)
+                .chain(values::binades((-1021..=-57).step_by(16), 20));
+            for x0 in x0s.flat_map(|x| [x, -x]) {
+                xs.push(values::midpoint_scan(x0, eval, 1 << 12));
             }
         }
         _ => {
@@ -273,6 +337,14 @@ fn near_midpoints(func: Func) -> Vec<f64> {
                     1,
                 ));
             }
+        }
+    }
+    if let Some((lo, hi)) = func.flat_range() {
+        for x0 in values::interval(lo, hi, 100_000) {
+            xs.extend(values::around(
+                values::midpoint_inverse(x0, eval, inverse),
+                1,
+            ));
         }
     }
 

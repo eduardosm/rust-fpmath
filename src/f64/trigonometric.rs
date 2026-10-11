@@ -25,7 +25,7 @@
 //! and `tan(|x|)`.
 
 use super::f64x2::F64x2;
-use super::round_u8;
+use super::{mul_tiny, round_u8};
 use crate::traits::Float as _;
 
 // GENERATE: consts F64x2 FRAC_PI_180 PI
@@ -75,7 +75,7 @@ impl crate::generic::Trigonometric for f64 {
     fn sind_finite(x: Self) -> Self {
         if x.exponent() < -960 {
             // Avoid subnormals in `F64x2`, which break accuracy.
-            (F64x2::new1(x * f64::exp2i_fast(106)) * FRAC_PI_180).scalbn_to_f64(-106)
+            mul_tiny(x, FRAC_PI_180)
         } else {
             let (n, y) = reduce_deg(x.abs());
             with_sign_of(deg_to_rad(y).sin_k(n).to_f64(), x)
@@ -92,7 +92,7 @@ impl crate::generic::Trigonometric for f64 {
     fn sind_cosd_finite(x: Self) -> (Self, Self) {
         if x.exponent() < -960 {
             // Avoid subnormals in `F64x2`, which break accuracy.
-            let sin = (F64x2::new1(x * f64::exp2i_fast(106)) * FRAC_PI_180).scalbn_to_f64(-106);
+            let sin = mul_tiny(x, FRAC_PI_180);
             (sin, 1.0)
         } else {
             let (n, y) = reduce_deg(x.abs());
@@ -105,7 +105,7 @@ impl crate::generic::Trigonometric for f64 {
     fn tand_finite(x: Self) -> Self {
         if x.exponent() <= -40 {
             // Avoid subnormals in `F64x2`, which break accuracy.
-            (F64x2::new1(x * f64::exp2i_fast(106)) * FRAC_PI_180).scalbn_to_f64(-106)
+            mul_tiny(x, FRAC_PI_180)
         } else {
             let (n, y) = reduce_deg(x.abs());
             with_sign_of(deg_to_rad(y).tan_k(n), x)
@@ -116,7 +116,7 @@ impl crate::generic::Trigonometric for f64 {
     fn sinpi_finite(x: Self) -> Self {
         if x.exponent() < -960 {
             // Avoid subnormals in `F64x2`, which break accuracy.
-            (F64x2::new1(x * f64::exp2i_fast(106)) * PI).scalbn_to_f64(-106)
+            mul_tiny(x, PI)
         } else {
             let (n, y) = reduce_half_revs(x.abs());
             with_sign_of(half_revs_to_rad(y).sin_k(n).to_f64(), x)
@@ -133,7 +133,7 @@ impl crate::generic::Trigonometric for f64 {
     fn sinpi_cospi_finite(x: Self) -> (Self, Self) {
         if x.exponent() < -960 {
             // Avoid subnormals in `F64x2`, which break accuracy.
-            let sin = (F64x2::new1(x * f64::exp2i_fast(106)) * PI).scalbn_to_f64(-106);
+            let sin = mul_tiny(x, PI);
             (sin, 1.0)
         } else {
             let (n, y) = reduce_half_revs(x.abs());
@@ -146,7 +146,7 @@ impl crate::generic::Trigonometric for f64 {
     fn tanpi_finite(x: Self) -> Self {
         if x.exponent() <= -40 {
             // Avoid subnormals in `F64x2`, which break accuracy.
-            (F64x2::new1(x * f64::exp2i_fast(106)) * PI).scalbn_to_f64(-106)
+            mul_tiny(x, PI)
         } else {
             let (n, y) = reduce_half_revs(x.abs());
             with_sign_of(half_revs_to_rad(y).tan_k(n), x)

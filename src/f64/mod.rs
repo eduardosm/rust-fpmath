@@ -166,8 +166,16 @@ impl crate::FloatMath for f64 {
         crate::generic::exp2(x)
     }
 
+    fn exp2_m1(x: Self) -> Self {
+        crate::generic::exp2_m1(x)
+    }
+
     fn exp10(x: Self) -> Self {
         crate::generic::exp10(x)
+    }
+
+    fn exp10_m1(x: Self) -> Self {
+        crate::generic::exp10_m1(x)
     }
 
     fn ln(x: Self) -> Self {
@@ -182,8 +190,16 @@ impl crate::FloatMath for f64 {
         crate::generic::log2(x)
     }
 
+    fn log2_1p(x: Self) -> Self {
+        crate::generic::log2_1p(x)
+    }
+
     fn log10(x: Self) -> Self {
         crate::generic::log10(x)
+    }
+
+    fn log10_1p(x: Self) -> Self {
+        crate::generic::log10_1p(x)
     }
 
     fn pow(x: Self, y: Self) -> Self {
@@ -386,6 +402,22 @@ fn sqrt_parts(w_hi: f64, w_lo: f64) -> (f64, f64) {
     let (p, pe) = square_parts(y);
     let res = ((w_hi - p) - pe) + w_lo;
     (y, res * (0.5 * r))
+}
+
+/// Returns `x * k` rounded to `f64` (only once, also when the result is
+/// subnormal), for `k > 0` and a small `x`, which can be zero or subnormal
+/// (`x * 2^106` must not overflow).
+///
+/// It is used with the arguments so small that a function is `x * k` after
+/// rounding.
+#[inline]
+fn mul_tiny(x: f64, k: f64x2::F64x2) -> f64 {
+    // The product is scaled to avoid subnormals in `F64x2`, which break its
+    // accuracy, and `copysign` recovers the sign of zero, which `F64x2` can
+    // lose.
+    (f64x2::F64x2::new1(x * f64::exp2i_fast(106)) * k)
+        .scalbn_to_f64(-106)
+        .copysign(x)
 }
 
 /// Rounds `x` to the nearest integer, returning it as `f64` and its lowest
