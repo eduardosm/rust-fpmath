@@ -156,8 +156,16 @@ impl crate::FloatMath for f32 {
         crate::generic::exp2(x)
     }
 
+    fn exp2_m1(x: Self) -> Self {
+        crate::generic::exp2_m1(x)
+    }
+
     fn exp10(x: Self) -> Self {
         crate::generic::exp10(x)
+    }
+
+    fn exp10_m1(x: Self) -> Self {
+        crate::generic::exp10_m1(x)
     }
 
     fn ln(x: Self) -> Self {
@@ -172,8 +180,16 @@ impl crate::FloatMath for f32 {
         crate::generic::log2(x)
     }
 
+    fn log2_1p(x: Self) -> Self {
+        crate::generic::log2_1p(x)
+    }
+
     fn log10(x: Self) -> Self {
         crate::generic::log10(x)
+    }
+
+    fn log10_1p(x: Self) -> Self {
+        crate::generic::log10_1p(x)
     }
 
     fn pow(x: Self, y: Self) -> Self {

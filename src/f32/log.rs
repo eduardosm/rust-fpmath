@@ -8,7 +8,8 @@
 //!
 //! where `z = m * s - 1` is exact when the mantissa `m` comes from an `f32`
 //! (24 bits * 24 bits), and `ln(1 + z)` is approximated with a polynomial.
-//! `log2` and `log10` multiply the result by `log2(e)` and `log10(e)`.
+//! `log2` and `log10` multiply the result by `log2(e)` and `log10(e)`, and so
+//! do `log2_1p` and `log10_1p` with the result of `ln_1p`.
 
 use crate::f64::{ln_1p_q, ln_tbl, split_ln_arg};
 use crate::traits::Float as _;
@@ -25,18 +26,7 @@ impl crate::generic::Log for f32 {
 
     #[inline]
     fn ln_1p_finite(x: Self) -> Self {
-        let x_exp = x.exponent();
-        let x = f64::from(x);
-        if x_exp < -8 {
-            // |x| < 2^-8
-            ln_1p_poly(x) as f32
-        } else {
-            // `1 + x` is exact when |x| < 2^53, otherwise its relative error
-            // is at most 2^-53. Its mantissa can have up to 53 bits, so
-            // `ln_f64` adds its absolute error for wide mantissas, while the
-            // result is at least about 2^-8.
-            ln_f64(1.0 + x, 0) as f32
-        }
+        ln_1p_f64(x) as f32
     }
 
     #[inline]
@@ -45,8 +35,36 @@ impl crate::generic::Log for f32 {
     }
 
     #[inline]
+    fn log2_1p_finite(x: Self) -> Self {
+        (ln_1p_f64(x) * LOG2_E) as f32
+    }
+
+    #[inline]
     fn log10_finite(x: Self, edelta: i16) -> Self {
         (ln_f64(f64::from(x), edelta) * LOG10_E) as f32
+    }
+
+    #[inline]
+    fn log10_1p_finite(x: Self) -> Self {
+        (ln_1p_f64(x) * LOG10_E) as f32
+    }
+}
+
+/// Returns `ln(1 + x)`, where `x` is greater than -1 and not zero (it can be
+/// subnormal).
+#[inline]
+fn ln_1p_f64(x: f32) -> f64 {
+    let x_exp = x.exponent();
+    let x = f64::from(x);
+    if x_exp < -8 {
+        // |x| < 2^-8
+        ln_1p_poly(x)
+    } else {
+        // `1 + x` is exact when |x| < 2^53, otherwise its relative error
+        // is at most 2^-53. Its mantissa can have up to 53 bits, so
+        // `ln_f64` adds its absolute error for wide mantissas, while the
+        // result is at least about 2^-8.
+        ln_f64(1.0 + x, 0)
     }
 }
 

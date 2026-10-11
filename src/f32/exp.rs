@@ -11,6 +11,9 @@
 //! `2^(f / N) - 1 = exp(r) - 1`, with `r = f * ln(2) / N`, is approximated
 //! with a polynomial in `f`. The coefficients are calculated from those of a
 //! polynomial in `r`.
+//!
+//! `exp_m1`, `exp2_m1` and `exp10_m1` calculate `(S - 1) + S * (2^(f / N) - 1)`
+//! with a longer polynomial (see `exp2_m1_f64`).
 
 use crate::f64::{EXP2_TBL_BITS, exp2_tbl, round_i32};
 use crate::traits::Float as _;
@@ -50,17 +53,7 @@ impl crate::generic::Exp for f32 {
             }
         }
 
-        // exp(x) - 1 = (S - 1) + S * (2^(f / N) - 1)
-        //
-        // The relative error before the final rounding is about 2^-43.5:
-        // * m = 0: S = 1, so the result is the polynomial.
-        // * m != 0: |exp(x) - 1| > 0.0027 * S, and the polynomial has an
-        //   absolute error of 2^-52.1 relative to `S`. `S - 1` has an error of
-        //   at most 2^-53 * |S - 1| (it is exact when 1/2 <= S <= 2^53), and
-        //   the error of `x * log2(e) * N` is about 2^-53 * |x| relative to
-        //   `S`, which is also small compared to |exp(x) - 1| / S.
-        let (s, f) = reduce(f64::from(x) * (LOG2_E * TBL_N));
-        ((s - 1.0) + (s * f) * poly_m1(f)) as f32
+        exp2_m1_f64(f64::from(x) * (LOG2_E * TBL_N)) as f32
     }
 
     #[inline]
@@ -79,6 +72,20 @@ impl crate::generic::Exp for f32 {
     }
 
     #[inline]
+    fn exp2_m1_finite(x: Self) -> Self {
+        if x.exponent() >= 7 {
+            if x.is_sign_negative() {
+                return -1.0;
+            } else {
+                return f32::INFINITY;
+            }
+        }
+
+        // Like `exp_m1`, but `x * N` is exact
+        exp2_m1_f64(f64::from(x) * TBL_N) as f32
+    }
+
+    #[inline]
     fn exp10_finite(x: Self) -> Self {
         if x.exponent() >= 6 {
             if x.is_sign_negative() {
@@ -92,6 +99,19 @@ impl crate::generic::Exp for f32 {
         let (s, f) = reduce(f64::from(x) * (LOG2_10 * TBL_N));
         (s + (s * f) * poly(f)) as f32
     }
+
+    #[inline]
+    fn exp10_m1_finite(x: Self) -> Self {
+        if x.exponent() >= 6 {
+            if x.is_sign_negative() {
+                return -1.0;
+            } else {
+                return f32::INFINITY;
+            }
+        }
+
+        exp2_m1_f64(f64::from(x) * (LOG2_10 * TBL_N)) as f32
+    }
 }
 
 /// Returns `exp(x)`, for `|x| < 128`, with a relative error of about 2^-40.5:
@@ -102,6 +122,23 @@ impl crate::generic::Exp for f32 {
 pub(super) fn exp_f64(x: f64) -> f64 {
     let (s, f) = reduce(x * (LOG2_E * TBL_N));
     s + (s * f) * poly(f)
+}
+
+/// Returns `2^(z / N) - 1`, for `|z| < 2^15`, where `z = x * log2(B) * N` (`B`
+/// is the base and `x` can be subnormal).
+///
+/// The relative error is about 2^-43.5:
+/// * m = 0: S = 1, so the result is the polynomial.
+/// * m != 0: |B^x - 1| > 0.0027 * S, and the polynomial has an absolute error
+///   of 2^-52.1 relative to `S`. `S - 1` has an error of at most
+///   2^-53 * |S - 1| (it is exact when 1/2 <= S <= 2^53), and the error of
+///   `z` (which is exact when `B = 2`) is about 2^-53 * |x * ln(B)| relative
+///   to `S`, which is also small compared to |B^x - 1| / S.
+#[inline]
+fn exp2_m1_f64(z: f64) -> f64 {
+    // 2^(z / N) - 1 = (S - 1) + S * (2^(f / N) - 1)
+    let (s, f) = reduce(z);
+    (s - 1.0) + (s * f) * poly_m1(f)
 }
 
 /// Splits `z = m + f`, where `m` is an integer and `|f| <= ~1/2`, returning

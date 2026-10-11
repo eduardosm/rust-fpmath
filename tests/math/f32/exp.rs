@@ -40,11 +40,37 @@ fn test_exp2() {
 }
 
 #[test]
+fn test_exp2_m1() {
+    let mut max_error: f32 = 0.0;
+    test_with(Func::Exp2M1, |x| {
+        let expected = fpmath::exp2_m1(f64::from(x));
+        let actual = fpmath::exp2_m1(x);
+
+        check_result(x, actual, expected, &mut max_error);
+    });
+    eprintln!("max error = {max_error}");
+    assert!(max_error > MIN_MAX_ERROR);
+}
+
+#[test]
 fn test_exp10() {
     let mut max_error: f32 = 0.0;
     test_with(Func::Exp10, |x| {
         let expected = fpmath::exp10(f64::from(x));
         let actual = fpmath::exp10(x);
+
+        check_result(x, actual, expected, &mut max_error);
+    });
+    eprintln!("max error = {max_error}");
+    assert!(max_error > MIN_MAX_ERROR);
+}
+
+#[test]
+fn test_exp10_m1() {
+    let mut max_error: f32 = 0.0;
+    test_with(Func::Exp10M1, |x| {
+        let expected = fpmath::exp10_m1(f64::from(x));
+        let actual = fpmath::exp10_m1(x);
 
         check_result(x, actual, expected, &mut max_error);
     });
@@ -58,17 +84,26 @@ enum Func {
     Exp,
     ExpM1,
     Exp2,
+    Exp2M1,
     Exp10,
+    Exp10M1,
 }
 
 impl Func {
+    /// Returns whether the function is `b^x - 1` (instead of `b^x`).
+    fn is_m1(self) -> bool {
+        matches!(self, Self::ExpM1 | Self::Exp2M1 | Self::Exp10M1)
+    }
+
     /// Calculates the function in `f64`.
     fn eval(self, x: f64) -> f64 {
         match self {
             Self::Exp => fpmath::exp(x),
             Self::ExpM1 => fpmath::exp_m1(x),
             Self::Exp2 => fpmath::exp2(x),
+            Self::Exp2M1 => fpmath::exp2_m1(x),
             Self::Exp10 => fpmath::exp10(x),
+            Self::Exp10M1 => fpmath::exp10_m1(x),
         }
     }
 
@@ -78,7 +113,9 @@ impl Func {
             Self::Exp => fpmath::ln(y),
             Self::ExpM1 => fpmath::ln_1p(y),
             Self::Exp2 => fpmath::log2(y),
+            Self::Exp2M1 => fpmath::log2_1p(y),
             Self::Exp10 => fpmath::log10(y),
+            Self::Exp10M1 => fpmath::log10_1p(y),
         }
     }
 
@@ -86,30 +123,48 @@ impl Func {
     fn log_b_2(self) -> f64 {
         match self {
             Self::Exp | Self::ExpM1 => std::f64::consts::LN_2,
-            Self::Exp2 => 1.0,
-            Self::Exp10 => std::f64::consts::LOG10_2,
+            Self::Exp2 | Self::Exp2M1 => 1.0,
+            Self::Exp10 | Self::Exp10M1 => std::f64::consts::LOG10_2,
         }
     }
 
     /// Returns the range of arguments with non-trivial results. Below it,
-    /// the results are rounded to zero (or to -1 for `exp_m1`), and above it,
-    /// they overflow.
+    /// the results are rounded to zero (or to -1 for `b^x - 1`), and above
+    /// it, they overflow.
     fn range(self) -> (f32, f32) {
-        let lo = match self {
-            Self::ExpM1 => exp2i(-30) - 1.0,
-            _ => exp2i(-151),
+        let lo = if self.is_m1() {
+            exp2i(-30) - 1.0
+        } else {
+            exp2i(-151)
         };
         (self.inverse(lo) as f32, self.inverse(exp2i(129)) as f32)
     }
 
-    /// Returns the range of arguments with subnormal results, if any.
+    /// Returns the range of arguments with subnormal results that are not
+    /// trivial, if any. The results of `b^x - 1` are subnormal around zero,
+    /// where they are `x * ln(b)` rounded (which is trivial for `exp_m1`).
     fn subnormal_range(self) -> Option<(f32, f32)> {
         match self {
             Self::ExpM1 => None,
+            Self::Exp2M1 | Self::Exp10M1 => Some((
+                self.inverse(-exp2i(-126)) as f32,
+                self.inverse(exp2i(-126)) as f32,
+            )),
             _ => Some((
                 self.inverse(exp2i(-150)) as f32,
                 self.inverse(exp2i(-126)) as f32,
             )),
+        }
+    }
+
+    /// Returns the range of arguments where the results of `b^x - 1` are
+    /// close to -1 and the function is flat (see [`near_midpoints`]).
+    fn flat_range(self) -> Option<(f32, f32)> {
+        match self {
+            Self::ExpM1 => Some((-17.0, -6.0)),
+            Self::Exp2M1 => Some((-24.5, -8.5)),
+            Self::Exp10M1 => Some((-7.4, -2.6)),
+            _ => None,
         }
     }
 
@@ -118,12 +173,13 @@ impl Func {
     /// overflow) and, at the other end, the smallest normal value, the
     /// smallest subnormal value and half of it (below which the results are
     /// rounded to zero), or the midpoint between -1 and the next value (below
-    /// which the results of `exp_m1` are rounded to -1).
+    /// which the results of `b^x - 1` are rounded to -1).
     fn limit_results(self) -> Vec<f64> {
         let overflow = exp2i(128) - exp2i(103);
-        match self {
-            Self::ExpM1 => vec![overflow, exp2i(-25) - 1.0],
-            _ => vec![overflow, exp2i(-126), exp2i(-149), exp2i(-150)],
+        if self.is_m1() {
+            vec![overflow, exp2i(-25) - 1.0]
+        } else {
+            vec![overflow, exp2i(-126), exp2i(-149), exp2i(-150)]
         }
     }
 }
@@ -136,21 +192,21 @@ fn test_with(func: Func, mut f: impl FnMut(f32)) {
     }
 
     // Test a set of subnormal values, whose results are trivial (one, or `x`
-    // for `exp_m1`)
+    // for `exp_m1`) or `x * ln(b)` rounded (for `exp2_m1` and `exp10_m1`)
     for x in values::subnormals(10_000) {
         f(x);
         f(-x);
     }
 
     // Test a set of normal values at each binade, most of them have trivial
-    // results (zero, one, infinity, `x` or -1)
+    // results (zero, one, infinity, `x` or -1) or `x * ln(b)` rounded
     for x in values::binades(-126..=127, 1000) {
         f(x);
         f(-x);
     }
 
     // Test more values with small magnitudes, whose results are close to one
-    // (or to `x` for `exp_m1`)
+    // (or to `x * ln(b)` for `b^x - 1`)
     for x in values::binades(-30..=-1, 200_000) {
         f(x);
         f(-x);
@@ -225,13 +281,17 @@ fn reduction_boundaries(func: Func) -> impl Iterator<Item = f32> {
 /// Where the function is flat (its result changes much less than an ULP
 /// between consecutive arguments), the arguments closest to the inverse of a
 /// midpoint have such results. This happens with small arguments (results
-/// close to one) and, for `exp_m1`, with large negative arguments (results
+/// close to one) and, for `b^x - 1`, with large negative arguments (results
 /// close to -1).
 ///
 /// With small arguments, `exp_m1(x) = x + g(x)` is not flat, but `g` is. When
 /// the result is in the same binade as `x`, the arguments closest to the
 /// inverse of `g` at an odd multiple of half an ULP of `x` have results close
 /// to a midpoint.
+///
+/// `exp2_m1` and `exp10_m1` are close to `x * ln(b)` with small arguments, so
+/// neither of those methods works with them. The values tested at each binade
+/// are dense enough to include results very close to a midpoint.
 fn near_midpoints(func: Func) -> Vec<f32> {
     let small = values::binades(-27..=-2, 5000).flat_map(|x| [x, -x]);
 
@@ -247,13 +307,8 @@ fn near_midpoints(func: Func) -> Vec<f32> {
                     xs.extend(values::around(x, 1));
                 }
             }
-            for x0 in values::interval(-17.0, -6.0, 100_000) {
-                xs.extend(values::around(
-                    values::midpoint_inverse(x0, eval, inverse),
-                    1,
-                ));
-            }
         }
+        Func::Exp2M1 | Func::Exp10M1 => {}
         _ => {
             for x0 in small {
                 xs.extend(values::around(
@@ -261,6 +316,14 @@ fn near_midpoints(func: Func) -> Vec<f32> {
                     1,
                 ));
             }
+        }
+    }
+    if let Some((lo, hi)) = func.flat_range() {
+        for x0 in values::interval(lo, hi, 100_000) {
+            xs.extend(values::around(
+                values::midpoint_inverse(x0, eval, inverse),
+                1,
+            ));
         }
     }
 

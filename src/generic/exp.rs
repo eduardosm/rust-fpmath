@@ -7,7 +7,11 @@ pub(crate) trait Exp: Float {
 
     fn exp2_finite(x: Self) -> Self;
 
+    fn exp2_m1_finite(x: Self) -> Self;
+
     fn exp10_finite(x: Self) -> Self;
+
+    fn exp10_m1_finite(x: Self) -> Self;
 }
 
 pub(crate) fn exp<F: Exp>(x: F) -> F {
@@ -82,6 +86,30 @@ pub(crate) fn exp2<F: Exp>(x: F) -> F {
     }
 }
 
+pub(crate) fn exp2_m1<F: Exp>(x: F) -> F {
+    let e = x.raw_exp();
+    if e == F::RawExp::ZERO && x.raw_mant() == F::Raw::ZERO {
+        // exp2_m1(±0) = ±0
+        x
+    } else if e == F::MAX_RAW_EXP {
+        if x.raw_mant() == F::Raw::ZERO {
+            if x.is_sign_negative() {
+                // exp2_m1(-inf) = -1
+                -F::ONE
+            } else {
+                // exp2_m1(+inf) = +inf
+                F::INFINITY
+            }
+        } else {
+            // propagate NaN
+            x
+        }
+    } else {
+        // also handles subnormals, exp2_m1(x) ~= x * ln(2)
+        F::exp2_m1_finite(x)
+    }
+}
+
 pub(crate) fn exp10<F: Exp>(x: F) -> F {
     let e = x.raw_exp();
     if e == F::RawExp::ZERO {
@@ -103,6 +131,30 @@ pub(crate) fn exp10<F: Exp>(x: F) -> F {
         }
     } else {
         F::exp10_finite(x)
+    }
+}
+
+pub(crate) fn exp10_m1<F: Exp>(x: F) -> F {
+    let e = x.raw_exp();
+    if e == F::RawExp::ZERO && x.raw_mant() == F::Raw::ZERO {
+        // exp10_m1(±0) = ±0
+        x
+    } else if e == F::MAX_RAW_EXP {
+        if x.raw_mant() == F::Raw::ZERO {
+            if x.is_sign_negative() {
+                // exp10_m1(-inf) = -1
+                -F::ONE
+            } else {
+                // exp10_m1(+inf) = +inf
+                F::INFINITY
+            }
+        } else {
+            // propagate NaN
+            x
+        }
+    } else {
+        // also handles subnormals, exp10_m1(x) ~= x * ln(10)
+        F::exp10_m1_finite(x)
     }
 }
 
@@ -150,6 +202,26 @@ mod tests {
         assert_total_eq!(exp2(f("-4")), f("0.0625"));
     }
 
+    fn test_exp2_m1<F: Float + FloatMath>() {
+        use crate::exp2_m1;
+
+        let f = F::parse;
+
+        assert_is_nan!(exp2_m1(F::NAN));
+        assert_total_eq!(exp2_m1(F::INFINITY), F::INFINITY);
+        assert_total_eq!(exp2_m1(F::NEG_INFINITY), -F::ONE);
+        assert_total_eq!(exp2_m1(F::ZERO), F::ZERO);
+        assert_total_eq!(exp2_m1(-F::ZERO), -F::ZERO);
+        assert_total_eq!(exp2_m1(F::ONE), F::ONE);
+        assert_total_eq!(exp2_m1(F::TWO), f("3"));
+        assert_total_eq!(exp2_m1(f("16")), f("65535"));
+        assert_total_eq!(exp2_m1(-F::ONE), -F::HALF);
+        assert_total_eq!(exp2_m1(-F::TWO), f("-0.75"));
+        assert_total_eq!(exp2_m1(f("-3")), f("-0.875"));
+        assert_total_eq!(exp2_m1(F::LARGEST), F::INFINITY);
+        assert_total_eq!(exp2_m1(-F::LARGEST), -F::ONE);
+    }
+
     fn test_exp10<F: Float + FloatMath>() {
         use crate::exp10;
 
@@ -164,12 +236,31 @@ mod tests {
         assert_total_eq!(exp10(F::TWO), f("100"));
     }
 
+    fn test_exp10_m1<F: Float + FloatMath>() {
+        use crate::exp10_m1;
+
+        let f = F::parse;
+
+        assert_is_nan!(exp10_m1(F::NAN));
+        assert_total_eq!(exp10_m1(F::INFINITY), F::INFINITY);
+        assert_total_eq!(exp10_m1(F::NEG_INFINITY), -F::ONE);
+        assert_total_eq!(exp10_m1(F::ZERO), F::ZERO);
+        assert_total_eq!(exp10_m1(-F::ZERO), -F::ZERO);
+        assert_total_eq!(exp10_m1(F::ONE), f("9"));
+        assert_total_eq!(exp10_m1(F::TWO), f("99"));
+        assert_total_eq!(exp10_m1(f("6")), f("999999"));
+        assert_total_eq!(exp10_m1(F::LARGEST), F::INFINITY);
+        assert_total_eq!(exp10_m1(-F::LARGEST), -F::ONE);
+    }
+
     #[test]
     fn test_f32() {
         test_exp::<f32>();
         test_exp_m1::<f32>();
         test_exp2::<f32>();
+        test_exp2_m1::<f32>();
         test_exp10::<f32>();
+        test_exp10_m1::<f32>();
     }
 
     #[test]
@@ -177,6 +268,8 @@ mod tests {
         test_exp::<f64>();
         test_exp_m1::<f64>();
         test_exp2::<f64>();
+        test_exp2_m1::<f64>();
         test_exp10::<f64>();
+        test_exp10_m1::<f64>();
     }
 }

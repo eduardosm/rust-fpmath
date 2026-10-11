@@ -15,8 +15,10 @@
 //!
 //! * Sign operations ([`abs`], [`copysign`]).
 //! * Rounding ([`round`], [`trunc`], [`ceil`], [`floor`]).
-//! * Exponential ([`exp`], [`exp_m1`], [`exp2`], [`exp10`]).
-//! * Logarithmic ([`ln`], [`ln_1p`], [`log2`], [`log10`]).
+//! * Exponential ([`exp`], [`exp_m1`], [`exp2`], [`exp2_m1`], [`exp10`],
+//!   [`exp10_m1`]).
+//! * Logarithmic ([`ln`], [`ln_1p`], [`log2`], [`log2_1p`], [`log10`],
+//!   [`log10_1p`]).
 //! * Power ([`pow`], [`powi`]).
 //! * Trigonometric
 //!   - Radians ([`sin`], [`cos`], [`sin_cos`], [`tan`]).
@@ -127,8 +129,14 @@ pub trait FloatMath: sealed::SealedMath + Sized {
     /// See the [`exp2`] function.
     fn exp2(x: Self) -> Self;
 
+    /// See the [`exp2_m1`] function.
+    fn exp2_m1(x: Self) -> Self;
+
     /// See the [`exp10`] function.
     fn exp10(x: Self) -> Self;
+
+    /// See the [`exp10_m1`] function.
+    fn exp10_m1(x: Self) -> Self;
 
     /// See the [`ln`] function.
     fn ln(x: Self) -> Self;
@@ -139,8 +147,14 @@ pub trait FloatMath: sealed::SealedMath + Sized {
     /// See the [`log2`] function.
     fn log2(x: Self) -> Self;
 
+    /// See the [`log2_1p`] function.
+    fn log2_1p(x: Self) -> Self;
+
     /// See the [`log10`] function.
     fn log10(x: Self) -> Self;
+
+    /// See the [`log10_1p`] function.
+    fn log10_1p(x: Self) -> Self;
 
     /// See the [`pow`] function.
     fn pow(x: Self, y: Self) -> Self;
@@ -361,6 +375,17 @@ pub fn exp2<F: FloatMath>(x: F) -> F {
     F::exp2(x)
 }
 
+/// Calculates `exp2(x) - 1.0`
+///
+/// Special cases:
+/// * Returns negative zero if `x` is negative zero
+/// * Returns positive infinity if `x` is positive infinity
+/// * Returns minus one if `x` is negative infinity
+/// * Returns NaN if `x` is NaN
+pub fn exp2_m1<F: FloatMath>(x: F) -> F {
+    F::exp2_m1(x)
+}
+
 /// Calculates 10 raised to `x`
 ///
 /// Special cases:
@@ -369,6 +394,17 @@ pub fn exp2<F: FloatMath>(x: F) -> F {
 /// * Returns NaN if `x` is NaN
 pub fn exp10<F: FloatMath>(x: F) -> F {
     F::exp10(x)
+}
+
+/// Calculates `exp10(x) - 1.0`
+///
+/// Special cases:
+/// * Returns negative zero if `x` is negative zero
+/// * Returns positive infinity if `x` is positive infinity
+/// * Returns minus one if `x` is negative infinity
+/// * Returns NaN if `x` is NaN
+pub fn exp10_m1<F: FloatMath>(x: F) -> F {
+    F::exp10_m1(x)
 }
 
 /// Calculates the natural logarithm of `x`
@@ -403,6 +439,18 @@ pub fn log2<F: FloatMath>(x: F) -> F {
     F::log2(x)
 }
 
+/// Calculates the base-2 logarithm of `x + 1`
+///
+/// Special cases:
+/// * Returns negative zero if `x` is negative zero
+/// * Returns negative infinity if `x` is minus one
+/// * Returns positive infinity if `x` is positive infinity
+/// * Returns NaN if `x` is NaN or less than minus one (including negative
+///   infinity)
+pub fn log2_1p<F: FloatMath>(x: F) -> F {
+    F::log2_1p(x)
+}
+
 /// Calculates the base-10 logarithm of `x`
 ///
 /// Special cases:
@@ -411,6 +459,18 @@ pub fn log2<F: FloatMath>(x: F) -> F {
 /// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
 pub fn log10<F: FloatMath>(x: F) -> F {
     F::log10(x)
+}
+
+/// Calculates the base-10 logarithm of `x + 1`
+///
+/// Special cases:
+/// * Returns negative zero if `x` is negative zero
+/// * Returns negative infinity if `x` is minus one
+/// * Returns positive infinity if `x` is positive infinity
+/// * Returns NaN if `x` is NaN or less than minus one (including negative
+///   infinity)
+pub fn log10_1p<F: FloatMath>(x: F) -> F {
+    F::log10_1p(x)
 }
 
 /// Calculates `x` raised to `y`

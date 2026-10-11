@@ -9,6 +9,10 @@
 - Some math functions have been renamed (`log` to `ln`, `log_1p` to `ln_1p`,
   `tgamma` to `gamma`, `lgamma` to `ln_gamma`)
 
+### Added
+
+- `exp2_m1`, `exp10_m1`, `log2_1p` and `log10_1p` functions.
+
 ### Fixed
 
 - Fixed cases of errors being larger than documented maximum.

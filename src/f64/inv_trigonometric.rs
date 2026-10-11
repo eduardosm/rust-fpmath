@@ -36,7 +36,7 @@
 //! double-word) by `180 / π` or `1 / π`.
 
 use super::f64x2::{F64x2, Split};
-use super::{round_i32, sqrt_parts, square_parts};
+use super::{mul_tiny, round_i32, sqrt_parts, square_parts};
 use crate::traits::Float as _;
 
 // GENERATE: consts F64x2 FRAC_PI_2 PI FRAC_180_PI FRAC_1_PI
@@ -236,18 +236,6 @@ fn mul_to_f64(hi: f64, lo: f64, k: F64x2) -> f64 {
     // so the optimizer can fold `Split::new(k.hi())`.
     let (p_hi, p_lo) = Split::new(k.hi()).mul(hi, lo);
     p_hi + (p_lo + hi * k.lo())
-}
-
-/// Returns `x * k` rounded to `f64`, for `|x| < 2^-960`, where
-/// `asin(x) ~= atan(x) ~= x`.
-#[inline]
-fn mul_tiny(x: f64, k: F64x2) -> f64 {
-    // The product is scaled to avoid subnormals in `F64x2`, which break its
-    // accuracy, and `copysign` recovers the sign of zero, which `F64x2` can
-    // lose.
-    (F64x2::new1(x * f64::exp2i_fast(106)) * k)
-        .scalbn_to_f64(-106)
-        .copysign(x)
 }
 
 /// Returns `(hi, lo)` such that `hi + lo ~= asin(x)`, for `|x| < 1`.
