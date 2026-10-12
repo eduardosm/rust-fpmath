@@ -701,3 +701,217 @@ pub(super) fn gen_gamma_stirling_poly(args: &[&str]) -> Result<String, String> {
 
     Ok(out)
 }
+
+/// Generates an approximation of `erf(x)` for `0 <= x <= x_max`, as
+///
+/// `erf(x) ~= x * (K0 + K1 * x^2 + ... + Kn * x^(2 * n))`
+///
+/// minimizing the relative error.
+///
+/// Arguments: `fkinds num_coeffs x_max`
+pub(super) fn gen_erf_poly(args: &[&str]) -> Result<String, String> {
+    let (fkinds, num_coeffs, x_max): (CoeffKinds, i32, f64) = arg_utils::parse_3_args(args)?;
+
+    let mut out = String::new();
+
+    // With u = x^2, fit erf(sqrt(u)) / sqrt(u), minimizing its relative error
+    // (which is the one of `erf(x)`).
+    let func = "begin s = sqrt(x); SpecialFunctions.erf(s) / s end";
+    let wfunc = "1 / fx";
+    let range = (1e-40, x_max * x_max);
+
+    julia::run_and_render_remez(
+        &fkinds,
+        func,
+        wfunc,
+        range,
+        num_coeffs - 1,
+        0,
+        "K",
+        &mut out,
+    );
+
+    Ok(out)
+}
+
+/// Julia code that calculates `erfcx(y)`, where `y` is a variable with a
+/// value of at least `JULIA_ERFCX_CF_MIN`, with the continued fraction
+///
+/// `erfcx(y) = 1 / (sqrt(π) * (y + (1/2) / (y + (2/2) / (y + (3/2) / ...))))`
+///
+/// which converges quickly with large arguments (with 500 terms, its
+/// relative error is less than 2^-339 when `y >= 4`).
+const JULIA_ERFCX_CF: &str = "t = y; \
+    for k in 500:-1:1; t = y + k / (2 * t); end; \
+    1 / (sqrt(BigFloat(pi)) * t)";
+
+/// Smallest argument for `JULIA_ERFCX_CF` (`SpecialFunctions.erfcx` is used
+/// below it, which is slow with large arguments).
+const JULIA_ERFCX_CF_MIN: f64 = 4.0;
+
+/// Generates a table of approximations of the scaled complementary error
+/// function, `erfcx(x) = exp(x^2) * erfc(x)`, for `x_min <= x < x_max`, as a
+/// static array of `ErfcxPoly`.
+///
+/// Each binade is split in `2^bits` intervals of the same length. For each
+/// interval `[a, b)` from `x_min` to `x_max`, with `c = (a + b) / 2`,
+///
+/// `erfcx(c + d) ~= K0 + K1 * d + ... + Kn * d^n`
+///
+/// is fitted for `|d| <= (b - a) / 2`, minimizing the relative error, with
+/// the first `num_hi` coefficients as `F64x2` (field `k_hi`) and the next
+/// `num_lo` ones as `f64` (field `k_lo`).
+///
+/// Arguments: `bits x_min x_max num_hi num_lo`, where `x_min` and `x_max`
+/// must be limits of intervals.
+pub(super) fn gen_erfcx_table(args: &[&str]) -> Result<String, String> {
+    let (bits, x_min, x_max, num_hi, num_lo): (u32, f64, f64, usize, usize) =
+        arg_utils::parse_5_args(args)?;
+    if bits > 8 {
+        return Err(format!("invalid number of bits: {bits}"));
+    }
+    if !(x_min > 0.0 && x_min < x_max && x_max.is_finite()) {
+        return Err(format!("invalid range: [{x_min}, {x_max})"));
+    }
+    if num_hi == 0 || num_lo == 0 {
+        return Err("expected at least one coefficient of each kind".into());
+    }
+
+    // The intervals of the binade of `x` have length `2^(e - bits)`, where
+    // `x = m * 2^e` with `1 <= m < 2`.
+    let width = |x: f64| {
+        let e = rug::Float::with_val(53, x).get_exp().unwrap() - 1;
+        2.0f64.powi(e - bits as i32)
+    };
+    let is_limit = |x: f64| (x / width(x)).fract() == 0.0;
+    if !is_limit(x_min) || !is_limit(x_max) {
+        return Err(format!(
+            "[{x_min}, {x_max}) is not a whole number of intervals"
+        ));
+    }
+
+    let mut intervals = Vec::new();
+    let mut a = x_min;
+    while a < x_max {
+        let b = a + width(a);
+        intervals.push((a, b));
+        a = b;
+    }
+
+    let mut out = String::new();
+    let num_per_binade = 1u32 << bits;
+    let poly_deg = num_hi + num_lo - 1;
+
+    writeln!(
+        out,
+        "// ERFCX_TBL[i] has the coefficients `K0, ..., K{poly_deg}` such that"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "// erfcx(c + d) ~= K0 + K1 * d + ... + K{poly_deg} * d^{poly_deg}, for |d| <= (b - a) / 2,"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "// where [a, b) is the i-th interval from {x_min} (each binade is split in"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "// {num_per_binade} intervals of the same length) and c = (a + b) / 2"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "static ERFCX_TBL: [ErfcxPoly; {}] = [",
+        intervals.len()
+    )
+    .unwrap();
+
+    let render_value = |fkind: FloatKind, value: &rug::Float, out: &mut String| {
+        render_const_value(fkind, value, out);
+        out.push_str(", // ");
+        render_const_dec_value(fkind, value, out);
+        out.push('\n');
+    };
+
+    for (a, b) in intervals {
+        eprintln!("interval [{a}, {b})");
+
+        let c = (a + b) / 2.0;
+        let func = if a >= JULIA_ERFCX_CF_MIN {
+            format!("begin y = {c} + x; {JULIA_ERFCX_CF} end")
+        } else {
+            format!("SpecialFunctions.erfcx({c} + x)")
+        };
+        let wfunc = "1 / fx";
+        let h = (b - a) / 2.0;
+        let coeffs = julia::run_remez(&func, wfunc, (-h, h), poly_deg as i32);
+
+        writeln!(out, "// [{a}, {b})").unwrap();
+        writeln!(out, "ErfcxPoly {{").unwrap();
+        writeln!(out, "k_hi: [").unwrap();
+        for coeff in coeffs[..num_hi].iter() {
+            render_value(FloatKind::F64x2, coeff, &mut out);
+        }
+        writeln!(out, "],").unwrap();
+        writeln!(out, "k_lo: [").unwrap();
+        for coeff in coeffs[num_hi..].iter() {
+            render_value(FloatKind::F64, coeff, &mut out);
+        }
+        writeln!(out, "],").unwrap();
+        writeln!(out, "}},").unwrap();
+    }
+    writeln!(out, "];").unwrap();
+
+    Ok(out)
+}
+
+/// Generates the coefficients of the asymptotic series of the scaled
+/// complementary error function, for `x >= x0`:
+///
+/// `erfcx(x) ~= (K0 + K1 / x^2 + K2 / x^4 + ... + Kn / x^(2 * n)) / x`
+///
+/// where `K0 = 1 / sqrt(π)` (as in the series) and `K1, K2, ...` are fitted
+/// to minimize the relative error.
+///
+/// Arguments: `fkinds num_coeffs x0`, where `num_coeffs` includes `K0`.
+pub(super) fn gen_erfcx_asympt_poly(args: &[&str]) -> Result<String, String> {
+    let (fkinds, num_coeffs, x0): (CoeffKinds, i32, f64) = arg_utils::parse_3_args(args)?;
+    if num_coeffs < 2 {
+        return Err("expected at least 2 coefficients".into());
+    }
+    if !(x0 >= JULIA_ERFCX_CF_MIN && x0.is_finite()) {
+        return Err(format!("invalid x0: {x0}"));
+    }
+
+    let mut out = String::new();
+
+    // With s = 1 / x^2, fit
+    // R(s) = (x * erfcx(x) - K0) / s
+    // with a polynomial in `s`, minimizing the error of `s * R(s)` relative to
+    // `x * erfcx(x) = K0 + s * R(s)`.
+    let func = format!(
+        "begin \
+        y = 1 / sqrt(x); \
+        e = begin {JULIA_ERFCX_CF} end; \
+        (y * e - 1 / sqrt(BigFloat(pi))) / x \
+        end"
+    );
+    let wfunc = "x / (1 / sqrt(BigFloat(pi)) + x * fx)";
+    let range = (1e-40, 1.0 / (x0 * x0));
+
+    let coeffs = julia::run_remez(&func, wfunc, range, num_coeffs - 2);
+
+    let prec = 1024;
+    let k0 = rug::Float::with_val(prec, rug::float::Constant::Pi)
+        .sqrt()
+        .recip();
+    render_const(fkinds.get(0), "K0", k0, &mut out);
+    for (j, coeff) in coeffs.into_iter().enumerate() {
+        render_const(fkinds.get(j + 1), &format!("K{}", j + 1), coeff, &mut out);
+    }
+
+    Ok(out)
+}

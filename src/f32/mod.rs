@@ -1,4 +1,5 @@
 mod cbrt;
+mod erf;
 mod exp;
 mod gamma;
 mod hyperbolic;
@@ -330,6 +331,18 @@ impl crate::FloatMath for f32 {
 
     fn ln_gamma(x: Self) -> (Self, i8) {
         crate::generic::ln_gamma(x)
+    }
+
+    fn erf(x: Self) -> Self {
+        crate::generic::erf(x)
+    }
+
+    fn erfc(x: Self) -> Self {
+        crate::generic::erfc(x)
+    }
+
+    fn erfcx(x: Self) -> Self {
+        crate::generic::erfcx(x)
     }
 }
 

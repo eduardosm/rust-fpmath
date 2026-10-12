@@ -1,4 +1,5 @@
 mod cbrt;
+mod erf;
 mod exp;
 mod frexp;
 mod gamma;

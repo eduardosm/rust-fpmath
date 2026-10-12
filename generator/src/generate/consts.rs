@@ -96,6 +96,7 @@ fn named_const(name: &str, prec: u32) -> Result<rug::Float, String> {
         "FRAC_1_PI" => rug::Float::with_val(prec, rug::float::Constant::Pi).recip(),
         "FRAC_3PI_4" => (rug::Float::with_val(prec, rug::float::Constant::Pi) * 3) / 4,
         "FRAC_2_PI" => 2 / rug::Float::with_val(prec, rug::float::Constant::Pi),
+        "FRAC_2_SQRT_PI" => 2 / rug::Float::with_val(prec, rug::float::Constant::Pi).sqrt(),
         "FRAC_PI_180" => rug::Float::with_val(prec, rug::float::Constant::Pi) / 180,
         "FRAC_180_PI" => 180 / rug::Float::with_val(prec, rug::float::Constant::Pi),
         "LN_PI" => rug::Float::with_val(prec, rug::float::Constant::Pi).ln(),

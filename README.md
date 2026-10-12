@@ -38,6 +38,8 @@ fpmath is a pure-Rust floating point library that implements math functions for
 * Hypotenuse
 * Power (floating point and integer exponent)
 * Gamma and ln-gamma
+* Error function, complementary error function and scaled complementary
+  error function
 
 ## Development
 

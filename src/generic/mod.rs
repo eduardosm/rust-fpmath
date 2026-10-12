@@ -1,6 +1,7 @@
 use crate::traits::{Float, Int as _};
 
 mod cbrt;
+mod erf;
 mod exp;
 mod frexp;
 mod gamma;
@@ -16,6 +17,7 @@ mod sqrt;
 mod trigonometric;
 
 pub(crate) use cbrt::{Cbrt, cbrt};
+pub(crate) use erf::{Erf, erf, erfc, erfcx};
 pub(crate) use exp::{Exp, exp, exp_m1, exp2, exp2_m1, exp10, exp10_m1};
 pub(crate) use frexp::frexp;
 pub(crate) use gamma::{Gamma, gamma, ln_gamma};

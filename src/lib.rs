@@ -31,6 +31,7 @@
 //! * Hyperbolic ([`sinh`], [`cosh`], [`sinh_cosh`], [`tanh`]).
 //! * Inverse hyperbolic ([`asinh`], [`acosh`], [`atanh`]).
 //! * Gamma ([`gamma`], [`ln_gamma`]).
+//! * Error function ([`erf`], [`erfc`], [`erfcx`]).
 //!
 //! All functions are implemted for the native floating point types [`prim@f32`]
 //! and [`prim@f64`].
@@ -45,7 +46,6 @@
 //! is always correctly rounded (its error is less than 0.5 ULP).
 
 // TODO:
-// * Error function and complementary (erf, erfc)
 // * Bessel functions (j0, y0, j1, y1, jn, yn)
 
 // Uncomment to use `dbg!`
@@ -260,6 +260,15 @@ pub trait FloatMath: sealed::SealedMath + Sized {
 
     /// See the [`ln_gamma`] function.
     fn ln_gamma(x: Self) -> (Self, i8);
+
+    /// See the [`erf`] function.
+    fn erf(x: Self) -> Self;
+
+    /// See the [`erfc`] function.
+    fn erfc(x: Self) -> Self;
+
+    /// See the [`erfcx`] function.
+    fn erfcx(x: Self) -> Self;
 }
 
 /// Calculates the absolute value of `x`
@@ -927,4 +936,42 @@ pub fn gamma<F: FloatMath>(x: F) -> F {
 /// negative infinity.
 pub fn ln_gamma<F: FloatMath>(x: F) -> (F, i8) {
     F::ln_gamma(x)
+}
+
+/// Calculates the error function of `x`
+///
+/// Special cases:
+/// * Returns negative zero if `x` is negative zero
+/// * Returns one if `x` is positive infinity
+/// * Returns minus one if `x` is negative infinity
+/// * Returns NaN if `x` is NaN
+pub fn erf<F: FloatMath>(x: F) -> F {
+    F::erf(x)
+}
+
+/// Calculates the complementary error function of `x`
+///
+/// The complementary error function of `x` is `1 - erf(x)`, which this
+/// function calculates without losing accuracy when `erf(x)` is close to one.
+///
+/// Special cases:
+/// * Returns zero if `x` is positive infinity
+/// * Returns two if `x` is negative infinity
+/// * Returns NaN if `x` is NaN
+pub fn erfc<F: FloatMath>(x: F) -> F {
+    F::erfc(x)
+}
+
+/// Calculates the scaled complementary error function of `x`
+///
+/// The scaled complementary error function of `x` is `exp(x^2) * erfc(x)`,
+/// which this function calculates without the underflow of `erfc(x)` and the
+/// overflow of `exp(x^2)` when `x` is large.
+///
+/// Special cases:
+/// * Returns zero if `x` is positive infinity
+/// * Returns positive infinity if `x` is negative infinity
+/// * Returns NaN if `x` is NaN
+pub fn erfcx<F: FloatMath>(x: F) -> F {
+    F::erfcx(x)
 }

@@ -1,4 +1,5 @@
 mod cbrt;
+mod erf;
 mod exp;
 mod f64x2;
 mod gamma;
@@ -11,6 +12,7 @@ mod pow;
 mod sqrt;
 mod trigonometric;
 
+pub(crate) use erf::erfcx_short;
 pub(crate) use exp::{EXP2_TBL_BITS, exp2_tbl};
 pub(crate) use gamma::ln_gamma_near_zero;
 pub(crate) use inv_hyperbolic::{acosh_large_corr, asinh_large_corr};
@@ -341,6 +343,18 @@ impl crate::FloatMath for f64 {
     fn ln_gamma(x: Self) -> (Self, i8) {
         crate::generic::ln_gamma(x)
     }
+
+    fn erf(x: Self) -> Self {
+        crate::generic::erf(x)
+    }
+
+    fn erfc(x: Self) -> Self {
+        crate::generic::erfc(x)
+    }
+
+    fn erfcx(x: Self) -> Self {
+        crate::generic::erfcx(x)
+    }
 }
 
 /// Returns approximations of `(sqrt(x), 1 / sqrt(x))`, with relative errors
@@ -384,6 +398,32 @@ fn square_parts(x: f64) -> (f64, f64) {
     let p = (x * x).purify();
     let e = ((a * a - p) + 2.0 * a * b) + b * b;
     (p, e)
+}
+
+/// Returns `n - q * d`, with an error less than 2^-77 * |n|, where
+/// `q ~= n / d` with a relative error of at most 2^-50.
+#[inline]
+fn div_residual(n: f64, d: f64, q: f64) -> f64 {
+    // q = q1 + q2 and d = d1 + d2, where `q1` and `d1` have 26 bits, so the
+    // products `q1 * d1`, `q1 * d2` and `q2 * d1` are exact, and so is
+    // `n - q1 * d1` (by Sterbenz lemma). Only `q2 * d2`, which is less than
+    // 2^-50 * |n|, and the subtractions of the last three products, which
+    // are less than 2^-24 * |n|, can be rounded.
+    let q1 = q.split_hi();
+    let q2 = q - q1;
+    let d1 = d.split_hi();
+    let d2 = d - d1;
+    (((n - q1 * d1) - q1 * d2) - q2 * d1) - q2 * d2
+}
+
+/// Returns `(hi, lo)` such that `hi + lo ~= 1 / x`, with a relative error
+/// less than 2^-77, where `hi` is `1 / x` rounded, for
+/// `2^-512 <= |x| <= 2^512`.
+#[inline]
+fn recip_parts(x: f64) -> (f64, f64) {
+    // 1 / x = t + (1 - t * x) / x ~= t + (1 - t * x) * t
+    let t = (1.0 / x).purify();
+    (t, div_residual(1.0, x, t) * t)
 }
 
 /// Returns `(hi, lo)` such that `hi + lo ~= sqrt(w_hi + w_lo)`, with a

@@ -191,9 +191,10 @@ pub(super) fn midpoint_scan(x: f64, f: impl Fn(&rug::Float) -> rug::Float, n: u3
     let eval = |o: i64| f(&rug::Float::with_val(EXT_PREC, super::from_ordinal(o)));
     let (ym, y0, yp) = (eval(ord - 1), eval(ord), eval(ord + 1));
 
-    // In ULPs of `y0`: its position relative to the midpoints, and the first
-    // and second differences
-    let e = super::exponent(y0.to_f64()) - 52;
+    // In ULPs of `y0` (all the subnormals have the ULP of the smallest normal
+    // values): its position relative to the midpoints, and the first and
+    // second differences
+    let e = super::exponent(y0.to_f64()).max(-1022) - 52;
     let p0: rug::Float = (rug::Float::with_val(EXT_PREC, &y0) >> e) - 0.5f64;
     let p0 = (p0.clone() - p0.floor()).to_f64();
     let d1 = (rug::Float::with_val(EXT_PREC, &yp - &ym) >> (e + 1)).to_f64();

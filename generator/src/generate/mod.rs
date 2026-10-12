@@ -44,6 +44,9 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "ln_gamma_poly" => approx::gen_ln_gamma_poly(&args),
         "ln_gamma_root" => approx::gen_ln_gamma_root(&args),
         "gamma_stirling_poly" => approx::gen_gamma_stirling_poly(&args),
+        "erf_poly" => approx::gen_erf_poly(&args),
+        "erfcx_table" => approx::gen_erfcx_table(&args),
+        "erfcx_asympt_poly" => approx::gen_erfcx_asympt_poly(&args),
 
         _ => {
             eprintln!("Invalid generate parameter: {cmd:?}");
