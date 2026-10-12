@@ -557,6 +557,26 @@ impl Reduced {
         (d.hi(), d.lo() + lo)
     }
 
+    /// Returns `(hi, lo, edelta)` such that
+    /// `(hi + lo) * 2^edelta ~= 2^(m / N) * exp(r)`, for any `m`, where
+    /// `hi + lo` is calculated by `eval`.
+    ///
+    /// `edelta` is zero when `k = m >> EXP2_TBL_BITS` is in
+    /// `[MIN_SCALE_K, MAX_SCALE_K]`, so `hi + lo > 0.99 * 2^MIN_SCALE_K`.
+    /// Otherwise, `edelta = k` and `hi + lo` is `2^(j / N) * exp(r)`, in
+    /// `[0.99, 2)`.
+    #[inline]
+    pub(super) fn eval_scaled(&self, p: f64) -> (f64, f64, i32) {
+        let k = self.m >> EXP2_TBL_BITS;
+        if (MIN_SCALE_K..=MAX_SCALE_K).contains(&k) {
+            let (hi, lo) = self.eval(p);
+            (hi, lo, 0)
+        } else {
+            let (hi, lo) = self.mul_exp2(-k).eval(p);
+            (hi, lo, k)
+        }
+    }
+
     /// Returns `2^(m / N) * exp(r)` rounded to `f64`, where `p` is
     /// `exp_poly(r)` or a more accurate approximation.
     #[inline]

@@ -62,8 +62,8 @@
 use super::exp::{Reduced as ExpReduced, exp_poly};
 use super::f64x2::{F64x2, Split};
 use super::log::{ln_accurate_parts, ln_accurate_sum_parts, ln_parts};
-use super::round_i32;
 use super::trigonometric::sinpi_f64x2;
+use super::{div_residual, round_i32};
 use crate::traits::Float as _;
 
 // GENERATE: consts F64x2 LN_PI
@@ -502,17 +502,8 @@ fn stirling(y: f64, c: f64, l_hi: f64, l_lo: f64) -> (f64, f64) {
     let q3 = (t * s) * r;
 
     // K1 / y = q + (K1 - q * y) / y, where `q ~= K1 / y`
-    //
-    // q = q1 + q2 and y = y1 + y2, where `q1` and `y1` have 26 bits, so
-    // `K1 - q * y` is calculated with the exact products `q1 * y1`, `q1 * y2`
-    // and `q2 * y1` (`K1 - q1 * y1` is exact by Sterbenz lemma) and the
-    // rounded `q2 * y2`, which is less than 2^-50 * K1
     let q = (K1.hi() * t).purify();
-    let q1 = q.split_hi();
-    let q2 = q - q1;
-    let y1 = y.split_hi();
-    let y2 = y - y1;
-    let e = (((K1.hi() - q1 * y1) - q1 * y2) - q2 * y1) - q2 * y2;
+    let e = div_residual(K1.hi(), y, q);
     let q_lo = (e + K1.lo()) * t + q3;
 
     // yc1 * a >= 1.2 * y, and (y + c) * ln(y) - y is greater than K0 ~= 0.92

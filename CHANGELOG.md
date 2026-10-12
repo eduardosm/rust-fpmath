@@ -12,6 +12,8 @@
 ### Added
 
 - `exp2_m1`, `exp10_m1`, `log2_1p` and `log10_1p` functions.
+- Error function (`erf`), complementary error function (`erfc`) and scaled
+  complementary error function (`erfcx`).
 
 ### Fixed
 
