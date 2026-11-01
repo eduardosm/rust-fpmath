@@ -1,5 +1,6 @@
 use crate::traits::{Float, Int as _};
 
+mod bessel;
 mod cbrt;
 mod erf;
 mod exp;
@@ -16,6 +17,7 @@ mod scalbn;
 mod sqrt;
 mod trigonometric;
 
+pub(crate) use bessel::{Bessel, j0, j1, jn, y0, y1, yn};
 pub(crate) use cbrt::{Cbrt, cbrt};
 pub(crate) use erf::{Erf, erf, erfc, erfcx};
 pub(crate) use exp::{Exp, exp, exp_m1, exp2, exp2_m1, exp10, exp10_m1};

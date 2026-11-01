@@ -32,6 +32,9 @@
 //! * Inverse hyperbolic ([`asinh`], [`acosh`], [`atanh`]).
 //! * Gamma ([`gamma`], [`ln_gamma`]).
 //! * Error function ([`erf`], [`erfc`], [`erfcx`]).
+//! * Bessel functions
+//!   - First kind ([`j0`], [`j1`], [`jn`]).
+//!   - Second kind ([`y0`], [`y1`], [`yn`]).
 //!
 //! All functions are implemted for the native floating point types [`prim@f32`]
 //! and [`prim@f64`].
@@ -41,12 +44,17 @@
 //!
 //! # Accuracy
 //!
-//! The results of all functions have an error of less than 0.5 + 2<sup>-10</sup>
-//! ULP (units in the last place), with the exception of [`sqrt`], whose result
-//! is always correctly rounded (its error is less than 0.5 ULP).
-
-// TODO:
-// * Bessel functions (j0, y0, j1, y1, jn, yn)
+//! The results of most functions have an error of less than 0.5 + 2<sup>-10</sup>
+//! ULP (units in the last place), with these exceptions:
+//!
+//! * [`sqrt`], whose result is always correctly rounded (its error is less
+//!   than 0.5 ULP).
+//! * [`jn`] and [`yn`] with an order `n` other than 0, 1 and -1, when the
+//!   absolute value of `x` is greater than the one of `n`. There, the
+//!   functions oscillate around zero with an amplitude of
+//!   `sqrt(jn(n, x)^2 + yn(n, x)^2)`, and their error can be larger by up to
+//!   2<sup>-63</sup> times that amplitude, which is only noticeable in the
+//!   results that are much smaller than it (close to a zero of the function).
 
 // Uncomment to use `dbg!`
 //extern crate std;
@@ -269,6 +277,24 @@ pub trait FloatMath: sealed::SealedMath + Sized {
 
     /// See the [`erfcx`] function.
     fn erfcx(x: Self) -> Self;
+
+    /// See the [`j0`] function.
+    fn j0(x: Self) -> Self;
+
+    /// See the [`j1`] function.
+    fn j1(x: Self) -> Self;
+
+    /// See the [`jn`] function.
+    fn jn(n: i32, x: Self) -> Self;
+
+    /// See the [`y0`] function.
+    fn y0(x: Self) -> Self;
+
+    /// See the [`y1`] function.
+    fn y1(x: Self) -> Self;
+
+    /// See the [`yn`] function.
+    fn yn(n: i32, x: Self) -> Self;
 }
 
 /// Calculates the absolute value of `x`
@@ -974,4 +1000,88 @@ pub fn erfc<F: FloatMath>(x: F) -> F {
 /// * Returns NaN if `x` is NaN
 pub fn erfcx<F: FloatMath>(x: F) -> F {
     F::erfcx(x)
+}
+
+/// Calculates the Bessel function of the first kind of order 0 of `x`
+///
+/// Special cases:
+/// * Returns zero if `x` is positive or negative infinity
+/// * Returns NaN if `x` is NaN
+pub fn j0<F: FloatMath>(x: F) -> F {
+    F::j0(x)
+}
+
+/// Calculates the Bessel function of the first kind of order 1 of `x`
+///
+/// Special cases:
+/// * Returns negative zero if `x` is negative zero
+/// * Returns zero if `x` is positive infinity
+/// * Returns negative zero if `x` is negative infinity
+/// * Returns NaN if `x` is NaN
+pub fn j1<F: FloatMath>(x: F) -> F {
+    F::j1(x)
+}
+
+/// Calculates the Bessel function of the first kind of order `n` of `x`
+///
+/// `jn(-n, x)` and `jn(n, -x)` are equal to `jn(n, x)` when `n` is even and to
+/// `-jn(n, x)` when `n` is odd, including the sign of the zero results.
+///
+/// When the absolute value of `n` is greater than one, the results close to
+/// zero can be less accurate than the ones of other functions (see the
+/// [accuracy](crate#accuracy) of the crate).
+///
+/// Special cases:
+/// * Returns zero if `x` is positive or negative zero and `n` is even and not
+///   zero
+/// * Returns zero if `x` is positive or negative infinity and `n` is even
+/// * Returns zero if `x` is a zero or an infinity with the same sign as `n`
+///   and `n` is odd
+/// * Returns negative zero if `x` is a zero or an infinity with the opposite
+///   sign of `n` and `n` is odd
+/// * Returns NaN if `x` is NaN
+pub fn jn<F: FloatMath>(n: i32, x: F) -> F {
+    F::jn(n, x)
+}
+
+/// Calculates the Bessel function of the second kind of order 0 of `x`
+///
+/// Special cases:
+/// * Returns negative infinity if `x` is positive or negative zero
+/// * Returns zero if `x` is positive infinity
+/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+pub fn y0<F: FloatMath>(x: F) -> F {
+    F::y0(x)
+}
+
+/// Calculates the Bessel function of the second kind of order 1 of `x`
+///
+/// Special cases:
+/// * Returns negative infinity if `x` is positive or negative zero
+/// * Returns zero if `x` is positive infinity
+/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+pub fn y1<F: FloatMath>(x: F) -> F {
+    F::y1(x)
+}
+
+/// Calculates the Bessel function of the second kind of order `n` of `x`
+///
+/// `yn(-n, x)` is equal to `yn(n, x)` when `n` is even and to `-yn(n, x)` when
+/// `n` is odd.
+///
+/// When the absolute value of `n` is greater than one, the results close to
+/// zero can be less accurate than the ones of other functions (see the
+/// [accuracy](crate#accuracy) of the crate).
+///
+/// Special cases:
+/// * Returns negative infinity if `x` is positive or negative zero, unless `n`
+///   is negative and odd
+/// * Returns positive infinity if `x` is positive or negative zero and `n` is
+///   negative and odd
+/// * Returns zero if `x` is positive infinity, unless `n` is negative and odd
+/// * Returns negative zero if `x` is positive infinity and `n` is negative and
+///   odd
+/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+pub fn yn<F: FloatMath>(n: i32, x: F) -> F {
+    F::yn(n, x)
 }

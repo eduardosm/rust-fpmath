@@ -100,6 +100,10 @@ fn named_const(name: &str, prec: u32) -> Result<rug::Float, String> {
         "FRAC_PI_180" => rug::Float::with_val(prec, rug::float::Constant::Pi) / 180,
         "FRAC_180_PI" => 180 / rug::Float::with_val(prec, rug::float::Constant::Pi),
         "LN_PI" => rug::Float::with_val(prec, rug::float::Constant::Pi).ln(),
+        "LN_2PI" => (rug::Float::with_val(prec, rug::float::Constant::Pi) * 2u32).ln(),
+        "LN_FRAC_PI_2" => (rug::Float::with_val(prec, rug::float::Constant::Pi) / 2u32).ln(),
+        "FRAC_1_3" => rug::Float::with_val(prec, 1) / 3u32,
+        "FRAC_1_5" => rug::Float::with_val(prec, 1) / 5u32,
         _ => {
             return Err(format!("unknown constant: {name:?}"));
         }

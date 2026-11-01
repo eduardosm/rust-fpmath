@@ -1,3 +1,4 @@
+mod bessel;
 mod cbrt;
 mod erf;
 mod exp;
@@ -12,6 +13,14 @@ mod pow;
 mod sqrt;
 mod trigonometric;
 
+#[cfg(test)]
+pub(crate) use bessel::DEBYE_BELOW_MIN;
+pub(crate) use bessel::{
+    J0_LARGE_MIN, J0_SMALL_MAX, J1_LARGE_MIN, J1_SMALL_MAX, ORDER_DEBYE_MIN, Y0_LARGE_MIN,
+    Y0_SMALL_MAX, Y1_LARGE_MIN, Y1_SMALL_MAX, j0_large_short, j0_zero_poly, j1_large_short,
+    j1_zero_poly, jn_convergent_terms, jn_finite, jn_underflows, y0_large_short, y0_y1_large_short,
+    y0_zero_poly, y1_large_short, y1_zero_poly, yn_finite, yn_overflows,
+};
 pub(crate) use erf::erfcx_short;
 pub(crate) use exp::{EXP2_TBL_BITS, exp2_tbl};
 pub(crate) use gamma::ln_gamma_near_zero;
@@ -354,6 +363,30 @@ impl crate::FloatMath for f64 {
 
     fn erfcx(x: Self) -> Self {
         crate::generic::erfcx(x)
+    }
+
+    fn j0(x: Self) -> Self {
+        crate::generic::j0(x)
+    }
+
+    fn j1(x: Self) -> Self {
+        crate::generic::j1(x)
+    }
+
+    fn jn(n: i32, x: Self) -> Self {
+        crate::generic::jn(n, x)
+    }
+
+    fn y0(x: Self) -> Self {
+        crate::generic::y0(x)
+    }
+
+    fn y1(x: Self) -> Self {
+        crate::generic::y1(x)
+    }
+
+    fn yn(n: i32, x: Self) -> Self {
+        crate::generic::yn(n, x)
     }
 }
 

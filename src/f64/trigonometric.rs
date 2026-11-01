@@ -176,7 +176,7 @@ pub(crate) fn sin_cos_pi_128(n: u8) -> (f64, f64) {
 ///
 /// `n` is only meaningful modulo 256. The reduction of `-x` is `(-n, -b)`.
 #[inline]
-fn reduce_rad(x: f64) -> (u8, Reduced) {
+pub(super) fn reduce_rad(x: f64) -> (u8, Reduced) {
     let x = x.purify();
     let absx = x.abs();
     if absx < 1.5 {
@@ -259,15 +259,39 @@ pub(crate) fn reduce_rad_large_sum(x: f64) -> (u8, f64) {
 
 /// Like `reduce_rad_large`, for `|x| >= 2^39`.
 ///
+/// `x * 128/π` is calculated modulo 256 with integer arithmetic (see
+/// `mul_128_pi`), with an error less than 2^-128. Since the reduced argument
+/// is at least ~2^-61 when it is close to a multiple of π/2, this is accurate
+/// enough.
+#[cold]
+fn reduce_rad_huge(x: f64) -> (u8, Reduced) {
+    let (n, frac) = mul_128_pi(x);
+    let (n, b) = reduced_from_fixed(n, frac);
+    if x.is_sign_negative() {
+        (
+            n.wrapping_neg(),
+            Reduced {
+                bh: -b.bh,
+                bl: -b.bl,
+            },
+        )
+    } else {
+        (n, b)
+    }
+}
+
+/// Returns `(n, frac)` such that `|x| * 128/π = 256 * M + n + frac * 2^-128`,
+/// where `M` is an integer and `frac` is truncated, with an error less than
+/// 2^-128, for `|x| >= 2^-10`.
+///
 /// With `|x| = m * 2^e` (`m` a 53-bit integer), `x * 128/π` is computed modulo
 /// 256 as `m * G * 2^8`, where `G = frac(2^(e-1) / π)` is taken from the bits of
 /// `1/π` starting at position `e` (the discarded leading bits contribute
 /// multiples of 256). 192 bits of `G` are used, so the truncation error of
 /// `x * 128/π` is less than `2^53 * 2^-184 = 2^-131`, and the fraction is
-/// kept with 128 bits (error less than 2^-128). Since the reduced argument is at
-/// least ~2^-61 when it is close to a multiple of π/2, this is accurate enough.
-#[cold]
-fn reduce_rad_huge(x: f64) -> (u8, Reduced) {
+/// kept with 128 bits.
+#[inline]
+pub(super) fn mul_128_pi(x: f64) -> (u8, u128) {
     // GENERATE: reduce_rad::frac_1_pi_bits 63 20
     // 2^-63 / π ~= sum(FRAC_1_PI_BITS[i] * 2^(-64 * (i + 1)))
     static FRAC_1_PI_BITS: [u64; 20] = [
@@ -314,10 +338,19 @@ fn reduce_rad_huge(x: f64) -> (u8, Reduced) {
     let t = m * u128::from(window(w)) + (t >> 64);
     let q2 = t as u64;
 
-    let mut n = (q2 >> 56) as u8;
+    let n = (q2 >> 56) as u8;
     // Highest 128 bits of the fraction
-    let mut frac =
+    let frac =
         (u128::from(q2 & ((1 << 56) - 1)) << 72) | (u128::from(q1) << 8) | u128::from(q0 >> 56);
+    (n, frac)
+}
+
+/// Returns `(k, b)` such that `k * π/128 + b ~= (n + frac * 2^-128) * π/128`
+/// (modulo `2 * π`), with `|b| <= π/256`.
+///
+/// The conversion adds a relative error of less than 2^-103 to `b`.
+#[inline]
+pub(super) fn reduced_from_fixed(mut n: u8, mut frac: u128) -> (u8, Reduced) {
     let neg = (frac >> 127) != 0;
     if neg {
         // Round to nearest, the fraction becomes negative
@@ -327,11 +360,13 @@ fn reduce_rad_huge(x: f64) -> (u8, Reduced) {
 
     // |fraction| = frac * 2^-128. Convert it to a non-normalized
     // double-double (fh, fl), dropping at most 22 bits (relative error
-    // < 2^-105). When `n` is a multiple of 64, |x - n * π/128| >= 2^-60.89
-    // (the minimum for all finite `f64`), so `frac >= 2^72`. Otherwise the
-    // result is not small, so a small absolute error is enough (the masking
-    // of `lz` avoids an overflowing shift in the impossible case
-    // `frac == 0`).
+    // < 2^-105). That holds for any non-zero `frac` because it is normalized
+    // first (shifted by `lz`), which matters for the small ones: with
+    // `reduce_rad_huge`, `frac >= 2^72` when the result is small
+    // (|x - n * π/128| >= 2^-60.89 for all finite `f64`), but
+    // `bessel::phase_precise` gets much smaller ones close to the zeros of
+    // the Bessel functions. The masking of `lz` avoids an overflowing shift
+    // in the case `frac == 0`.
     let lz = frac.leading_zeros() & 127;
     let frac = frac << lz;
     let fh = ((frac >> 75) as u64) as f64 * f64::exp2i_fast(-53 - lz as i16);
@@ -342,11 +377,7 @@ fn reduce_rad_huge(x: f64) -> (u8, Reduced) {
     let bl = p.lo() + (fh * (PI.lo() * (1.0 / 128.0)) + fl * (PI.hi() * (1.0 / 128.0)));
     let (bh, bl) = if neg { (-p.hi(), -bl) } else { (p.hi(), bl) };
 
-    if x.is_sign_negative() {
-        (n.wrapping_neg(), Reduced { bh: -bh, bl: -bl })
-    } else {
-        (n, Reduced { bh, bl })
-    }
+    (n, Reduced { bh, bl })
 }
 
 /// Reduces the angle argument `x` (in degrees) to `(n, t)` such that:
@@ -465,9 +496,10 @@ pub(crate) fn sinpi_f64x2(x: f64) -> F64x2 {
 /// A reduced argument `b = bh + bl`, with `|b| <= ~π/256`.
 ///
 /// `bh + bl` is not necessarily normalized, but `|bl| <= ~2^-47`.
-struct Reduced {
-    bh: f64,
-    bl: f64,
+#[derive(Copy, Clone)]
+pub(super) struct Reduced {
+    pub(super) bh: f64,
+    pub(super) bl: f64,
 }
 
 // GENERATE: sin_pi_table F64x2 128
@@ -734,7 +766,7 @@ static SIN_PI_TBL: [F64x2; 256] = [
 impl Reduced {
     /// Returns `sin(n * π/128 + b)` as a non-normalized sum `hi + lo`.
     #[inline]
-    fn sin_k(&self, n: u8) -> Sum2 {
+    pub(super) fn sin_k(&self, n: u8) -> Sum2 {
         let s = SIN_PI_TBL[usize::from(n)];
         let c = SIN_PI_TBL[usize::from(n.wrapping_add(64))];
         self.sin_a(s, c)
@@ -820,19 +852,19 @@ impl Reduced {
 }
 
 /// Non-normalized sum `hi + lo`, with `|lo|` much smaller than `|hi|`.
-struct Sum2 {
+pub(super) struct Sum2 {
     hi: f64,
     lo: f64,
 }
 
 impl Sum2 {
     #[inline]
-    fn to_f64(&self) -> f64 {
+    pub(super) fn to_f64(&self) -> f64 {
         (self.hi + self.lo).purify()
     }
 
     #[inline]
-    fn normalize(&self) -> F64x2 {
+    pub(super) fn normalize(&self) -> F64x2 {
         F64x2::fast_add11(self.hi, self.lo.purify())
     }
 }

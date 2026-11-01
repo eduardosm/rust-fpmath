@@ -4,6 +4,7 @@ use crate::RunError;
 
 mod approx;
 mod arg_utils;
+mod bessel;
 mod consts;
 mod julia;
 mod reduce_rad;
@@ -37,6 +38,7 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "asin_poly" => approx::gen_asin_poly(&args),
         "atan_poly" => approx::gen_atan_poly(&args),
         "atan_table" => approx::gen_atan_table(&args),
+        "atanh_table" => approx::gen_atanh_table(&args),
         "asinh_poly" => approx::gen_asinh_poly(&args),
         "atanh_poly" => approx::gen_atanh_poly(&args),
         "asinh_acosh_large_poly" => approx::gen_asinh_acosh_large_poly(&args),
@@ -47,6 +49,14 @@ pub(crate) fn generate(param: &str) -> Result<String, RunError> {
         "erf_poly" => approx::gen_erf_poly(&args),
         "erfcx_table" => approx::gen_erfcx_table(&args),
         "erfcx_asympt_poly" => approx::gen_erfcx_asympt_poly(&args),
+        "bessel_table" => bessel::gen_bessel_table(&args),
+        "bessel_small_poly" => bessel::gen_bessel_small_poly(&args),
+        "bessel_phase_poly" => bessel::gen_bessel_phase_poly(&args),
+        "bessel_phase_fixed" => bessel::gen_bessel_phase_fixed(&args),
+        "bessel_modulus_poly" => bessel::gen_bessel_modulus_poly(&args),
+        "bessel_debye_poly" => bessel::gen_bessel_debye_poly(&args),
+        "bessel_airy_table" => bessel::gen_bessel_airy_table(&args),
+        "bessel_olver_poly" => bessel::gen_bessel_olver_poly(&args),
 
         _ => {
             eprintln!("Invalid generate parameter: {cmd:?}");

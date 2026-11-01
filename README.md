@@ -40,6 +40,7 @@ fpmath is a pure-Rust floating point library that implements math functions for
 * Gamma and ln-gamma
 * Error function, complementary error function and scaled complementary
   error function
+* Bessel functions of the first and second kind, of integer order
 
 ## Development
 
