@@ -1,3 +1,4 @@
+mod bessel;
 mod cbrt;
 mod erf;
 mod exp;
@@ -343,6 +344,30 @@ impl crate::FloatMath for f32 {
 
     fn erfcx(x: Self) -> Self {
         crate::generic::erfcx(x)
+    }
+
+    fn j0(x: Self) -> Self {
+        crate::generic::j0(x)
+    }
+
+    fn j1(x: Self) -> Self {
+        crate::generic::j1(x)
+    }
+
+    fn jn(n: i32, x: Self) -> Self {
+        crate::generic::jn(n, x)
+    }
+
+    fn y0(x: Self) -> Self {
+        crate::generic::y0(x)
+    }
+
+    fn y1(x: Self) -> Self {
+        crate::generic::y1(x)
+    }
+
+    fn yn(n: i32, x: Self) -> Self {
+        crate::generic::yn(n, x)
     }
 }
 

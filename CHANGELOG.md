@@ -14,6 +14,8 @@
 - `exp2_m1`, `exp10_m1`, `log2_1p` and `log10_1p` functions.
 - Error function (`erf`), complementary error function (`erfc`) and scaled
   complementary error function (`erfcx`).
+- Bessel functions of the first kind (`j0`, `j1` and `jn`) and of the second
+  kind (`y0`, `y1` and `yn`).
 
 ### Fixed
 
@@ -22,7 +24,8 @@
 
 ### Changed
 
-- Maximum error has been brought down to 0.5 + 2<sup>-10</sup> ULP from 1 ULP.
+- Maximum error has been brought down to 0.5 + 2<sup>-10</sup> ULP from 1 ULP
+  (except for the new functions `jn` and `yn`).
 - Poles of `tand` and `tanpi` now have alternating signs.
 - `f32` math functions now use `f64` internally.
 - Performance of most math functions has been improved.

@@ -447,7 +447,7 @@ pub(crate) fn ln_1p_q(z: f64) -> f64 {
 ///
 /// `|lo| <= 2^-25 * |hi|`.
 #[inline]
-fn ln_1p_poly_accurate(zh: f64, zl: f64) -> (f64, f64) {
+pub(super) fn ln_1p_poly_accurate(zh: f64, zl: f64) -> (f64, f64) {
     // ln(1 + z) - z + z^2 / 2 - z^3 / 3 ~= z^4 * (K4 + K5 * z + ... + K9 * z^5)
     // GENERATE: ln_1p_poly f64 6 -0.003907 0.003907 3
     const K4: f64 = f64::from_bits(0xBFD0000000000002); // -2.500000000000001e-1

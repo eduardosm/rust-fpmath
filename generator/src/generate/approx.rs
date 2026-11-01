@@ -450,6 +450,36 @@ pub(super) fn gen_atan_table(args: &[&str]) -> Result<String, String> {
     Ok(out)
 }
 
+/// Generates a table of `atanh(i / 2^bits)` for `i` in `0..=max_i`.
+///
+/// Arguments: `fkind bits max_i`
+pub(super) fn gen_atanh_table(args: &[&str]) -> Result<String, String> {
+    let (fkind, bits, max_i): (FloatKind, u32, u32) = arg_utils::parse_3_args(args)?;
+    if max_i >= 1 << bits {
+        return Err(format!("max_i must be less than 2^{bits}, found {max_i}"));
+    }
+
+    let mut out = String::new();
+
+    let ftype = fkind.name();
+    let prec = fkind.rug_aux_prec();
+    let num = 1u32 << bits;
+
+    writeln!(out, "// ATANH_TBL[i] = atanh(i / {num})").unwrap();
+    writeln!(out, "static ATANH_TBL: [{ftype}; {}] = [", max_i + 1).unwrap();
+    for i in 0..=max_i {
+        let v = (rug::Float::with_val(prec, i) >> bits).atanh();
+        out.push_str("    ");
+        render_const_value(fkind, &v, &mut out);
+        out.push_str(", // ");
+        render_const_dec_value(fkind, &v, &mut out);
+        out.push('\n');
+    }
+    writeln!(out, "];").unwrap();
+
+    Ok(out)
+}
+
 /// Generates an approximation of `asinh(x) / x - 1` in
 /// `[range_start, range_end]` with the even powers `x^2, x^4, ...`.
 ///

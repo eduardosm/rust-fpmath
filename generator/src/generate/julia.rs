@@ -77,8 +77,20 @@ pub(super) fn run_remez(
     range: (f64, f64),
     poly_deg: i32,
 ) -> Vec<rug::Float> {
+    run_remez_with_setup("", func, wfunc, range, poly_deg)
+}
+
+/// Like `run_remez`, but running the statements of `setup` first, which can
+/// define the constants that `func` and `wfunc` use.
+pub(super) fn run_remez_with_setup(
+    setup: &str,
+    func: &str,
+    wfunc: &str,
+    range: (f64, f64),
+    poly_deg: i32,
+) -> Vec<rug::Float> {
     let prec = 1024;
-    let code = gen_remez_code(prec, func, wfunc, range, poly_deg);
+    let code = gen_remez_code(prec, setup, func, wfunc, range, poly_deg);
     let result = run_julia(&code).unwrap();
 
     let mut lines = result.split(|&c| c == b'\n');
@@ -92,12 +104,21 @@ pub(super) fn run_remez(
         .collect()
 }
 
-fn gen_remez_code(prec: u32, func: &str, wfunc: &str, range: (f64, f64), poly_deg: i32) -> String {
+fn gen_remez_code(
+    prec: u32,
+    setup: &str,
+    func: &str,
+    wfunc: &str,
+    range: (f64, f64),
+    poly_deg: i32,
+) -> String {
     let mut code = String::new();
 
     code.push_str("import Remez;\n");
     code.push_str("import SpecialFunctions;\n");
     writeln!(code, "Remez.setprecision(BigFloat, {prec});").unwrap();
+    code.push_str(setup);
+    code.push('\n');
     code.push_str("f = (x) -> ");
     code.push_str(func);
     code.push_str(";\n");
