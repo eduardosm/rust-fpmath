@@ -1,6 +1,6 @@
 [package]
 name = "fpmath"
-version = "0.2.0-pre"
+version = "0.2.0"
 authors = ["Eduardo Sánchez Muñoz <eduardosm-dev@e64.io>"]
 edition = "2024"
 rust-version = "1.85"
@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 keywords = ["float", "floating-point", "math"]
 categories = ["mathematics", "no-std", "science"]
 exclude = ["/.github", ".gitignore", "/.markdownlint.yaml", "/ci"]
-publish = false
+publish = true
 
 [features]
 default = []
