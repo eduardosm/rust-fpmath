@@ -352,8 +352,13 @@ pub fn frexp<F: FloatMath>(x: F) -> (F, i32) {
 /// hypotenuse of a triangle with sides of length `x` and `y`.
 ///
 /// Special cases:
-/// * Returns positive infinity if `x` or `y` is infinity
-/// * Returns NaN if `x` or `y` is NaN and neither is infinity
+///
+/// | `x`                 | `y`                 | Result |
+/// |---------------------|---------------------|--------|
+/// | ±∞                  | any (including NaN) | +∞     |
+/// | any (including NaN) | ±∞                  | +∞     |
+/// | NaN                 | not ±∞              | NaN    |
+/// | not ±∞              | NaN                 | NaN    |
 pub fn hypot<F: FloatMath>(x: F, y: F) -> F {
     F::hypot(x, y)
 }
@@ -361,9 +366,13 @@ pub fn hypot<F: FloatMath>(x: F, y: F) -> F {
 /// Calculates the square root of `x` with an error of less than 0.5 ULP.
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+///
+/// | `x`                | Result |
+/// |--------------------|--------|
+/// | -0                 | -0     |
+/// | +∞                 | +∞     |
+/// | < 0 (including -∞) | NaN    |
+/// | NaN                | NaN    |
 pub fn sqrt<F: FloatMath>(x: F) -> F {
     F::sqrt(x)
 }
@@ -371,10 +380,13 @@ pub fn sqrt<F: FloatMath>(x: F) -> F {
 /// Calculates the cube root of `x`.
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns negative infinity if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | +∞     |
+/// | -∞  | -∞     |
+/// | NaN | NaN    |
 pub fn cbrt<F: FloatMath>(x: F) -> F {
     F::cbrt(x)
 }
@@ -382,9 +394,12 @@ pub fn cbrt<F: FloatMath>(x: F) -> F {
 /// Calculates Euler's number raised to `x`
 ///
 /// Special cases:
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns zero if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | +∞  | +∞     |
+/// | -∞  | +0     |
+/// | NaN | NaN    |
 pub fn exp<F: FloatMath>(x: F) -> F {
     F::exp(x)
 }
@@ -392,10 +407,13 @@ pub fn exp<F: FloatMath>(x: F) -> F {
 /// Calculates `exp(x) - 1.0`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns minus one if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | +∞     |
+/// | -∞  | -1     |
+/// | NaN | NaN    |
 pub fn exp_m1<F: FloatMath>(x: F) -> F {
     F::exp_m1(x)
 }
@@ -403,9 +421,12 @@ pub fn exp_m1<F: FloatMath>(x: F) -> F {
 /// Calculates 2 raised to `x`
 ///
 /// Special cases:
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns zero if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | +∞  | +∞     |
+/// | -∞  | +0     |
+/// | NaN | NaN    |
 pub fn exp2<F: FloatMath>(x: F) -> F {
     F::exp2(x)
 }
@@ -413,10 +434,13 @@ pub fn exp2<F: FloatMath>(x: F) -> F {
 /// Calculates `exp2(x) - 1.0`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns minus one if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | +∞     |
+/// | -∞  | -1     |
+/// | NaN | NaN    |
 pub fn exp2_m1<F: FloatMath>(x: F) -> F {
     F::exp2_m1(x)
 }
@@ -424,9 +448,12 @@ pub fn exp2_m1<F: FloatMath>(x: F) -> F {
 /// Calculates 10 raised to `x`
 ///
 /// Special cases:
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns zero if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | +∞  | +∞     |
+/// | -∞  | +0     |
+/// | NaN | NaN    |
 pub fn exp10<F: FloatMath>(x: F) -> F {
     F::exp10(x)
 }
@@ -434,10 +461,13 @@ pub fn exp10<F: FloatMath>(x: F) -> F {
 /// Calculates `exp10(x) - 1.0`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns minus one if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | +∞     |
+/// | -∞  | -1     |
+/// | NaN | NaN    |
 pub fn exp10_m1<F: FloatMath>(x: F) -> F {
     F::exp10_m1(x)
 }
@@ -445,9 +475,13 @@ pub fn exp10_m1<F: FloatMath>(x: F) -> F {
 /// Calculates the natural logarithm of `x`
 ///
 /// Special cases:
-/// * Returns negative infinity if `x` is positive or negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+///
+/// | `x`                | Result |
+/// |--------------------|--------|
+/// | ±0                 | -∞     |
+/// | +∞                 | +∞     |
+/// | < 0 (including -∞) | NaN    |
+/// | NaN                | NaN    |
 pub fn ln<F: FloatMath>(x: F) -> F {
     F::ln(x)
 }
@@ -455,11 +489,14 @@ pub fn ln<F: FloatMath>(x: F) -> F {
 /// Calculates the natural logarithm of `x + 1`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns negative infinity if `x` is minus one
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns NaN if `x` is NaN or less than minus one (including negative
-///   infinity)
+///
+/// | `x`                 | Result |
+/// |---------------------|--------|
+/// | -0                  | -0     |
+/// | -1                  | -∞     |
+/// | +∞                  | +∞     |
+/// | < -1 (including -∞) | NaN    |
+/// | NaN                 | NaN    |
 pub fn ln_1p<F: FloatMath>(x: F) -> F {
     F::ln_1p(x)
 }
@@ -467,9 +504,13 @@ pub fn ln_1p<F: FloatMath>(x: F) -> F {
 /// Calculates the base-2 logarithm of `x`
 ///
 /// Special cases:
-/// * Returns negative infinity if `x` is positive or negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+///
+/// | `x`                | Result |
+/// |--------------------|--------|
+/// | ±0                 | -∞     |
+/// | +∞                 | +∞     |
+/// | < 0 (including -∞) | NaN    |
+/// | NaN                | NaN    |
 pub fn log2<F: FloatMath>(x: F) -> F {
     F::log2(x)
 }
@@ -477,11 +518,14 @@ pub fn log2<F: FloatMath>(x: F) -> F {
 /// Calculates the base-2 logarithm of `x + 1`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns negative infinity if `x` is minus one
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns NaN if `x` is NaN or less than minus one (including negative
-///   infinity)
+///
+/// | `x`                 | Result |
+/// |---------------------|--------|
+/// | -0                  | -0     |
+/// | -1                  | -∞     |
+/// | +∞                  | +∞     |
+/// | < -1 (including -∞) | NaN    |
+/// | NaN                 | NaN    |
 pub fn log2_1p<F: FloatMath>(x: F) -> F {
     F::log2_1p(x)
 }
@@ -489,9 +533,13 @@ pub fn log2_1p<F: FloatMath>(x: F) -> F {
 /// Calculates the base-10 logarithm of `x`
 ///
 /// Special cases:
-/// * Returns negative infinity if `x` is positive or negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+///
+/// | `x`                | Result |
+/// |--------------------|--------|
+/// | ±0                 | -∞     |
+/// | +∞                 | +∞     |
+/// | < 0 (including -∞) | NaN    |
+/// | NaN                | NaN    |
 pub fn log10<F: FloatMath>(x: F) -> F {
     F::log10(x)
 }
@@ -499,11 +547,14 @@ pub fn log10<F: FloatMath>(x: F) -> F {
 /// Calculates the base-10 logarithm of `x + 1`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns negative infinity if `x` is minus one
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns NaN if `x` is NaN or less than minus one (including negative
-///   infinity)
+///
+/// | `x`                 | Result |
+/// |---------------------|--------|
+/// | -0                  | -0     |
+/// | -1                  | -∞     |
+/// | +∞                  | +∞     |
+/// | < -1 (including -∞) | NaN    |
+/// | NaN                 | NaN    |
 pub fn log10_1p<F: FloatMath>(x: F) -> F {
     F::log10_1p(x)
 }
@@ -511,40 +562,31 @@ pub fn log10_1p<F: FloatMath>(x: F) -> F {
 /// Calculates `x` raised to `y`
 ///
 /// Special cases:
-/// * Returns 1 when `x` is 1 or `y` is zero
-/// * Returns 1 when `x` is -1 and `y` is positive or negative infinity
-/// * Returns NaN when `x` is NaN and `y` is not zero
-/// * Returns NaN when `y` is NaN and `z` is not 1
-/// * Returns positive zero when `x` is positive zero and `y` is positive
-/// * Returns positive zero when `x` is positive infinity and `y` is negative
-/// * Returns positive infinity when `x` is positive infinity and `y` is
-///   positive
-/// * Returns positive infinity when `x` is positive zero and `y` is negative
-/// * Returns positive zero when `x` is negative zero and `y` is positive and
-///   not an odd integer
-/// * Returns positive zero when `x` is negative infinity and `y` is negative
-///   and not an odd integer
-/// * Returns positive infinity when `x` is negative infinity and `y` is
-///   positive and not an odd integer
-/// * Returns positive infinity when `x` is negative zero and `y` is negative
-///   and not an odd integer
-/// * Returns negative zero when `x` is negative zero and `y` is positive and an
-///   odd integer
-/// * Returns negative zero when `x` is negative infinity and `y` is negative
-///   and an odd integer
-/// * Returns negative infinity when `x` is negative infinity and `y` is
-///   positive and an odd integer
-/// * Returns negative infinity when `x` is negative zero and `y` is negative
-///   and an odd integer
-/// * Returns positive zero when the absolute value of `x` is less than one and
-///   `y` is positive infinity
-/// * Returns positive zero when the absolute value of `x` is greater than one
-///   and `y` is negative infinity
-/// * Returns positive infinity when the absolute value of `x` is less than one
-///   and `y` is negative infinity
-/// * Returns positive infinity when the absolute value of `x` is greater than
-///   one and `y` is positive infinity
-/// * Returns NaN when `x` is negative and `y` is finite and not integer
+///
+/// | `x`                 | `y`                     | Result |
+/// |---------------------|-------------------------|--------|
+/// | 1                   | any (including NaN)     | 1      |
+/// | any (including NaN) | ±0                      | 1      |
+/// | -1                  | ±∞                      | 1      |
+/// | NaN                 | not ±0                  | NaN    |
+/// | not 1               | NaN                     | NaN    |
+/// | +0                  | > 0                     | +0     |
+/// | +0                  | < 0                     | +∞     |
+/// | -0                  | > 0, odd integer        | -0     |
+/// | -0                  | > 0, not an odd integer | +0     |
+/// | -0                  | < 0, odd integer        | -∞     |
+/// | -0                  | < 0, not an odd integer | +∞     |
+/// | +∞                  | > 0                     | +∞     |
+/// | +∞                  | < 0                     | +0     |
+/// | -∞                  | > 0, odd integer        | -∞     |
+/// | -∞                  | > 0, not an odd integer | +∞     |
+/// | -∞                  | < 0, odd integer        | -0     |
+/// | -∞                  | < 0, not an odd integer | +0     |
+/// | > -1 and < 1        | +∞                      | +0     |
+/// | > -1 and < 1        | -∞                      | +∞     |
+/// | < -1 or > 1         | +∞                      | +∞     |
+/// | < -1 or > 1         | -∞                      | +0     |
+/// | < 0, finite         | finite, not an integer  | NaN    |
 pub fn pow<F: FloatMath>(x: F, y: F) -> F {
     F::pow(x, y)
 }
@@ -552,30 +594,24 @@ pub fn pow<F: FloatMath>(x: F, y: F) -> F {
 /// Calculates `x` raised to `y`
 ///
 /// Special cases:
-/// * Returns 1 when `x` is 1 or `y` is zero
-/// * Returns NaN when `x` is NaN and `y` is not zero
-/// * Returns NaN when `y` is NaN and `z` is not 1
-/// * Returns positive zero when `x` is positive zero and `y` is positive
-/// * Returns positive zero when `x` is positive infinity and `y` is negative
-/// * Returns positive infinity when `x` is positive infinity and `y` is
-///   positive
-/// * Returns positive infinity when `x` is positive zero and `y` is negative
-/// * Returns positive zero when `x` is negative zero and `y` is positive and
-///   even
-/// * Returns positive zero when `x` is negative infinity and `y` is negative
-///   and even
-/// * Returns positive infinity when `x` is negative infinity and `y` is
-///   positive and even
-/// * Returns positive infinity when `x` is negative zero and `y` is negative
-///   and even
-/// * Returns negative zero when `x` is negative zero and `y` is positive and
-///   odd
-/// * Returns negative zero when `x` is negative infinity and `y` is negative
-///   and odd
-/// * Returns negative infinity when `x` is negative infinity and `y` is
-///   positive and odd
-/// * Returns negative infinity when `x` is negative zero and `y` is negative
-///   and odd
+///
+/// | `x`                 | `y`       | Result |
+/// |---------------------|-----------|--------|
+/// | 1                   | any       | 1      |
+/// | any (including NaN) | 0         | 1      |
+/// | NaN                 | not 0     | NaN    |
+/// | +0                  | > 0       | +0     |
+/// | +0                  | < 0       | +∞     |
+/// | -0                  | > 0, odd  | -0     |
+/// | -0                  | > 0, even | +0     |
+/// | -0                  | < 0, odd  | -∞     |
+/// | -0                  | < 0, even | +∞     |
+/// | +∞                  | > 0       | +∞     |
+/// | +∞                  | < 0       | +0     |
+/// | -∞                  | > 0, odd  | -∞     |
+/// | -∞                  | > 0, even | +∞     |
+/// | -∞                  | < 0, odd  | -0     |
+/// | -∞                  | < 0, even | +0     |
 pub fn powi<F: FloatMath>(x: F, y: i32) -> F {
     F::powi(x, y)
 }
@@ -583,8 +619,12 @@ pub fn powi<F: FloatMath>(x: F, y: i32) -> F {
 /// Calculates the sine of `x` radians
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is infinity or NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | ±∞  | NaN    |
+/// | NaN | NaN    |
 pub fn sin<F: FloatMath>(x: F) -> F {
     F::sin(x)
 }
@@ -592,7 +632,11 @@ pub fn sin<F: FloatMath>(x: F) -> F {
 /// Calculates the cosine of `x` radians
 ///
 /// Special cases:
-/// * Returns NaN if `x` is infinity or NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | ±∞  | NaN    |
+/// | NaN | NaN    |
 pub fn cos<F: FloatMath>(x: F) -> F {
     F::cos(x)
 }
@@ -608,8 +652,12 @@ pub fn sin_cos<F: FloatMath>(x: F) -> (F, F) {
 /// Calculates the tangent of `x` radians
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is infinity or NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | ±∞  | NaN    |
+/// | NaN | NaN    |
 pub fn tan<F: FloatMath>(x: F) -> F {
     F::tan(x)
 }
@@ -617,8 +665,12 @@ pub fn tan<F: FloatMath>(x: F) -> F {
 /// Calculates the sine of `x` degrees
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is infinity or NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | ±∞  | NaN    |
+/// | NaN | NaN    |
 pub fn sind<F: FloatMath>(x: F) -> F {
     F::sind(x)
 }
@@ -626,7 +678,11 @@ pub fn sind<F: FloatMath>(x: F) -> F {
 /// Calculates the cosine of `x` degrees
 ///
 /// Special cases:
-/// * Returns NaN if `x` is infinity or NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | ±∞  | NaN    |
+/// | NaN | NaN    |
 pub fn cosd<F: FloatMath>(x: F) -> F {
     F::cosd(x)
 }
@@ -643,8 +699,14 @@ pub fn sind_cosd<F: FloatMath>(x: F) -> (F, F) {
 /// Calculates the tangent of `x` degrees
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is infinity or NaN
+///
+/// | `x`                    | Result |
+/// |------------------------|--------|
+/// | -0                     | -0     |
+/// | 90 + 360k (integer k)  | +∞     |
+/// | -90 + 360k (integer k) | -∞     |
+/// | ±∞                     | NaN    |
+/// | NaN                    | NaN    |
 pub fn tand<F: FloatMath>(x: F) -> F {
     F::tand(x)
 }
@@ -652,8 +714,12 @@ pub fn tand<F: FloatMath>(x: F) -> F {
 /// Calculates the sine of `x` half-revolutions
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is infinity or NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | ±∞  | NaN    |
+/// | NaN | NaN    |
 pub fn sinpi<F: FloatMath>(x: F) -> F {
     F::sinpi(x)
 }
@@ -661,7 +727,11 @@ pub fn sinpi<F: FloatMath>(x: F) -> F {
 /// Calculates the cosine of `x` half-revolutions
 ///
 /// Special cases:
-/// * Returns NaN if `x` is infinity or NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | ±∞  | NaN    |
+/// | NaN | NaN    |
 pub fn cospi<F: FloatMath>(x: F) -> F {
     F::cospi(x)
 }
@@ -678,8 +748,14 @@ pub fn sinpi_cospi<F: FloatMath>(x: F) -> (F, F) {
 /// Calculates the tangent of `x` half-revolutions
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is infinity or NaN
+///
+/// | `x`                   | Result |
+/// |-----------------------|--------|
+/// | -0                    | -0     |
+/// | 0.5 + 2k (integer k)  | +∞     |
+/// | -0.5 + 2k (integer k) | -∞     |
+/// | ±∞                    | NaN    |
+/// | NaN                   | NaN    |
 pub fn tanpi<F: FloatMath>(x: F) -> F {
     F::tanpi(x)
 }
@@ -687,9 +763,12 @@ pub fn tanpi<F: FloatMath>(x: F) -> F {
 /// Calculates the arcsine of `x`, returning the result in radians
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is NaN or greater than one in magnitude (including
-///   infinity)
+///
+/// | `x`                        | Result |
+/// |----------------------------|--------|
+/// | -0                         | -0     |
+/// | < -1 or > 1 (including ±∞) | NaN    |
+/// | NaN                        | NaN    |
 pub fn asin<F: FloatMath>(x: F) -> F {
     F::asin(x)
 }
@@ -697,8 +776,11 @@ pub fn asin<F: FloatMath>(x: F) -> F {
 /// Calculates the arccosine of `x`, returning the result in radians
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN or greater than one in magnitude (including
-///   infinity)
+///
+/// | `x`                        | Result |
+/// |----------------------------|--------|
+/// | < -1 or > 1 (including ±∞) | NaN    |
+/// | NaN                        | NaN    |
 pub fn acos<F: FloatMath>(x: F) -> F {
     F::acos(x)
 }
@@ -706,10 +788,13 @@ pub fn acos<F: FloatMath>(x: F) -> F {
 /// Calculates the arctangent of `x`, returning the result in radians
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is NaN
-/// * Returns π/2 if `x` is positive infinity
-/// * Returns -π/2 if `x` is negative infinity
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | π/2    |
+/// | -∞  | -π/2   |
+/// | NaN | NaN    |
 pub fn atan<F: FloatMath>(x: F) -> F {
     F::atan(x)
 }
@@ -718,28 +803,27 @@ pub fn atan<F: FloatMath>(x: F) -> F {
 /// radians
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN or `y` is NaN
-/// * Returns positive zero if `y` is positive zero and `x` is positive (zero,
-///   finite or infinity)
-/// * Returns negative zero if `y` is negative zero and `x` is positive (zero,
-///   finite or infinity)
-/// * Returns π if `y` is positive zero and `x` is negative (zero, finite or
-///   infinity)
-/// * Returns -π if `y` is negative zero and `x` is negative (zero, finite or
-///   infinity)
-/// * Returns π/2 if `y` is positive infinity and `x` is zero or finite
-/// * Returns -π/2 if `y` is negative infinity and `x` is zero or finite
-/// * Returns positive zero if `x` is positive infinity and `y` is positive
-///   (zero or finite)
-/// * Returns negative zero if `x` is positive infinity and `y` is negative
-///   (zero or finite)
-/// * Returns π if `x` is negative infinity and `y` is positive (zero or finite)
-/// * Returns -π if `x` is negative infinity and `y` is negative (zero or
-///   finite)
-/// * Returns π/4 if `x` is positive infinity and `y` is positive infinity
-/// * Returns -π/4 if `x` is positive infinity and `y` is negative infinity
-/// * Returns 3π/4 if `x` is negative infinity and `y` is positive infinity
-/// * Returns -3π/4 if `x` is negative infinity and `y` is negative infinity
+///
+/// | `y`         | `x`                      | Result |
+/// |-------------|--------------------------|--------|
+/// | NaN         | any                      | NaN    |
+/// | any         | NaN                      | NaN    |
+/// | +0          | +0 or > 0 (including +∞) | +0     |
+/// | -0          | +0 or > 0 (including +∞) | -0     |
+/// | +0          | -0 or < 0 (including -∞) | π      |
+/// | -0          | -0 or < 0 (including -∞) | -π     |
+/// | > 0, finite | +∞                       | +0     |
+/// | < 0, finite | +∞                       | -0     |
+/// | > 0, finite | -∞                       | π      |
+/// | < 0, finite | -∞                       | -π     |
+/// | > 0, finite | ±0                       | π/2    |
+/// | < 0, finite | ±0                       | -π/2   |
+/// | +∞          | finite (including ±0)    | π/2    |
+/// | -∞          | finite (including ±0)    | -π/2   |
+/// | +∞          | +∞                       | π/4    |
+/// | -∞          | +∞                       | -π/4   |
+/// | +∞          | -∞                       | 3π/4   |
+/// | -∞          | -∞                       | -3π/4  |
 pub fn atan2<F: FloatMath>(y: F, x: F) -> F {
     F::atan2(y, x)
 }
@@ -747,9 +831,12 @@ pub fn atan2<F: FloatMath>(y: F, x: F) -> F {
 /// Calculates the arcsine of `x`, returning the result in degrees
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is NaN or greater than one in magnitude (including
-///   infinity)
+///
+/// | `x`                        | Result |
+/// |----------------------------|--------|
+/// | -0                         | -0     |
+/// | < -1 or > 1 (including ±∞) | NaN    |
+/// | NaN                        | NaN    |
 pub fn asind<F: FloatMath>(x: F) -> F {
     F::asind(x)
 }
@@ -757,8 +844,11 @@ pub fn asind<F: FloatMath>(x: F) -> F {
 /// Calculates the arccosine of `x`, returning the result in degrees
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN or greater than one in magnitude (including
-///   infinity)
+///
+/// | `x`                        | Result |
+/// |----------------------------|--------|
+/// | < -1 or > 1 (including ±∞) | NaN    |
+/// | NaN                        | NaN    |
 pub fn acosd<F: FloatMath>(x: F) -> F {
     F::acosd(x)
 }
@@ -766,10 +856,13 @@ pub fn acosd<F: FloatMath>(x: F) -> F {
 /// Calculates the arctangent of `x`, returning the result in degrees
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is NaN
-/// * Returns 90 if `x` is positive infinity
-/// * Returns -90 if `x` is negative infinity
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | 90     |
+/// | -∞  | -90    |
+/// | NaN | NaN    |
 pub fn atand<F: FloatMath>(x: F) -> F {
     F::atand(x)
 }
@@ -778,29 +871,27 @@ pub fn atand<F: FloatMath>(x: F) -> F {
 /// degrees
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN or `y` is NaN
-/// * Returns positive zero if `y` is positive zero and `x` is positive (zero,
-///   finite or infinity)
-/// * Returns negative zero if `y` is negative zero and `x` is positive (zero,
-///   finite or infinity)
-/// * Returns 180 if `y` is positive zero and `x` is negative (zero, finite or
-///   infinity)
-/// * Returns -180 if `y` is negative zero and `x` is negative (zero, finite or
-///   infinity)
-/// * Returns 90 if `y` is positive infinity and `x` is zero or finite
-/// * Returns -90 if `y` is negative infinity and `x` is zero or finite
-/// * Returns positive zero if `x` is positive infinity and `y` is positive
-///   (zero or finite)
-/// * Returns negative zero if `x` is positive infinity and `y` is negative
-///   (zero or finite)
-/// * Returns 180 if `x` is negative infinity and `y` is positive (zero or
-///   finite)
-/// * Returns -180 if `x` is negative infinity and `y` is negative (zero or
-///   finite)
-/// * Returns 45 if `x` is positive infinity and `y` is positive infinity
-/// * Returns -45 if `x` is positive infinity and `y` is negative infinity
-/// * Returns 135 if `x` is negative infinity and `y` is positive infinity
-/// * Returns -135 if `x` is negative infinity and `y` is negative infinity
+///
+/// | `y`         | `x`                      | Result |
+/// |-------------|--------------------------|--------|
+/// | NaN         | any                      | NaN    |
+/// | any         | NaN                      | NaN    |
+/// | +0          | +0 or > 0 (including +∞) | +0     |
+/// | -0          | +0 or > 0 (including +∞) | -0     |
+/// | +0          | -0 or < 0 (including -∞) | 180    |
+/// | -0          | -0 or < 0 (including -∞) | -180   |
+/// | > 0, finite | +∞                       | +0     |
+/// | < 0, finite | +∞                       | -0     |
+/// | > 0, finite | -∞                       | 180    |
+/// | < 0, finite | -∞                       | -180   |
+/// | > 0, finite | ±0                       | 90     |
+/// | < 0, finite | ±0                       | -90    |
+/// | +∞          | finite (including ±0)    | 90     |
+/// | -∞          | finite (including ±0)    | -90    |
+/// | +∞          | +∞                       | 45     |
+/// | -∞          | +∞                       | -45    |
+/// | +∞          | -∞                       | 135    |
+/// | -∞          | -∞                       | -135   |
 pub fn atan2d<F: FloatMath>(y: F, x: F) -> F {
     F::atan2d(y, x)
 }
@@ -808,9 +899,12 @@ pub fn atan2d<F: FloatMath>(y: F, x: F) -> F {
 /// Calculates the arcsine of `x`, returning the result in half-revolutions
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is NaN or greater than one in magnitude (including
-///   infinity)
+///
+/// | `x`                        | Result |
+/// |----------------------------|--------|
+/// | -0                         | -0     |
+/// | < -1 or > 1 (including ±∞) | NaN    |
+/// | NaN                        | NaN    |
 pub fn asinpi<F: FloatMath>(x: F) -> F {
     F::asinpi(x)
 }
@@ -818,8 +912,11 @@ pub fn asinpi<F: FloatMath>(x: F) -> F {
 /// Calculates the arccosine of `x`, returning the result in half-revolutions
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN or greater than one in magnitude (including
-///   infinity)
+///
+/// | `x`                        | Result |
+/// |----------------------------|--------|
+/// | < -1 or > 1 (including ±∞) | NaN    |
+/// | NaN                        | NaN    |
 pub fn acospi<F: FloatMath>(x: F) -> F {
     F::acospi(x)
 }
@@ -827,10 +924,13 @@ pub fn acospi<F: FloatMath>(x: F) -> F {
 /// Calculates the arctangent of `x`, returning the result in half-revolutions
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns NaN if `x` is NaN
-/// * Returns 0.5 if `x` is positive infinity
-/// * Returns -0.5 if `x` is negative infinity
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | 0.5    |
+/// | -∞  | -0.5   |
+/// | NaN | NaN    |
 pub fn atanpi<F: FloatMath>(x: F) -> F {
     F::atanpi(x)
 }
@@ -839,28 +939,27 @@ pub fn atanpi<F: FloatMath>(x: F) -> F {
 /// half-revolutions
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN or `y` is NaN
-/// * Returns positive zero if `y` is positive zero and `x` is positive (zero,
-///   finite or infinity)
-/// * Returns negative zero if `y` is negative zero and `x` is positive (zero,
-///   finite or infinity)
-/// * Returns 1 if `y` is positive zero and `x` is negative (zero, finite or
-///   infinity)
-/// * Returns -1 if `y` is negative zero and `x` is negative (zero, finite or
-///   infinity)
-/// * Returns 0.5 if `y` is positive infinity and `x` is zero or finite
-/// * Returns -0.5 if `y` is negative infinity and `x` is zero or finite
-/// * Returns positive zero if `x` is positive infinity and `y` is positive
-///   (zero or finite)
-/// * Returns negative zero if `x` is positive infinity and `y` is negative
-///   (zero or finite)
-/// * Returns 1 if `x` is negative infinity and `y` is positive (zero or finite)
-/// * Returns -1 if `x` is negative infinity and `y` is negative (zero or
-///   finite)
-/// * Returns 0.25 if `x` is positive infinity and `y` is positive infinity
-/// * Returns -0.25 if `x` is positive infinity and `y` is negative infinity
-/// * Returns 0.75 if `x` is negative infinity and `y` is positive infinity
-/// * Returns -0.75 if `x` is negative infinity and `y` is negative infinity
+///
+/// | `y`         | `x`                      | Result |
+/// |-------------|--------------------------|--------|
+/// | NaN         | any                      | NaN    |
+/// | any         | NaN                      | NaN    |
+/// | +0          | +0 or > 0 (including +∞) | +0     |
+/// | -0          | +0 or > 0 (including +∞) | -0     |
+/// | +0          | -0 or < 0 (including -∞) | 1      |
+/// | -0          | -0 or < 0 (including -∞) | -1     |
+/// | > 0, finite | +∞                       | +0     |
+/// | < 0, finite | +∞                       | -0     |
+/// | > 0, finite | -∞                       | 1      |
+/// | < 0, finite | -∞                       | -1     |
+/// | > 0, finite | ±0                       | 0.5    |
+/// | < 0, finite | ±0                       | -0.5   |
+/// | +∞          | finite (including ±0)    | 0.5    |
+/// | -∞          | finite (including ±0)    | -0.5   |
+/// | +∞          | +∞                       | 0.25   |
+/// | -∞          | +∞                       | -0.25  |
+/// | +∞          | -∞                       | 0.75   |
+/// | -∞          | -∞                       | -0.75  |
 pub fn atan2pi<F: FloatMath>(y: F, x: F) -> F {
     F::atan2pi(y, x)
 }
@@ -868,10 +967,13 @@ pub fn atan2pi<F: FloatMath>(y: F, x: F) -> F {
 /// Calculates the hyperbolic sine of `x`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns negative infinity if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | +∞     |
+/// | -∞  | -∞     |
+/// | NaN | NaN    |
 pub fn sinh<F: FloatMath>(x: F) -> F {
     F::sinh(x)
 }
@@ -879,8 +981,11 @@ pub fn sinh<F: FloatMath>(x: F) -> F {
 /// Calculates the hyperbolic cosine of `x`
 ///
 /// Special cases:
-/// * Returns positive infinity if `x` is positive or negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | ±∞  | +∞     |
+/// | NaN | NaN    |
 pub fn cosh<F: FloatMath>(x: F) -> F {
     F::cosh(x)
 }
@@ -897,10 +1002,13 @@ pub fn sinh_cosh<F: FloatMath>(x: F) -> (F, F) {
 /// Calculates the hyperbolic tangent of `x`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns one if `x` is positive infinity
-/// * Returns minus one if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | 1      |
+/// | -∞  | -1     |
+/// | NaN | NaN    |
 pub fn tanh<F: FloatMath>(x: F) -> F {
     F::tanh(x)
 }
@@ -908,10 +1016,13 @@ pub fn tanh<F: FloatMath>(x: F) -> F {
 /// Calculates the hyperbolic arcsine of `x`
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN
-/// * Returns negative zero if `x` is negative zero
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns negative infinity if `x` is negative infinity
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | +∞     |
+/// | -∞  | -∞     |
+/// | NaN | NaN    |
 pub fn asinh<F: FloatMath>(x: F) -> F {
     F::asinh(x)
 }
@@ -919,8 +1030,12 @@ pub fn asinh<F: FloatMath>(x: F) -> F {
 /// Calculates the hyperbolic arccosine of `x`
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN or less than one (including negative infinity)
-/// * Returns positive infinity if `x` is positive infinity
+///
+/// | `x`                | Result |
+/// |--------------------|--------|
+/// | +∞                 | +∞     |
+/// | < 1 (including -∞) | NaN    |
+/// | NaN                | NaN    |
 pub fn acosh<F: FloatMath>(x: F) -> F {
     F::acosh(x)
 }
@@ -928,21 +1043,35 @@ pub fn acosh<F: FloatMath>(x: F) -> F {
 /// Calculates the hyperbolic arctangent of `x`
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN or greater than 1 in magnitude
-/// * Returns negative zero if `x` is negative zero
-/// * Returns positive infinity if `x` is 1
-/// * Returns negative infinity if `x` is -1
+///
+/// | `x`                        | Result |
+/// |----------------------------|--------|
+/// | -0                         | -0     |
+/// | 1                          | +∞     |
+/// | -1                         | -∞     |
+/// | < -1 or > 1 (including ±∞) | NaN    |
+/// | NaN                        | NaN    |
 pub fn atanh<F: FloatMath>(x: F) -> F {
     F::atanh(x)
 }
 
 /// Calculates the gamma function of `x`
 ///
+/// When `x` is negative and not an integer, the sign of the gamma function
+/// alternates between consecutive integers, and results that underflow to zero
+/// keep that sign. For example, `gamma(-180.5)` returns negative zero and
+/// `gamma(-181.5)` returns positive zero.
+///
 /// Special cases:
-/// * Returns NaN if `x` is NaN, negative infinity or a negative integer
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns positive infinity if `x` is positive zero
-/// * Returns negative infinity if `x` is negative zero
+///
+/// | `x`          | Result |
+/// |--------------|--------|
+/// | +0           | +∞     |
+/// | -0           | -∞     |
+/// | +∞           | +∞     |
+/// | -∞           | NaN    |
+/// | < 0, integer | NaN    |
+/// | NaN          | NaN    |
 pub fn gamma<F: FloatMath>(x: F) -> F {
     F::gamma(x)
 }
@@ -954,12 +1083,15 @@ pub fn gamma<F: FloatMath>(x: F) -> F {
 /// when the sign of the gamma function of `x` is not defined.
 ///
 /// Special cases:
-/// * Returns NaN if `x` is NaN or negative infinity
-/// * Returns positive infinity if `x` is positive infinity
-/// * Returns positive infinity if `x` is zero or a negative integer
 ///
-/// The sign is considered undefined when `x` is NaN, a negative integer or
-/// negative infinity.
+/// | `x`          | Result | Sign |
+/// |--------------|--------|------|
+/// | +0           | +∞     | 1    |
+/// | -0           | +∞     | -1   |
+/// | +∞           | +∞     | 1    |
+/// | -∞           | NaN    | 0    |
+/// | < 0, integer | +∞     | 0    |
+/// | NaN          | NaN    | 0    |
 pub fn ln_gamma<F: FloatMath>(x: F) -> (F, i8) {
     F::ln_gamma(x)
 }
@@ -967,10 +1099,13 @@ pub fn ln_gamma<F: FloatMath>(x: F) -> (F, i8) {
 /// Calculates the error function of `x`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns one if `x` is positive infinity
-/// * Returns minus one if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | 1      |
+/// | -∞  | -1     |
+/// | NaN | NaN    |
 pub fn erf<F: FloatMath>(x: F) -> F {
     F::erf(x)
 }
@@ -981,9 +1116,12 @@ pub fn erf<F: FloatMath>(x: F) -> F {
 /// function calculates without losing accuracy when `erf(x)` is close to one.
 ///
 /// Special cases:
-/// * Returns zero if `x` is positive infinity
-/// * Returns two if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | +∞  | +0     |
+/// | -∞  | 2      |
+/// | NaN | NaN    |
 pub fn erfc<F: FloatMath>(x: F) -> F {
     F::erfc(x)
 }
@@ -995,9 +1133,12 @@ pub fn erfc<F: FloatMath>(x: F) -> F {
 /// overflow of `exp(x^2)` when `x` is large.
 ///
 /// Special cases:
-/// * Returns zero if `x` is positive infinity
-/// * Returns positive infinity if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | +∞  | +0     |
+/// | -∞  | +∞     |
+/// | NaN | NaN    |
 pub fn erfcx<F: FloatMath>(x: F) -> F {
     F::erfcx(x)
 }
@@ -1005,8 +1146,11 @@ pub fn erfcx<F: FloatMath>(x: F) -> F {
 /// Calculates the Bessel function of the first kind of order 0 of `x`
 ///
 /// Special cases:
-/// * Returns zero if `x` is positive or negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | ±∞  | +0     |
+/// | NaN | NaN    |
 pub fn j0<F: FloatMath>(x: F) -> F {
     F::j0(x)
 }
@@ -1014,10 +1158,13 @@ pub fn j0<F: FloatMath>(x: F) -> F {
 /// Calculates the Bessel function of the first kind of order 1 of `x`
 ///
 /// Special cases:
-/// * Returns negative zero if `x` is negative zero
-/// * Returns zero if `x` is positive infinity
-/// * Returns negative zero if `x` is negative infinity
-/// * Returns NaN if `x` is NaN
+///
+/// | `x` | Result |
+/// |-----|--------|
+/// | -0  | -0     |
+/// | +∞  | +0     |
+/// | -∞  | -0     |
+/// | NaN | NaN    |
 pub fn j1<F: FloatMath>(x: F) -> F {
     F::j1(x)
 }
@@ -1032,14 +1179,17 @@ pub fn j1<F: FloatMath>(x: F) -> F {
 /// [accuracy](crate#accuracy) of the crate).
 ///
 /// Special cases:
-/// * Returns zero if `x` is positive or negative zero and `n` is even and not
-///   zero
-/// * Returns zero if `x` is positive or negative infinity and `n` is even
-/// * Returns zero if `x` is a zero or an infinity with the same sign as `n`
-///   and `n` is odd
-/// * Returns negative zero if `x` is a zero or an infinity with the opposite
-///   sign of `n` and `n` is odd
-/// * Returns NaN if `x` is NaN
+///
+/// | `n`         | `x`      | Result |
+/// |-------------|----------|--------|
+/// | 0           | ±0       | 1      |
+/// | even, not 0 | ±0       | +0     |
+/// | even        | ±∞       | +0     |
+/// | odd, > 0    | +0 or +∞ | +0     |
+/// | odd, > 0    | -0 or -∞ | -0     |
+/// | odd, < 0    | +0 or +∞ | -0     |
+/// | odd, < 0    | -0 or -∞ | +0     |
+/// | any         | NaN      | NaN    |
 pub fn jn<F: FloatMath>(n: i32, x: F) -> F {
     F::jn(n, x)
 }
@@ -1047,9 +1197,13 @@ pub fn jn<F: FloatMath>(n: i32, x: F) -> F {
 /// Calculates the Bessel function of the second kind of order 0 of `x`
 ///
 /// Special cases:
-/// * Returns negative infinity if `x` is positive or negative zero
-/// * Returns zero if `x` is positive infinity
-/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+///
+/// | `x`                | Result |
+/// |--------------------|--------|
+/// | ±0                 | -∞     |
+/// | +∞                 | +0     |
+/// | < 0 (including -∞) | NaN    |
+/// | NaN                | NaN    |
 pub fn y0<F: FloatMath>(x: F) -> F {
     F::y0(x)
 }
@@ -1057,9 +1211,13 @@ pub fn y0<F: FloatMath>(x: F) -> F {
 /// Calculates the Bessel function of the second kind of order 1 of `x`
 ///
 /// Special cases:
-/// * Returns negative infinity if `x` is positive or negative zero
-/// * Returns zero if `x` is positive infinity
-/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+///
+/// | `x`                | Result |
+/// |--------------------|--------|
+/// | ±0                 | -∞     |
+/// | +∞                 | +0     |
+/// | < 0 (including -∞) | NaN    |
+/// | NaN                | NaN    |
 pub fn y1<F: FloatMath>(x: F) -> F {
     F::y1(x)
 }
@@ -1074,14 +1232,15 @@ pub fn y1<F: FloatMath>(x: F) -> F {
 /// [accuracy](crate#accuracy) of the crate).
 ///
 /// Special cases:
-/// * Returns negative infinity if `x` is positive or negative zero, unless `n`
-///   is negative and odd
-/// * Returns positive infinity if `x` is positive or negative zero and `n` is
-///   negative and odd
-/// * Returns zero if `x` is positive infinity, unless `n` is negative and odd
-/// * Returns negative zero if `x` is positive infinity and `n` is negative and
-///   odd
-/// * Returns NaN if `x` is NaN or negative non-zero (including infinity)
+///
+/// | `n`         | `x`                | Result |
+/// |-------------|--------------------|--------|
+/// | even or > 0 | ±0                 | -∞     |
+/// | odd, < 0    | ±0                 | +∞     |
+/// | even or > 0 | +∞                 | +0     |
+/// | odd, < 0    | +∞                 | -0     |
+/// | any         | < 0 (including -∞) | NaN    |
+/// | any         | NaN                | NaN    |
 pub fn yn<F: FloatMath>(n: i32, x: F) -> F {
     F::yn(n, x)
 }
